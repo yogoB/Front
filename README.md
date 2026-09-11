@@ -55,6 +55,7 @@ assets/                 원본 HTML에서 추출한 폰트와 폰트 CSS
 tests/                 계약 테스트와 선택 실행 브라우저 검증
 ```
 
+**프론트 개발을 처음 시작하는 팀원은 [시작하기](docs/getting-started.md) → [개발 가이드](docs/frontend-guide.md) 순서로 읽으면 문서만 보고 구현할 수 있습니다.**
 상세 동작과 구현 경계는 [연동 명세](docs/integration.md), 기존 프로토타입 분석은 [이전 분석](docs/README.md)을 참고합니다.
 
 ## 검증
