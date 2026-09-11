@@ -1,0 +1,3 @@
+#!/bin/sh
+[ "$YOGOBI_SKIP_TRACKING" = "1" ] && exit 0
+python3 scripts/knowledge.py sync || printf '%s\n' 'Obsidian 동기화 실패: python3 scripts/knowledge.py sync 로 재시도하세요.' >&2

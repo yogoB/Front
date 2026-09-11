@@ -1,0 +1,8 @@
+.git
+node_modules
+tests
+scripts
+.githooks
+docs
+__pycache__
+.DS_Store
