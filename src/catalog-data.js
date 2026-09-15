@@ -48,3 +48,15 @@ export const FEE_BUCKETS = [
   { label: '5~7만원', rep: 60000 },
   { label: '7만원 이상', rep: 80000 },
 ];
+
+// 디테일 모드 통신사. 알뜰폰 브랜드는 BE currentCarrier enum에 개별로 없으므로 '알뜰폰'으로 매핑한다.
+// ponytail: 매핑은 mvnoCarrier 플래그로 표시만; 실제 전송은 결과 연동 단계에서 처리.
+export const CARRIERS = [
+  { name: 'SKT', mvno: false },
+  { name: 'KT', mvno: false },
+  { name: 'LG U+', mvno: false },
+  { name: '세븐모바일', mvno: true },
+  { name: 'M모바일', mvno: true },
+  { name: '헬로모바일', mvno: true },
+  { name: '스노우맨', mvno: true },
+];

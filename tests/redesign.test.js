@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CATALOG, DATA_BUCKETS, FEE_BUCKETS } from '../src/catalog-data.js';
+import { CATALOG, DATA_BUCKETS, FEE_BUCKETS, CARRIERS } from '../src/catalog-data.js';
+
+test('carriers include majors and flag MVNO brands for BE mapping', () => {
+  const names = CARRIERS.map(c => c.name);
+  for (const major of ['SKT', 'KT', 'LG U+']) assert.ok(names.includes(major), `missing ${major}`);
+  assert.ok(CARRIERS.some(c => c.mvno), 'need at least one 알뜰폰 brand flagged');
+  assert.ok(CARRIERS.filter(c => c.mvno).every(c => c.name), 'mvno entries need names');
+});
 
 test('mock catalog is well-formed for the light flow', () => {
   const tierIds = new Set();
