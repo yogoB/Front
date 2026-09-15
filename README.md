@@ -43,15 +43,20 @@ Google 로그인은 BE의 Google OAuth 설정이 필요하고, 가입·비밀번
 ## 구성
 
 ```text
-index.html              통신 → 구독 → 조건 확인 → 결과, 문장 추천
+index.html              랜딩 + 모드 선택 (Figma 리디자인, 진행 중)
+light.html, detail.html 라이트/디테일 입력 흐름 (다음 단계 구현 예정, 현재 자리표시)
+app.html                기존 통신 → 구독 → 조건 → 결과 앱 (BE 연동 동작본)
 account.html            회원·로그인 세션 관리
-src/app.js              화면 이벤트·카탈로그·추천·직접 계산
+src/landing.js          랜딩·모드선택 뷰 전환
+src/redesign.css        리디자인 공통 스타일(디자인 토큰)
+src/app.js              app.html의 화면 이벤트·카탈로그·추천·직접 계산
 src/account.js          인증·이메일 확인·Google 연결·세션 종료
 src/api.js              공통 fetch, 쿠키, CSRF, 오류, 취소, 시간 제한
 src/model.js            요청 변환, 입력 검증, CSV 내보내기
 src/config.js           API 주소
-src/styles.css          기존 테마를 보존한 공통·반응형 스타일
+src/styles.css          기존 app.html 테마를 보존한 공통·반응형 스타일
 assets/                 원본 HTML에서 추출한 폰트와 폰트 CSS
+docs/ux-flow.md         리디자인 화면·흐름 확정본과 BE 매핑
 tests/                 계약 테스트와 선택 실행 브라우저 검증
 ```
 
