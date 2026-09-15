@@ -43,11 +43,19 @@ Google 로그인은 BE의 Google OAuth 설정이 필요하고, 가입·비밀번
 ## 구성
 
 ```text
-index.html              랜딩 + 모드 선택 (Figma 리디자인, 진행 중)
-light.html, detail.html 라이트/디테일 입력 흐름 (다음 단계 구현 예정, 현재 자리표시)
+index.html              랜딩 + 모드 선택 (라이트/디테일)
+light.html              라이트 입력 3단계 (데이터 범위 → 통신비 → 구독)
+detail.html             디테일 입력 3단계 (통신사·약정 → 희망요금 → 희망구독)
+results.html            결과 비교표 (현재·추천·최저 3열, 1/6/12개월, 추천 사유)
+calendar.html           전환 액션 캘린더 (단계 가이드 + 월/주간, 목업)
 app.html                기존 통신 → 구독 → 조건 → 결과 앱 (BE 연동 동작본)
 account.html            회원·로그인 세션 관리
 src/landing.js          랜딩·모드선택 뷰 전환
+src/light.js, detail.js 입력 흐름 로직
+src/results.js          결과 비교표 렌더·기간 탭
+src/calendar.js         전환 캘린더 렌더
+src/recommend-mock.js   목업 추천 계산(운영 시 POST /recommendations로 교체)
+src/catalog-data.js     목업 카탈로그·통신사·구간 데이터
 src/redesign.css        리디자인 공통 스타일(디자인 토큰)
 src/app.js              app.html의 화면 이벤트·카탈로그·추천·직접 계산
 src/account.js          인증·이메일 확인·Google 연결·세션 종료
