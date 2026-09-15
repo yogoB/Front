@@ -7,17 +7,57 @@
   <title>전환 액션 캘린더 · 요고비</title>
   <link rel="stylesheet" href="./assets/fonts.css">
   <link rel="stylesheet" href="./src/redesign.css">
+  <script type="module" src="./src/calendar.js"></script>
 </head>
 <body>
 <header class="site-header">
   <a class="brand" href="./"><span class="brand-mark">B</span>YogoB</a>
-  <nav class="header-nav"><a class="btn btn-brand" href="./account.html">로그인</a></nav>
+  <nav class="header-nav">
+    <a class="plain" href="./">홈</a>
+    <a class="plain" href="./results.html">조건 수정</a>
+    <a class="btn btn-brand" href="./account.html">로그인</a>
+  </nav>
 </header>
-<main class="placeholder" role="main">
-  <span class="badge">다음 단계</span>
+
+<main class="cal-page" role="main">
+  <div class="cal-top">
+    <div><a class="back-link" href="./results.html">← 추천 결과로 돌아가기</a> <span class="pill-badge">A안 선택됨</span></div>
+    <button type="button" class="btn btn-brand" id="gcal">Google 캘린더 연동하기</button>
+  </div>
   <h1>통신사 전환 액션 캘린더</h1>
-  <p>단계별 전환 가이드와 캘린더는 다음 단계에서 구현합니다.</p>
-  <a class="btn btn-ghost" href="./results.html">← 결과로 돌아가기</a>
+  <p class="flow-sub">계획된 전환 일정을 한눈에 확인하고, 준비 항목을 단계별로 챙기세요.</p>
+  <p class="notice-line" id="gcal-note" hidden>Google 캘린더 연동은 준비 중이에요. 아래 일정을 참고해 직접 등록해 주세요.</p>
+
+  <div class="cal-cols">
+    <aside class="cal-side">
+      <div class="switch-card">
+        <div><span class="muted">현재 월 납부요금</span><strong id="cur-amount">—</strong></div>
+        <span class="arrow" aria-hidden="true">→</span>
+        <div><span class="muted">전환 예상요금</span><strong class="accent" id="rec-amount">—</strong></div>
+      </div>
+
+      <h2 class="guide-title">단계별 가이드</h2>
+      <ol class="guide" id="guide"></ol>
+
+      <p class="hint">본 체크리스트와 일정은 정보 제공 목적이에요. 통신사·OTT 정책에 따라 요금·조건이 다를 수 있으니 가입 전 공식 홈페이지에서 최종 확인해 주세요.</p>
+    </aside>
+
+    <section class="cal-main">
+      <div class="cal-controls">
+        <div class="cal-nav">
+          <button type="button" id="prev" aria-label="이전 달">‹</button>
+          <strong id="cal-title">—</strong>
+          <button type="button" id="next" aria-label="다음 달">›</button>
+          <button type="button" class="text-btn" id="today">오늘로 이동</button>
+        </div>
+        <div class="seg" role="tablist" aria-label="보기">
+          <button type="button" data-view="month" class="active">월간</button>
+          <button type="button" data-view="week">주간</button>
+        </div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </section>
+  </div>
 </main>
 </body>
 </html>
