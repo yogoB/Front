@@ -27,6 +27,16 @@ $('code-back').addEventListener('click', () => {
   $('email').focus();
 });
 
+/** 로그인 뒤 돌아갈 곳. 결과 화면의 비회원 게이트가 남겨 둔 값만 받는다.
+    URL 파라미터로 받지 않는다 — 외부에서 넘긴 주소로 튕겨 보내는 통로가 되기 때문이다.
+    허용 목록 밖이면 무시하고 기본 화면으로 간다. */
+const ALLOWED_NEXT = ['results.html', 'calendar.html', 'mypage.html'];
+export function nextAfterLogin() {
+  const next = sessionStorage.getItem('yogobi:next');
+  sessionStorage.removeItem('yogobi:next');
+  return ALLOWED_NEXT.includes(next) ? `./${next}` : './account.html';
+}
+
 /* 2. 실제 로그인 */
 $('password-form').addEventListener('submit', async event => {
   event.preventDefault();
@@ -40,7 +50,7 @@ $('password-form').addEventListener('submit', async event => {
       body: { email: $('login-email').textContent, password: $('password').value },
     });
     step('redirect');
-    location.assign('./account.html');
+    location.assign(nextAfterLogin());
   } catch (error) {
     $('verify-status').hidden = true;
     button.disabled = false;

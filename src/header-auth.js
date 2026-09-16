@@ -41,6 +41,14 @@ function noteOAuthReturn(member) {
     box.className = 'auth-note auth-note-warn';
   }
   box.hidden = false;
+  // 결과 화면의 비회원 게이트에서 출발했다면 그리로 돌려보낸다(Google 은 랜딩으로 복귀한다).
+  // 목적지는 우리가 남긴 값만 쓴다 — 외부에서 넘긴 주소를 따라가지 않는다.
+  const next = sessionStorage.getItem('yogobi:next');
+  sessionStorage.removeItem('yogobi:next');
+  if (member && ['results.html', 'calendar.html', 'mypage.html'].includes(next)) {
+    location.replace(`./${next}`);
+    return;
+  }
   // 새로고침·뒤로가기에 같은 안내가 다시 뜨지 않게 흔적을 지운다(랜딩의 #modes 전환과도 섞이지 않는다).
   history.replaceState(null, '', location.pathname + location.search);
 }

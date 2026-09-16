@@ -79,6 +79,7 @@ function render(source, data) {
   renderBreakdown(best);
   renderCrossCheck(best);
   renderTotals(source, best);
+  gateForGuests(best);
   wireReport(best);
   fillPlanSpecs(source, best);
 }
@@ -247,6 +248,40 @@ function renderTotals(source, best) {
     currentTotal: current, planLabel: `${best.carrier} ${best.planName}`,
     monthlyTotal: best.monthlyTotal, monthlySavings: best.monthlySavings, annualSavings: best.annualSavings,
   }));
+}
+
+/* 비회원 게이트. 결과는 계산해서 **절감액까지 보여주고** 상세는 로그인 뒤에 본다(제품 결정).
+   블러는 가림막이지 접근 통제가 아니다 — 금액도 표도 공개 API 가 이미 내려준 값이고,
+   개발자도구로 걷어낼 수 있다. 정말 막아야 할 값이 생기면 BE 가 내려주지 않아야 한다. */
+function gateForGuests(best) {
+  const gate = $('gate');
+  if (!gate) return;
+  request('/api/v1/me', { member: true })
+    .then(() => { /* 회원이면 그대로 본다 */ })
+    .catch(() => openGate(gate, best));
+}
+
+function openGate(gate, best) {
+  document.getElementById('results').classList.add('gated');
+  const lead = $('gate-lead');
+  // 절감액은 BE 값 그대로다. 없으면 금액을 지어내지 않고 문장을 바꾼다.
+  if (best.monthlySavings > 0) {
+    lead.replaceChildren(document.createTextNode('최대 '));
+    const amount = document.createElement('b');
+    amount.textContent = won(best.monthlySavings);
+    lead.append(amount, document.createTextNode(' 절감 받을 수 있어요.'));
+  } else {
+    lead.textContent = '지금 조건에 맞는 조합을 찾았어요.';
+  }
+  $('gate-login').addEventListener('click', () => {
+    // 로그인 뒤 이 화면으로 돌아온다. 입력은 sessionStorage 에 있어 같은 탭이면 그대로 다시 계산된다.
+    sessionStorage.setItem('yogobi:next', 'results.html');
+    location.assign('./login.html');
+  });
+  $('gate-back').addEventListener('click', () => { location.assign('./#modes'); });
+  // Esc 로 닫으면 블러만 남은 막다른 화면이 된다 — 나가는 길은 위 두 버튼뿐이다.
+  gate.addEventListener('cancel', event => event.preventDefault());
+  gate.showModal();
 }
 
 /* 정보 오류 제보(POST /api/v1/catalog/reports). 접수만 하고 카탈로그를 바꾸지 않는다 — BE 가 PENDING 으로 저장한다. */
