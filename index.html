@@ -80,21 +80,25 @@
 </main>
 
 <!-- 진입 · 모드 선택 -->
-<main id="view-modes" class="view" role="main" hidden>
+<main id="view-modes" class="view modes" role="main" hidden>
   <div class="modes-wrap">
+    <div class="modes-art" aria-hidden="true">
+      <span class="coin coin-a">₩</span>
+      <span class="coin coin-b">₩</span>
+      <span class="coin coin-c">₩</span>
+      <span class="modes-glass">🔍</span>
+    </div>
     <button type="button" class="back-link" id="modes-back">← 처음으로</button>
     <h1>나의 <span class="chip">데이터사용량</span> <span class="chip">통신비</span> <span class="chip">구독서비스</span> 를 분석해서<br>얼마나 절감할 수 있을지 바로 알려드려요!</h1>
     <div class="mode-cards">
       <a class="mode-card light" href="./light.html">
-        <span class="kind">라이트 모드</span>
-        <h2>핵심 3가지만 빠르게</h2>
-        <p>데이터·통신비·구독만 답하면 바로 결과를 볼 수 있어요.</p>
+        <h2>라이트모드</h2>
+        <p>3개의 질문으로 분석해드려요!<br>단 정확도는 조금 떨어질 수 있어요</p>
         <span class="go" aria-hidden="true">→</span>
       </a>
       <a class="mode-card detail" href="./detail.html">
-        <span class="kind">디테일 모드</span>
-        <h2>꼼꼼하게 최저가까지</h2>
-        <p>통신사·약정·희망 조건까지 세세하게 넣어 더 정확한 조합을 찾아요.</p>
+        <h2>디테일모드</h2>
+        <p>통신사·약정·희망 조건까지 넣어<br>더 정확한 조합을 찾아드려요</p>
         <span class="go" aria-hidden="true">→</span>
       </a>
     </div>

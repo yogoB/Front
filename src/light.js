@@ -34,6 +34,7 @@ function error(message = '') { $('error').textContent = message; $('error').hidd
 function renderData() {
   const b = DATA_BUCKETS[state.dataIdx];
   $('data-value').textContent = state.dataSkipped ? '모름' : b.label;
+  $('data-range').style.setProperty('--pct', `${state.dataIdx / (DATA_BUCKETS.length - 1) * 100}%`); // 채워진 트랙
 }
 $('data-range').addEventListener('input', e => {
   state.dataIdx = Number(e.target.value); state.dataSkipped = false; renderData();

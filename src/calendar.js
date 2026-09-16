@@ -12,7 +12,7 @@ import { request } from './api.js';
 const $ = id => document.getElementById(id);
 const won = n => `₩${n.toLocaleString('ko-KR')}`;
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
-const STEP_COLORS = ['#4f6bed', '#22c55e', '#a855f7', '#0ea5a3'];
+const STEP_COLORS = ['#22b892', '#4f6bed', '#a855f7', '#6b7280']; // 준비·가입·구독 정리·완료 (시안 순서)
 const STEPS = [
   { when: '준비', title: '통신사 변경 준비', desc: '약정일·해지조건·명의서류를 체크합니다.' },
   { when: '가입', title: '추천 요금제 가입', desc: '통신사 공식 채널에서 번호이동 가입을 진행합니다.' },
@@ -47,15 +47,17 @@ if (!result) {
 } else {
   $('cur-amount').textContent = result.currentTotal === null ? '—' : won(result.currentTotal);
   $('rec-amount').textContent = won(result.monthlyTotal);
+  if (result.planLabel) $('rec-label').textContent = `${result.planLabel} 전환 예상요금`;
 }
+const stepName = i => (i < 3 ? `${i + 1}단계 · ` : '') + STEPS[i].when;
 $('guide').replaceChildren(...STEPS.map((s, i) => {
-  const li = document.createElement('li');
+  const li = document.createElement('li'); li.style.background = STEP_COLORS[i] + '14';
+  const head = document.createElement('strong'); head.style.color = STEP_COLORS[i];
   const dot = document.createElement('span'); dot.className = 'guide-dot'; dot.style.background = STEP_COLORS[i];
-  const body = document.createElement('div');
-  const head = document.createElement('strong'); head.textContent = `${i + 1}단계 · ${s.when}`;
+  head.append(dot, stepName(i));
   const title = document.createElement('span'); title.className = 'guide-name'; title.textContent = s.title;
   const desc = document.createElement('p'); desc.textContent = s.desc;
-  body.append(head, title, desc); li.append(dot, body);
+  li.append(head, title, desc);
   return li;
 }));
 
@@ -110,37 +112,41 @@ function relativeDay(date) {
   return days === 0 ? '오늘' : days > 0 ? `${days}일 뒤` : `${-days}일 전`;
 }
 
-/* 리스트 보기 — 캘린더와 같은 일정을 날짜순 목록으로 본다. 일정이 여러 달에 걸치면
-   달을 오가야 흐름이 보이는데, 목록은 한 번에 보여준다. 그래서 리스트에선 달 이동을 숨긴다. */
+/* 리스트 보기 — 캘린더와 같은 일정을 날짜별로 묶어 본다(시안). 일정이 여러 달에 걸치면
+   달을 오가야 흐름이 보이는데, 목록은 한 번에 보여준다. 그래서 리스트에선 달 이동을 숨긴다.
+   지난 일정은 체크 표시 — 실제 완료 여부는 모르므로 날짜가 지났다는 뜻일 뿐이다. */
 function renderList() {
-  $('cal-list').replaceChildren(...EVENTS.map(event => {
+  const days = new Map();
+  for (const event of EVENTS) {
     const date = dateOf(event.offset);
-    const item = document.createElement('li');
-    item.className = 'cal-li';
-    if (date < today) item.classList.add('past');
+    (days.get(+date) || days.set(+date, { date, events: [] }).get(+date)).events.push(event);
+  }
+  $('cal-list').replaceChildren(...[...days.values()].map(({ date, events }) => {
+    const past = date < today;
+    const day = document.createElement('li');
+    day.className = 'cal-day' + (past ? ' past' : '');
 
-    const when = document.createElement('div');
-    when.className = 'cal-li-when';
-    const md = document.createElement('strong'); md.textContent = `${date.getMonth() + 1}/${date.getDate()}`;
-    const wd = document.createElement('span'); wd.textContent = WD[date.getDay()];
-    when.append(md, wd);
-
-    const dot = document.createElement('span');
-    dot.className = 'cal-li-dot';
-    dot.style.background = STEP_COLORS[event.step];
-
-    const body = document.createElement('div');
-    const label = document.createElement('span');
-    label.className = 'cal-li-label'; label.textContent = event.label;
-    const step = document.createElement('small');
-    step.textContent = `${event.step + 1}단계 · ${STEPS[event.step].when}`;
-    body.append(label, step);
-
+    const head = document.createElement('div');
+    head.className = 'cal-day-head';
+    const when = document.createElement('strong'); when.textContent = `${date.getDate()}일 ${WD[date.getDay()]}요일`;
     const rel = document.createElement('span');
-    rel.className = 'cal-li-rel'; rel.textContent = relativeDay(date);
+    rel.className = +date === +today ? 'today-tag' : 'cal-li-rel';
+    rel.textContent = +date === +today ? 'TODAY' : relativeDay(date);
+    head.append(when, rel);
 
-    item.append(when, dot, body, rel);
-    return item;
+    const list = document.createElement('ul');
+    list.append(...events.map(event => {
+      const item = document.createElement('li'); item.className = 'cal-li';
+      const mark = document.createElement('span'); mark.className = 'cal-li-mark' + (past ? ' done' : '');
+      if (past) mark.textContent = '✓';
+      const label = document.createElement('span'); label.className = 'cal-li-label'; label.textContent = event.label;
+      const tag = document.createElement('span'); tag.className = 'cal-tag'; tag.textContent = stepName(event.step);
+      tag.style.background = STEP_COLORS[event.step] + '1f'; tag.style.color = STEP_COLORS[event.step];
+      item.append(mark, label, tag);
+      return item;
+    }));
+    day.append(head, list);
+    return day;
   }));
 }
 
@@ -158,12 +164,8 @@ function render() {
   const evMap = eventsForMonth(y, m);
   const cells = [...Array(first).fill(null), ...Array.from({ length: total }, (_, i) => i + 1)];
   while (cells.length % 7) cells.push(null);
-  let weeks = [];
+  const weeks = [];
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
-  if (mode === 'week') {
-    const wi = sameMonthAsToday(y, m) ? weeks.findIndex(w => w.includes(today.getDate())) : 0;
-    weeks = [weeks[wi < 0 ? 0 : wi]];
-  }
 
   const grid = $('cal-grid'); grid.replaceChildren();
   const head = document.createElement('div'); head.className = 'cal-week';

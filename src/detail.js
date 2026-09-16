@@ -111,7 +111,10 @@ function updateStatement() {
 }
 
 /* 2. 희망 데이터 + 현재 통신비 + 선택 입력 */
-function renderData() { $('data-value').textContent = DATA_BUCKETS[state.dataIdx].label; }
+function renderData() {
+  $('data-value').textContent = DATA_BUCKETS[state.dataIdx].label;
+  $('data-range').style.setProperty('--pct', `${state.dataIdx / (DATA_BUCKETS.length - 1) * 100}%`); // 채워진 트랙
+}
 $('data-range').addEventListener('input', e => { state.dataIdx = Number(e.target.value); renderData(); });
 
 // 통신비 구간 칩. 라이트 모드와 같은 구간을 쓴다(같은 질문은 같은 선택지).

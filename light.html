@@ -21,7 +21,7 @@
     <button type="button" class="back-link" id="back">←</button>
     <ol class="progress" id="progress">
       <li data-step="1"><span class="dot">1</span><span>기본</span></li>
-      <li data-step="2"><span class="dot">2</span><span>요금</span></li>
+      <li data-step="2"><span class="dot">2</span><span>요금제</span></li>
       <li data-step="3"><span class="dot">3</span><span>구독</span></li>
     </ol>
   </div>
@@ -30,13 +30,16 @@
 
   <!-- 1. 데이터 -->
   <section class="flow-panel" data-panel="1">
-    <span class="kicker">라이트 모드 · 기본 정보</span>
-    <h1 class="flow-q">한 달에 데이터 얼마나 쓰세요?</h1>
+    <span class="kicker">기본 정보</span>
+    <div class="q-row">
+      <h1 class="flow-q">한 달에 데이터 얼마나 쓰세요?</h1>
+      <button type="button" class="info" aria-label="도움말" data-tip="통신사 앱 → 사용량 조회에서 확인할 수 있어요">i</button>
+    </div>
     <p class="flow-sub">대략적으로 선택해도 괜찮아요. 해당 용량 이상인 요금제를 찾아요.</p>
     <div class="slider-card">
+      <p class="hint">데이터 사용량 범위를 조절하세요</p>
       <output class="slider-value" id="data-value">5~15GB</output>
       <input type="range" id="data-range" min="0" max="5" step="1" value="2" aria-label="데이터 사용량 구간">
-      <p class="hint">데이터 사용량 구간을 조절해 주세요.</p>
     </div>
     <div class="flow-actions">
       <button type="button" class="btn btn-brand btn-block" data-next>다음</button>
@@ -46,16 +49,19 @@
 
   <!-- 2. 통신비 -->
   <section class="flow-panel" data-panel="2" hidden>
-    <span class="kicker">라이트 모드 · 현재 납부액</span>
-    <h1 class="flow-q">실제로 내는 금액이 얼마예요?</h1>
-    <p class="flow-sub">결합·약정이 있으면 다 반영된 최종 납부금액이에요. 통신사 앱·청구서에서 확인할 수 있어요.</p>
+    <span class="kicker">현재 납부액</span>
+    <div class="q-row">
+      <h1 class="flow-q">실제로 내는 금액이 얼마예요?</h1>
+      <button type="button" class="info" aria-label="도움말" data-tip="통신사 앱 → 청구내역에서 확인할 수 있어요">i</button>
+    </div>
+    <p class="flow-sub">지난달 실제 납부한 결합·약정 할인이 다 적용된 총 납부금액을 알려주세요.</p>
     <div class="choice-row" id="fee-choices" role="group" aria-label="현재 통신비 구간"></div>
     <div class="fee-custom" id="fee-custom" hidden>
       <label for="fee-input">직접 입력</label>
       <div class="unit-input"><input id="fee-input" inputmode="numeric" placeholder="55000"><span>원</span></div>
     </div>
     <div class="flow-actions">
-      <button type="button" class="btn btn-brand btn-block" data-next>확인했어요 →</button>
+      <button type="button" class="btn btn-brand btn-block" data-next>다음</button>
       <button type="button" class="link-muted" data-skip>모르겠어요, 건너뛸게요</button>
     </div>
   </section>
@@ -74,7 +80,7 @@
         <p class="hint">입력값과 카탈로그 가격의 합계예요. 추천 금액은 결과에서 계산해요.</p>
       </aside>
       <div>
-        <span class="kicker">라이트 모드 · 구독 정보</span>
+        <span class="kicker">구독 정보</span>
         <h1 class="flow-q">현재 결제 중인 구독 서비스가 있나요?</h1>
         <p class="flow-sub">이용 중인 서비스를 고르고 등급을 선택해 주세요.</p>
         <div class="search"><input id="sub-search" placeholder="서비스 검색" aria-label="서비스 검색"></div>
