@@ -15,11 +15,13 @@ addEventListener('hashchange', () => show(location.hash === '#modes' ? 'modes' :
 show(location.hash === '#modes' ? 'modes' : 'landing');
 
 // 랜딩 지표는 실제 카탈로그 개수다. 마케팅 수치를 지어내지 않는다 — 못 받으면 카드를 숨긴다.
-const countInto = (id, path) => request(path)
+const countInto = (id, path, keep = () => true) => request(path)
   .then(({ data }) => {
-    if (!Array.isArray(data) || !data.length) throw new Error('empty');
-    $(id).textContent = `${data.length.toLocaleString('ko-KR')}개`;
+    const count = Array.isArray(data) ? data.filter(keep).length : 0;
+    if (!count) throw new Error('empty');
+    $(id).textContent = `${count.toLocaleString('ko-KR')}개`;
   })
   .catch(() => { $(id).closest('.stat').hidden = true; });
 countInto('stat-plans', '/api/v1/catalog/plans');
-countInto('stat-services', '/api/v1/catalog/services');
+// 등급이 없는 서비스는 화면에서 고를 수 없다(catalog-data.js loadCatalog 와 같은 기준) — 세지 않는다.
+countInto('stat-services', '/api/v1/catalog/services', service => service.tiers?.length > 0);
