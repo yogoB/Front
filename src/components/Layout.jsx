@@ -47,9 +47,9 @@ export function Footer() {
       </div>
       {/* 운영자용. 누구나 열 수 있는 정적 페이지지만 데이터는 전부 인증이 필요하다(backoffice.md §2). */}
       <div className="mt-[18px]">
-        <a href="/admin.html" rel="nofollow" className="text-xs text-muted hover:text-ink-soft hover:underline">
+        <Link to="/admin" rel="nofollow" className="text-xs text-muted hover:text-ink-soft hover:underline">
           관리자 로그인
-        </a>
+        </Link>
       </div>
     </footer>
   );
