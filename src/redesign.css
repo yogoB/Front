@@ -66,8 +66,14 @@ body:has(> .flow), body:has(> .cal-page) { background: var(--bg-page); }
 .section { padding: 40px 0; }
 
 /* Hero — 가운데 한 덩어리. 헤더·푸터는 건드리지 않는다. */
+/* 랜딩은 히어로 하나뿐이다 — 헤더·푸터를 뺀 남은 높이의 가운데에 둔다.
+   100vh 를 main 에 직접 주면 헤더 높이만큼 스크롤이 생기므로 body 를 세로 플렉스로 두고 main 이 남은 만큼 자란다.
+   랜딩에만 건다 — redesign.css 는 전 화면 공용이다. */
+.landing-page { min-height: 100vh; display: flex; flex-direction: column; }
+.landing-page #view-landing { display: flex; flex-direction: column; flex: 1; }
+.landing-page .site-footer { margin-top: auto; }
 .hero { display: grid; grid-template-columns: 1.35fr .65fr; gap: 24px; align-items: center;
-  padding: 72px 0 64px; }
+  flex: 1; padding: 40px 0; }
 .hero-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
 .badge { display: inline-block; background: var(--brand-tint); color: var(--brand-ink);
   font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 999px; }
@@ -99,26 +105,6 @@ body:has(> .flow), body:has(> .cal-page) { background: var(--bg-page); }
 .coin-a { width: 72px; height: 72px; font-size: 30px; left: -14%; top: 8%; }
 .coin-b { width: 40px; height: 40px; font-size: 17px; right: 8%; top: 2%; }
 .coin-c { width: 56px; height: 56px; font-size: 24px; right: -6%; top: 34%; }
-
-/* Stats */
-/* auto-fit: 카탈로그를 못 받아 카드를 숨겨도 남은 카드가 빈칸 없이 채운다. */
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-top: 40px; }
-.stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 20px; box-shadow: var(--shadow); }
-.stat .value { font-size: 26px; font-weight: 800; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
-.stat .label { font-weight: 600; margin-top: 6px; }
-.stat .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
-
-/* How it works */
-.how { background: var(--bg-soft); border-radius: var(--radius); padding: 36px; margin-top: 36px; }
-.how h2 { font-size: 24px; font-weight: 800; }
-.how .lead { color: var(--ink-soft); margin-top: 8px; }
-.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 28px; }
-.step { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
-.step .num { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 999px;
-  background: var(--brand-tint); color: var(--brand-ink); font-weight: 800; font-size: 13px; }
-.step h3 { font-size: 16px; font-weight: 700; margin-top: 12px; }
-.step p { color: var(--muted); font-size: 14px; margin-top: 6px; }
 
 /* Footer */
 .site-footer { border-top: 1px solid var(--line); margin-top: 40px; padding: 28px 0; }
@@ -629,11 +615,9 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
 @media (max-width: 860px) {
   .hero { grid-template-columns: 1fr; padding: 40px 0 32px; }
   .hero-art { display: none; }
-  .steps { grid-template-columns: repeat(2, 1fr); }
   .mode-cards { grid-template-columns: 1fr; }
   .hero h1 { font-size: 34px; }
 }
 @media (max-width: 520px) {
-  .steps { grid-template-columns: 1fr; }
   .site-footer .row { flex-direction: column; }
 }
