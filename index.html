@@ -22,37 +22,32 @@
 <!-- 랜딩 -->
 <main id="view-landing" class="view" role="main">
   <section id="main" class="hero">
-    <div>
-      <span class="badge">통신비 + 구독료를 한 번에</span>
-      <h1>지금 내는 요금,<br><span class="accent">얼마나 줄어드는지</span>부터 알려드려요.</h1>
-      <p class="lead">요금제와 구독을 같이 계산해 더 싼 조합과 바꾸기 좋은 시점을 찾아요. 질문 3개면 예상 절감액이 나옵니다.</p>
-      <div class="hero-cta">
-        <button type="button" id="start-btn" class="btn btn-brand btn-lg">1분 만에 절감액 확인</button>
-        <span class="cta-note">가입·로그인 없이 결과까지</span>
-      </div>
+    <div class="hero-copy">
+      <p class="hero-meta">
+        <span class="badge">통신비 · 구독료 최적화 진단</span>
+        <!-- 숫자는 실제 카탈로그에서 채운다(landing.js). 못 받으면 이 줄은 뜨지 않는다. -->
+        <span class="hero-stat" id="hero-stat" hidden></span>
+      </p>
+      <h1>지금 내는 요금,<br><span class="accent">월 얼마나</span> 줄어들까요?</h1>
+      <p class="lead">몇 가지 질문에 답하다 보면 복잡한 내 통신비와 요금제가 정리되고,
+        내 상황에 딱 맞는 선택지가 만들어집니다.<br>
+        <!-- D-36: 로그인이 필요하다는 사실을 입력 시작 전에 알린다. 다 시킨 뒤 꺼내면 거기서 이탈한다. -->
+        <b>로그인 없이 시작</b>할 수 있고, 결과 리포트는 로그인 후에 볼 수 있어요.</p>
+      <button type="button" id="start-btn" class="btn btn-dark btn-lg">내 요금제 진단받기</button>
       <ul class="trust-chips">
         <li>카드·계좌 연결 없음</li>
         <li>금액마다 출처 표시</li>
         <li>안 쓰는 혜택은 0원으로 계산</li>
       </ul>
     </div>
-    <div class="phone" aria-hidden="true">
-      <div class="phone-screen">
-        <span class="phone-tag">예시 화면</span>
-        <div class="phone-hero">
-          <small>정가 대비 매달</small>
-          <strong>15,100원</strong>
-          <span class="phone-delta">1년이면 181,200원</span>
-        </div>
-        <div class="phone-row"><small>추천 조합</small><strong>73,900원</strong></div>
-        <div class="phone-row"><small>정가 기준</small><strong>89,000원</strong></div>
-        <div class="phone-row"><small>바꾸기 좋은 날</small><strong>10월 1일</strong></div>
-        <div class="phone-cta">이 조합으로 바꾸기</div>
-      </div>
+    <div class="hero-art" aria-hidden="true">
+      <span class="coin coin-a">₩</span>
+      <span class="coin coin-b">₩</span>
+      <span class="coin coin-c">₩</span>
+      <span class="hero-bag">💰</span>
     </div>
   </section>
 
-  <!-- 카탈로그 수를 받은 카드만 나타난다(landing.js). 못 받거나 늦으면 숨은 채로 둔다. -->
   <section class="stats" aria-label="서비스 지표">
     <div class="stat" hidden><div class="value" id="stat-plans">—</div><div class="label">비교하는 요금제</div><div class="sub">3사 + 알뜰폰</div></div>
     <div class="stat" hidden><div class="value" id="stat-services">—</div><div class="label">계산에 넣는 구독</div><div class="sub">OTT·음악 등</div></div>
