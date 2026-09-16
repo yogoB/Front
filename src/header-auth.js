@@ -19,9 +19,9 @@ function noteOAuthReturn(member) {
   // success 로 돌아왔는데 세션이 안 잡혔으면(쿠키 차단 등) 로그인된 게 아니다 — 그렇게 적지 않는다.
   if (state === 'success' && !member) {
     box.textContent = '로그인은 됐지만 이 브라우저에 세션이 남지 않았어요. 쿠키를 허용한 뒤 다시 시도해 주세요.';
-    box.className = 'auth-note warn';
+    box.className = 'auth-note auth-note-warn';
   } else if (state === 'success') {
-    box.className = 'auth-note ok';
+    box.className = 'auth-note auth-note-ok';
     if (member?.nickname) {
       // 닉네임은 서버 문자열이므로 textContent 로만 넣는다. 링크는 우리가 만든 노드로 붙인다.
       const head = document.createTextNode(`로그인됐어요. 닉네임은 "${member.nickname}"으로 설정되었습니다. 변경은 `);
@@ -35,10 +35,10 @@ function noteOAuthReturn(member) {
     }
   } else if (state === 'account-conflict') {
     box.textContent = '같은 이메일의 계정이 있어요. 기존 방식으로 로그인한 뒤 Google 계정을 연결해 주세요.';
-    box.className = 'auth-note warn';
+    box.className = 'auth-note auth-note-warn';
   } else {
     box.textContent = '로그인을 완료하지 못했어요. 다시 시도해 주세요.';
-    box.className = 'auth-note warn';
+    box.className = 'auth-note auth-note-warn';
   }
   box.hidden = false;
   // 새로고침·뒤로가기에 같은 안내가 다시 뜨지 않게 흔적을 지운다(랜딩의 #modes 전환과도 섞이지 않는다).
