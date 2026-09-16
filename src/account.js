@@ -3,9 +3,7 @@ import { validPassword } from './model.js';
 
 const $ = id => document.getElementById(id);
 const fragment = new URLSearchParams(location.hash.slice(1));
-const action = fragment.get('action');
-let proof = fragment.get('token');
-history.replaceState(null, '', location.pathname); // Keep email proof out of history and persistent storage.
+history.replaceState(null, '', location.pathname);
 let member, busy = false;
 const show = message => { $('message').textContent = message; };
 const api = async (path, method = 'GET', body) => (await request(path, { method, body, member: true })).data;
@@ -19,10 +17,6 @@ async function run(callback) {
   try { await callback(); }
   catch (error) {
     if (error.status === 401) { member = null; showMember(); }
-    // 메일 링크가 만료됐을 때 재발송할 경로가 없다(메일 기능 제거). 확인 화면만 닫고 메시지를 보여준다.
-    if (error.code === 'YGB-AUTH-LINK') {
-      proof = null; $('confirm-form').reset(); $('confirmation').hidden = true;
-    }
     show(error.message);
   } finally {
     busy = false;
@@ -63,24 +57,9 @@ async function refresh() {
     item.append(button); $('sessions').append(item);
   }
 }
-if (proof && (action === 'signup' || action === 'reset')) {
-  $('confirmation').hidden = false;
-  $('confirmation-title').textContent = action === 'signup' ? '이메일 확인 · 가입 완료' : '비밀번호 재설정';
-} else {
-  proof = null;
-  if (fragment.get('auth') === 'success') show('로그인 또는 계정 연결이 완료되었습니다.');
-  else if (fragment.get('auth') === 'account-conflict') show('같은 이메일의 계정이 있어요. 기존 방식으로 로그인한 뒤 Google 계정을 연결해 주세요.');
-  else if (fragment.has('auth')) show('로그인을 완료하지 못했어요. 다시 시도해 주세요.');
-}
-handle('confirm-form', async () => {
-  const password = $('new-password').value; validPassword(password);
-  if (password !== $('confirm-password').value) throw new Error('두 비밀번호가 일치하지 않습니다.');
-  if (!proof) throw new Error('본인 확인 메일을 다시 요청해 주세요.');
-  await api(action === 'signup' ? '/api/v1/auth/signup' : '/api/v1/auth/password/reset', 'POST', { token: proof, password });
-  proof = null; $('confirm-form').reset(); $('confirmation').hidden = true;
-  show(action === 'signup' ? '가입이 완료되었습니다.' : '비밀번호를 변경했습니다. 새 비밀번호로 로그인해 주세요.');
-  await refresh();
-});
+if (fragment.get('auth') === 'success') show('로그인 또는 계정 연결이 완료되었습니다.');
+else if (fragment.get('auth') === 'account-conflict') show('같은 이메일의 계정이 있어요. 기존 방식으로 로그인한 뒤 Google 계정을 연결해 주세요.');
+else if (fragment.has('auth')) show('로그인을 완료하지 못했어요. 다시 시도해 주세요.');
 handle('login-form', async () => {
   try { await api('/api/v1/auth/login', 'POST', { email: $('email').value, password: $('password').value }); }
   finally { $('password').value = ''; }
