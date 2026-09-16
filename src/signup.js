@@ -1,8 +1,10 @@
 // 회원가입. 메일 설정이 없어도 바로 가입한다(D-19) — 이름·이메일·비밀번호·닉네임만 받는다.
 // 이메일 소유는 확인하지 않는다. BE 가 메일 기능을 켜면 그쪽에서 토큰 흐름을 요구하며 400을 준다.
 import { request, backendUrl, ApiError } from './api.js';
+import { validPassword } from './model.js';
 
 const $ = id => document.getElementById(id);
+const PW_HINT = '문자와 숫자를 섞어 8자 이상으로 입력해 주세요.';
 const titles = { info: '요고비 회원가입', password: '비밀번호 만들기', recovery: '복구 코드 저장' };
 
 function step(name) {
@@ -29,12 +31,25 @@ $('back').addEventListener('click', () => { step('info'); $('email').focus(); })
 $('password-form').addEventListener('submit', async event => {
   event.preventDefault();
   const button = $('password-form').querySelector('button[type="submit"]');
-  // 서버도 15자를 요구한다. 여기서 먼저 걸러 왕복을 아낀다.
-  if ([...$('password').value].length < 15) {
+  // 서버도 같은 규칙을 검사한다. 여기서 먼저 걸러 왕복을 아낀다.
+  const password = $('password').value;
+  const fail = (message, field) => {
+    $('pw-hint').textContent = message;
     $('pw-hint').classList.add('error');
-    $('password').focus();
+    $(field).focus();
+  };
+  try {
+    validPassword(password);
+  } catch (error) {
+    fail(error.message, 'password');
     return;
   }
+  // 오타로 못 들어오는 계정을 만들지 않게 두 번 받는다. 복구 수단이 복구 코드뿐이라 더 중요하다.
+  if (password !== $('password-confirm').value) {
+    fail('비밀번호가 서로 달라요. 확인란을 다시 입력해 주세요.', 'password-confirm');
+    return;
+  }
+  $('pw-hint').textContent = PW_HINT;
   $('pw-hint').classList.remove('error');
   $('signup-error').hidden = true;
   $('verify-status').hidden = false;

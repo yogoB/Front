@@ -47,7 +47,12 @@
           <input class="text-input" id="password" type="password" autocomplete="new-password"
                  placeholder="비밀번호를 만들어 주세요" required>
         </div>
-        <p class="hint" id="pw-hint">15자 이상으로 입력해 주세요.</p>
+        <div class="field">
+          <label class="sr-only" for="password-confirm">비밀번호 확인</label>
+          <input class="text-input" id="password-confirm" type="password" autocomplete="new-password"
+                 placeholder="비밀번호를 한 번 더 입력해 주세요" required>
+        </div>
+        <p class="hint" id="pw-hint">문자와 숫자를 섞어 8자 이상으로 입력해 주세요.</p>
         <button class="btn btn-brand btn-block" type="submit">가입 완료</button>
       </form>
       <p class="auth-status" id="verify-status" role="status" hidden>가입 중… <span class="spin-sm" aria-hidden="true"></span></p>

@@ -26,10 +26,12 @@ test('integer inputs do not silently rewrite invalid amounts or fractional GB', 
   assert.equal(integer(' 20 ', 'GB', 1), 20);
 });
 test('password validation follows code point and UTF-8 byte limits', () => {
-  validPassword('abcdefghijklmno'); validPassword('가'.repeat(24));
-  assert.throws(() => validPassword('a'.repeat(14)));
-  assert.throws(() => validPassword('가'.repeat(25)));
-  assert.throws(() => validPassword('a'.repeat(73)));
+  validPassword('abcd1234'); validPassword('가'.repeat(23) + '1');     // 문자+숫자 8자 이상
+  assert.throws(() => validPassword('abcd123'));                        // 7자
+  assert.throws(() => validPassword('abcdefgh'));                       // 숫자 없음
+  assert.throws(() => validPassword('12345678'));                       // 문자 없음
+  assert.throws(() => validPassword('가'.repeat(24) + '1'));            // 72바이트 초과(bcrypt 한계)
+  assert.throws(() => validPassword('a'.repeat(72) + '1'));
 });
 test('CSV preserves server amounts/provenance and neutralizes formula-like strings', () => {
   const csv = comparisonCsv([{ planId: 1, carrier: 'KT', planName: '=HYPERLINK("x")', monthlyTotal: 12345, baseline: 20000, monthlySavings: 7655, annualSavings: 91860,
