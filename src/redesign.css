@@ -390,6 +390,32 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
 .auth-warn a { color: #7a4e06; font-weight: 700; text-decoration: underline; }
 .auth [data-step] .link-muted { margin-top: 18px; }
 
+/* ── 회원가입 (Tana 스타일 벤치마킹) ── */
+.auth-card { border: 1px solid var(--line); border-radius: 16px; padding: 28px; background: #fff;
+  box-shadow: var(--shadow); text-align: left; margin-top: 8px; }
+.field { margin-bottom: 16px; }
+.field > label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-row .field { margin-bottom: 16px; }
+.text-input { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+  font: inherit; outline: none; background: #fff; }
+.text-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint); }
+.text-input[readonly] { background: var(--bg-soft); color: var(--muted); }
+.password-wrap { position: relative; }
+.password-wrap .text-input { padding-right: 44px; }
+.password-wrap .toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: none; border: 0; cursor: pointer; color: var(--muted); padding: 6px; line-height: 0; }
+.password-wrap .toggle:hover { color: var(--ink-soft); }
+.or-divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 12px;
+  font-weight: 700; margin: 18px 0; }
+.or-divider::before, .or-divider::after { content: ""; height: 1px; background: var(--line); flex: 1; }
+.auth-card .btn { margin-top: 4px; }
+.hint.error { color: #c0362c; }
+.resend { color: var(--muted); font-size: 14px; text-align: center; margin-top: 16px; }
+.resend button { background: none; border: 0; color: var(--brand-ink); font: inherit; font-weight: 600; cursor: pointer; }
+.resend button:disabled { color: var(--muted); cursor: default; }
+.auth > .link-muted { display: block; margin: 18px auto 0; }
+
 @media (max-width: 860px) {
   .cal-cols { grid-template-columns: 1fr; }
 }
