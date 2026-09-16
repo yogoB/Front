@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { readFileSync, readdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { request, ApiError } from '../src/api.js';
 import { DATA_BUCKETS, FEE_BUCKETS, CARRIERS } from '../src/catalog-data.js';
@@ -101,4 +102,17 @@ test('range buckets carry a positive integer representative for BE (monthlyDataG
       assert.ok(Number.isInteger(b.rep) && b.rep > 0, `${b.label} rep must be positive int`);
   // representative gb is what /recommendations receives; keep it in Java int range and non-skippable-safe
   assert.deepEqual(DATA_BUCKETS.map(b => b.rep), [2, 4, 10, 30, 80, 100]);
+});
+
+// 절대 원칙 2: 금액 계산은 BE_main 의 pricing 모듈만. 프론트는 서버 금액으로 산술하지 않는다.
+// 기간 환산·절감액 뺄셈이 되살아나면 여기서 잡는다.
+test('front never does arithmetic on server amounts', () => {
+  const MONEY = 'monthlyTotal|baseline|monthlySavings|annualSavings';
+  const arithmetic = new RegExp(`(${MONEY})\\s*[*/+-]\\s|[*/+-]\\s*[a-zA-Z_.]*(${MONEY})\\b`);
+  for (const file of readdirSync('src').filter(f => f.endsWith('.js'))) {
+    readFileSync(`src/${file}`, 'utf8').split('\n').forEach((line, i) => {
+      const code = line.replace(/\/\/.*$/, '');                 // 주석에 적힌 설명은 검사하지 않는다
+      assert.ok(!arithmetic.test(code), `src/${file}:${i + 1} 가 서버 금액으로 계산한다 — ${line.trim()}`);
+    });
+  }
 });

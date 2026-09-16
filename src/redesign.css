@@ -71,7 +71,7 @@ h1, h2, h3, p { margin: 0; }
 .trust-chips li::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--brand); }
 
 /* Phone mockup (decorative) */
-.phone { justify-self: center; width: 260px; height: 480px; border-radius: 40px;
+.phone { justify-self: center; width: 260px; height: 430px; border-radius: 40px;
   background: linear-gradient(160deg, #eef1f6, #dfe4ee); padding: 14px;
   box-shadow: 0 30px 60px rgba(20, 20, 43, .18); }
 .phone-screen { width: 100%; height: 100%; border-radius: 28px; background: #fff; padding: 18px 16px;
@@ -83,10 +83,6 @@ h1, h2, h3, p { margin: 0; }
 .phone-hero strong { display: block; font-size: 32px; font-weight: 800; letter-spacing: -.02em;
   color: var(--brand-strong); line-height: 1.15; }
 .phone-delta { color: var(--ink-soft); font-size: 11px; font-weight: 600; }
-.phone-gauge { height: 5px; border-radius: 999px; background: #eceef2; overflow: hidden; }
-.phone-gauge i { display: block; height: 100%; width: 62%; background: var(--brand); }
-.phone-compare { color: var(--muted); font-size: 10.5px; line-height: 1.4; }
-.phone-compare b { color: var(--ink-soft); }
 .phone-row { display: flex; justify-content: space-between; align-items: baseline;
   border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
 .phone-row small { color: var(--muted); font-size: 11px; }
@@ -336,7 +332,11 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
 
 /* 정보 오류 제보. 접수만 하고 카탈로그를 바꾸지 않는다. */
 .report { border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin: 20px 0; }
-.report h2 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.report > summary { font-size: 15px; font-weight: 700; cursor: pointer; list-style: none; }
+.report > summary::-webkit-details-marker { display: none; }
+.report > summary::before { content: '＋'; color: var(--muted); font-weight: 600; margin-right: 8px; }
+.report[open] > summary::before { content: '－'; }
+.report[open] > summary { margin-bottom: 10px; }
 .report form { display: grid; gap: 8px; margin-top: 14px; max-width: 520px; }
 .report label { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
 .report select, .report textarea, .report input {
@@ -378,12 +378,6 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
 .upsell { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   background: var(--brand-tint); border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; }
 .upsell p { color: var(--ink-soft); font-size: 14px; margin-top: 4px; }
-
-.period-tabs { display: inline-flex; background: var(--bg-soft); border-radius: 999px; padding: 4px;
-  gap: 4px; margin-bottom: 16px; }
-.period-tabs button { border: 0; background: none; padding: 8px 18px; border-radius: 999px; font: inherit;
-  font-weight: 600; color: var(--muted); cursor: pointer; }
-.period-tabs button.active { background: #fff; color: var(--ink); box-shadow: var(--shadow); }
 
 .compare-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
 /* fixed: 내용 길이와 무관하게 비교 3열의 가로 폭을 똑같이 준다. */

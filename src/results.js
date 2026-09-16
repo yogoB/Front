@@ -77,37 +77,33 @@ function render(source, data) {
   renderPlanRows(source, best);
   renderReasons(data);
   renderBreakdown(best);
-  renderPeriodTabs(source, best);
+  renderTotals(source, best);
   wireReport(best);
 }
 
-/* 결론을 먼저 낸다(절대 원칙 5-③): 입력하신 금액 대비 월·연 절감을 한 문장으로.
-   두 수의 뺄셈만 하며 금액을 새로 만들지 않는다 — 추천 금액은 BE, 현재 금액은 사용자 입력이다. */
+/* 결론 먼저(절대 원칙 5-③) — 다만 금액은 하나도 만들지 않는다(절대 원칙 2).
+   월·연 절감은 BE 의 monthlySavings·annualSavings 를 그대로 쓴다. 기준은 정가(baseline)이며
+   사용자의 현재 청구액이 아니다(integration.md 결과 해석). 현재 지출은 표의 '현재' 열에만 둔다. */
 function renderHeadline(source, best) {
   const box = $('save-hero');
   if (!box) return;
-  const current = currentTotal(source);
-  const saving = current === null ? null : current - best.monthlyTotal;
 
-  if (saving !== null && saving > 0) {
-    $('save-label').textContent = '이 조합으로 바꾸면 매달';
-    $('save-amount').textContent = won(saving);
-    $('save-annual').textContent = `1년이면 ${won(saving * 12)}`;
-  } else if (saving !== null) {
-    $('save-label').textContent = '지금이 이미 더 저렴해요';
-    $('save-amount').textContent = won(best.monthlyTotal);
-    $('save-annual').textContent = '추천 조합의 월 요금이에요';
+  if (best.monthlySavings > 0) {
+    $('save-label').textContent = '정가 대비 매달';
+    $('save-amount').textContent = won(best.monthlySavings);
+    $('save-annual').textContent = `1년이면 ${won(best.annualSavings)}`;
   } else {
     $('save-label').textContent = '추천 조합은 매달';
     $('save-amount').textContent = won(best.monthlyTotal);
-    $('save-annual').textContent = '현재 내는 금액을 넣으면 절감액까지 보여드려요';
+    $('save-annual').textContent = '정가보다 싼 조합을 찾지 못했어요';
   }
-  $('save-current').textContent = current === null ? '입력 안 함' : won(current);
   $('save-rec').textContent = won(best.monthlyTotal);
+  $('save-base').textContent = won(best.baseline);
   box.hidden = false;
 }
 
-/** 사용자가 입력한 현재 월 지출 합계. 통신비를 건너뛰었으면 null(지어내지 않는다). */
+/** 사용자가 입력한 현재 월 지출 합계 — 화면의 메모다(integration.md 입력 해석).
+    표의 '현재' 열 표시에만 쓰고, 절감액 계산에는 절대 쓰지 않는다. 통신비를 건너뛰었으면 null. */
 function currentTotal(source) {
   if (source.fee?.amount === undefined) return null;
   return source.fee.amount + keptSubs(source).reduce((sum, s) => sum + (s.price || 0), 0);
@@ -183,27 +179,14 @@ function renderNotices(source, data, best) {
   box.hidden = notices.length === 0;
 }
 
-function renderPeriodTabs(source, best) {
+/* 총액은 전부 그대로 출력한다. 기간 환산(6·12개월)은 프론트 곱셈으로만 존재하던 값이라 없앴다 —
+   BE 가 주는 기간은 월과 연(annualSavings)뿐이다. 필요해지면 계약 변경을 먼저 제안한다. */
+function renderTotals(source, best) {
   const current = currentTotal(source);
-  let period = 1;
-  const paint = () => {
-    $('cur-total').textContent = current === null ? '—' : won(current * period);
-    $('rec-total').textContent = won(best.monthlyTotal * period);
-    $('low-total').textContent = won(best.baseline * period);
-    const label = period === 1 ? '월' : `${period}개월`;
-    const versusInput = current === null ? 0 : current - best.monthlyTotal;
-    $('rec-save').textContent = best.monthlySavings > 0
-      ? `정가 대비 ${label} ${won(best.monthlySavings * period)} 절감`
-      : versusInput > 0 ? `입력 금액 대비 ${label} ${won(versusInput * period)} 절감` : '';
-  };
-  $('period-tabs').addEventListener('click', event => {
-    const button = event.target.closest('[data-period]');
-    if (!button) return;
-    period = Number(button.dataset.period);
-    document.querySelectorAll('#period-tabs button').forEach(b => b.classList.toggle('active', b === button));
-    paint();
-  });
-  paint();
+  $('cur-total').textContent = current === null ? '—' : won(current);   // 입력값 합계(메모)
+  $('rec-total').textContent = won(best.monthlyTotal);
+  $('low-total').textContent = won(best.baseline);
+  $('rec-save').textContent = best.monthlySavings > 0 ? `정가 대비 월 ${won(best.monthlySavings)} 절감` : '';
 
   // 캘린더가 같은 숫자를 쓰도록 결과를 넘긴다(절대 원칙 5-⑤: 같은 숫자는 같은 출처).
   sessionStorage.setItem('yogobi:result', JSON.stringify({
