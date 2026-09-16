@@ -1,5 +1,5 @@
-// 전환 액션 캘린더. 목업: 단계별 가이드 + 월/주간 캘린더. Google 연동은 준비 중(실제 연동 없음).
-import { mockRecommendation } from './recommend-mock.js';
+// 전환 액션 캘린더. 금액·요금제명은 결과 화면이 BE 응답에서 넘긴 값을 그대로 쓴다(같은 숫자는 같은 출처).
+// 단계 가이드·날짜는 아직 화면 예시다. Google 캘린더 연동은 없다.
 
 const $ = id => document.getElementById(id);
 const won = n => `₩${n.toLocaleString('ko-KR')}`;
@@ -7,23 +7,28 @@ const WD = ['일', '월', '화', '수', '목', '금', '토'];
 const STEP_COLORS = ['#4f6bed', '#22c55e', '#a855f7', '#0ea5a3'];
 const STEPS = [
   { when: '준비', title: '통신사 변경 준비', desc: '약정일·해지조건·명의서류를 체크합니다.' },
-  { when: '가입', title: 'KT 가입', desc: '온라인 다이렉트 샵에서 번호이동 가입을 진행합니다.' },
+  { when: '가입', title: '추천 요금제 가입', desc: '통신사 공식 채널에서 번호이동 가입을 진행합니다.' },
   { when: '구독 정리', title: '구독 및 요금제 확인', desc: '가입 후 기존 구독을 해지·연동합니다.' },
   { when: '완료', title: '최종 납부액 체크', desc: '첫 청구서에서 정상 할인을 검증합니다.' },
 ];
 const EVENTS = [
   { offset: 0, label: '전환 준비 시작', step: 0 },
   { offset: 3, label: '명의확인 서류 준비', step: 0 },
-  { offset: 8, label: '넷플릭스 결제일 확인', step: 2 },
-  { offset: 14, label: 'KT 가입 진행', step: 1 },
+  { offset: 8, label: '구독 결제일 확인', step: 2 },
+  { offset: 14, label: '추천 요금제 가입 진행', step: 1 },
   { offset: 21, label: '첫 청구서 확인', step: 3 },
 ];
 
 /* 금액 + 가이드 */
-const input = JSON.parse(sessionStorage.getItem('yogobi:input') || 'null');
-const rec = mockRecommendation(input || {});
-$('cur-amount').textContent = won(rec.currentTotal);
-$('rec-amount').textContent = won(rec.recTotal);
+const result = JSON.parse(sessionStorage.getItem('yogobi:result') || 'null');
+if (!result) {
+  // 결과 화면을 거치지 않으면 보여줄 금액이 없다. 지어내지 않고 되돌려 보낸다.
+  $('cur-amount').textContent = '—';
+  $('rec-amount').textContent = '—';
+} else {
+  $('cur-amount').textContent = result.currentTotal === null ? '—' : won(result.currentTotal);
+  $('rec-amount').textContent = won(result.monthlyTotal);
+}
 $('guide').replaceChildren(...STEPS.map((s, i) => {
   const li = document.createElement('li');
   const dot = document.createElement('span'); dot.className = 'guide-dot'; dot.style.background = STEP_COLORS[i];

@@ -1,55 +1,52 @@
-// 로그인 화면 (v0 스타일 벤치마킹). 비주얼 프로토타입 — 실제 이메일/비밀번호·Google 인증은 account.html(BE 연동).
-// ponytail: 목업 흐름(이메일 → 코드 → 확인 → 이동). 운영 연동 시 이메일 단계는 /auth/login 또는 코드 발송으로 교체.
+// 로그인 화면. 실제 BE 인증(POST /api/v1/auth/login)에 연결한다 — 쿠키 인증이라 credentials·CSRF 가 필요하다.
+// 가입·비밀번호 재설정은 메일 토큰 흐름이라 account.html 이 담당한다.
+import { request, backendUrl, ApiError } from './api.js';
+
 const $ = id => document.getElementById(id);
 const step = name => document.querySelectorAll('[data-step]').forEach(s => { s.hidden = s.dataset.step !== name; });
-const boxes = [...document.querySelectorAll('.code-box')];
 
-/* 1. 이메일 → 코드 단계 */
-$('email-form').addEventListener('submit', e => {
-  e.preventDefault();
+/* 1. 이메일 → 비밀번호 단계 (BE 는 이메일만으로 계정 존재를 알려주지 않는다) */
+$('email-form').addEventListener('submit', event => {
+  event.preventDefault();
   const email = $('email').value.trim();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $('email').focus(); return; }
-  $('code-email').textContent = email;
-  step('code');
-  boxes[0].focus();
+  $('login-email').textContent = email;
+  step('password');
+  $('password').focus();
 });
+
 $('google').addEventListener('click', () => {
-  // 실제 Google OAuth는 account.html에서 BE의 /oauth2/authorization/google로 진행한다.
-  step('redirect');
-  setTimeout(() => { location.href = './account.html'; }, 1200);
+  // BE 가 Google 을 켜지 않았으면 그쪽에서 오류를 보여준다. 프론트가 성공한 척하지 않는다.
+  location.href = backendUrl('/oauth2/authorization/google');
 });
+
 $('code-back').addEventListener('click', () => {
-  boxes.forEach(b => { b.value = ''; });
-  $('verify-status').hidden = true; $('code-warn').hidden = true;
-  step('email'); $('email').focus();
+  $('password').value = '';
+  $('login-error').hidden = true;
+  step('email');
+  $('email').focus();
 });
 
-/* 2. 6자리 코드 입력 UX */
-boxes.forEach((box, i) => {
-  box.addEventListener('input', () => {
-    box.value = box.value.replace(/\D/g, '').slice(0, 1);
-    if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
-    if (boxes.every(b => b.value)) verify();
-  });
-  box.addEventListener('keydown', e => {
-    if (e.key === 'Backspace' && !box.value && i > 0) boxes[i - 1].focus();
-  });
-  box.addEventListener('paste', e => {
-    const digits = (e.clipboardData.getData('text').match(/\d/g) || []).slice(0, 6);
-    if (!digits.length) return;
-    e.preventDefault();
-    digits.forEach((d, j) => { if (boxes[j]) boxes[j].value = d; });
-    boxes[Math.min(digits.length, boxes.length - 1)].focus();
-    if (boxes.every(b => b.value)) verify();
-  });
-});
-
-/* 3. 확인 중 → 이동 */
-function verify() {
-  $('code-warn').hidden = true;
+/* 2. 실제 로그인 */
+$('password-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = $('password-form').querySelector('button[type="submit"]');
+  $('login-error').hidden = true;
   $('verify-status').hidden = false;
-  boxes.forEach(b => { b.disabled = true; });
-  // 데모: 실제로는 코드 검증 응답을 기다린다. 미가입 경고 예시도 함께 보여준다.
-  setTimeout(() => { $('code-warn').hidden = false; }, 700);
-  setTimeout(() => { step('redirect'); location.assign('./'); }, 1600);
-}
+  button.disabled = true;
+  try {
+    await request('/api/v1/auth/login', {
+      method: 'POST', member: true,
+      body: { email: $('login-email').textContent, password: $('password').value },
+    });
+    step('redirect');
+    location.assign('./account.html');
+  } catch (error) {
+    $('verify-status').hidden = true;
+    button.disabled = false;
+    $('login-error').textContent = error instanceof ApiError
+      ? error.message : '로그인하지 못했어요. 잠시 후 다시 시도해 주세요.';
+    $('login-error').hidden = false;
+    $('password').focus();
+  }
+});

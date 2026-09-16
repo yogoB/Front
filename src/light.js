@@ -1,4 +1,4 @@
-import { CATALOG, DATA_BUCKETS, FEE_BUCKETS } from './catalog-data.js';
+import { loadCatalog, DATA_BUCKETS, FEE_BUCKETS } from './catalog-data.js';
 
 const $ = id => document.getElementById(id);
 const won = n => `${n.toLocaleString('ko-KR')}원`;
@@ -8,7 +8,7 @@ const state = {
   dataIdx: 2,          // 기본 5~15GB
   dataSkipped: false,
   fee: null,           // { label, amount } 또는 null
-  subs: CATALOG.map(s => ({ id: s.id, service: s, tierId: s.tiers[0].id, checked: false })),
+  subs: [],            // 카탈로그를 받은 뒤 채운다 (BE 가 원본)
 };
 
 /* 단계 전환 */
@@ -154,4 +154,11 @@ document.querySelectorAll('[data-skip]').forEach(b => b.addEventListener('click'
 }));
 $('analyze').addEventListener('click', analyze);
 
-renderData(); renderFee(); renderSubs(); showStep(1);
+/* 시작: 구독 카탈로그를 BE 에서 받아온 뒤 화면을 그린다. 목업 가격으로 대체하지 않는다. */
+renderData(); renderFee(); showStep(1);
+loadCatalog()
+  .then(catalog => {
+    state.subs = catalog.map(s => ({ id: s.id, service: s, tierId: s.tiers[0].id, checked: false }));
+    renderSubs();
+  })
+  .catch(e => error(e.message || '구독 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'));

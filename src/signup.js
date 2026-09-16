@@ -1,86 +1,49 @@
-// 회원가입 화면 (Tana 스타일 벤치마킹). 비주얼 프로토타입 — 실제 가입은 account.html(BE 이메일 인증).
-// ponytail: 목업 흐름(이름·이메일 → 비밀번호 → 코드 인증). 운영 연동 시 /auth/email/verification·/auth/signup으로 교체.
+// 회원가입 화면. BE 는 본인 확인 메일의 링크 토큰으로 가입을 끝낸다(10분·단일 사용).
+// 이 화면은 메일 발송까지 하고, 비밀번호 설정·가입 완료는 링크가 여는 account.html 이 처리한다.
+// 메일이 꺼져 있으면(AUTH_EMAIL_ENABLED=false) 서버가 503 을 주며, 그 오류를 그대로 보여준다.
+import { request, backendUrl, ApiError } from './api.js';
+
 const $ = id => document.getElementById(id);
-const boxes = [...document.querySelectorAll('.code-box')];
-const titles = { info: '요고비 회원가입', password: '비밀번호 만들기', verify: '이메일 인증' };
+const titles = { info: '요고비 회원가입', verify: '메일함을 확인해 주세요' };
 
 function step(name) {
   document.querySelectorAll('[data-step]').forEach(s => { s.hidden = s.dataset.step !== name; });
   $('auth-title').textContent = titles[name];
   $('back').hidden = name === 'info';
-  $('back').dataset.to = name === 'verify' ? 'password' : 'info';
 }
 
-/* 1. 이름 + 이메일 → 비밀번호 */
-$('info-form').addEventListener('submit', e => {
-  e.preventDefault();
+$('info-form').addEventListener('submit', event => {
+  event.preventDefault();
   const email = $('email').value.trim();
   if (!$('name').value.trim()) { $('name').focus(); return; }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $('email').focus(); return; }
   if (!$('nickname').value.trim()) { $('nickname').focus(); return; }
-  $('email-ro').value = email;
-  step('password');
-  $('password').focus();
-});
-$('google').addEventListener('click', () => { location.href = './account.html'; }); // 실제 Google OAuth는 account.html
-
-/* 2. 비밀번호 → 인증 */
-$('pw-toggle').addEventListener('click', () => {
-  const pw = $('password');
-  pw.type = pw.type === 'password' ? 'text' : 'password';
-  $('pw-toggle').setAttribute('aria-label', pw.type === 'password' ? '비밀번호 표시' : '비밀번호 숨기기');
-});
-$('password-form').addEventListener('submit', e => {
-  e.preventDefault();
-  if ($('password').value.length < 8) { $('pw-hint').classList.add('error'); $('password').focus(); return; }
-  $('pw-hint').classList.remove('error');
-  $('verify-email').textContent = $('email-ro').value;
+  $('verify-email').textContent = email;
   step('verify');
-  boxes[0].focus();
-  startResend();
+  sendVerification();
 });
 
-/* 3. 6자리 코드 */
-boxes.forEach((box, i) => {
-  box.addEventListener('input', () => {
-    box.value = box.value.replace(/\D/g, '').slice(0, 1);
-    if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
-    if (boxes.every(b => b.value)) verify();
-  });
-  box.addEventListener('keydown', e => {
-    if (e.key === 'Backspace' && !box.value && i > 0) boxes[i - 1].focus();
-  });
-  box.addEventListener('paste', e => {
-    const digits = (e.clipboardData.getData('text').match(/\d/g) || []).slice(0, 6);
-    if (!digits.length) return;
-    e.preventDefault();
-    digits.forEach((d, j) => { if (boxes[j]) boxes[j].value = d; });
-    boxes[Math.min(digits.length, boxes.length - 1)].focus();
-    if (boxes.every(b => b.value)) verify();
-  });
-});
-function verify() {
+$('google').addEventListener('click', () => { location.href = backendUrl('/oauth2/authorization/google'); });
+$('back').addEventListener('click', () => { step('info'); $('email').focus(); });
+$('resend').addEventListener('click', sendVerification);
+
+/** 본인 확인 메일 발송. 계정 존재 여부는 응답으로 알려주지 않는다(BE 가 같은 응답을 준다). */
+async function sendVerification() {
+  const resend = $('resend');
+  $('signup-error').hidden = true;
   $('verify-status').hidden = false;
-  boxes.forEach(b => { b.disabled = true; });
-  setTimeout(() => location.assign('./'), 1400); // 데모: 가입 완료 → 홈
+  resend.disabled = true;
+  try {
+    await request('/api/v1/auth/email/verification', {
+      method: 'POST', member: true, body: { email: $('verify-email').textContent },
+    });
+    $('verify-status').hidden = true;
+  } catch (error) {
+    $('verify-status').hidden = true;
+    $('signup-error').textContent = error instanceof ApiError
+      ? error.message : '메일을 보내지 못했어요. 잠시 후 다시 시도해 주세요.';
+    $('signup-error').hidden = false;
+  } finally {
+    resend.disabled = false;
+  }
 }
-
-/* 재전송 카운트다운 */
-let timer;
-function startResend() {
-  let n = 30;
-  const btn = $('resend'), label = $('resend-count');
-  btn.disabled = true; label.hidden = false; label.textContent = `(${n})`;
-  clearInterval(timer);
-  timer = setInterval(() => {
-    n -= 1;
-    if (n <= 0) { clearInterval(timer); btn.disabled = false; label.hidden = true; }
-    else label.textContent = `(${n})`;
-  }, 1000);
-}
-$('resend').addEventListener('click', () => { if (!$('resend').disabled) startResend(); });
-
-/* 뒤로 */
-$('back').addEventListener('click', () => step($('back').dataset.to || 'info'));
-
-step('info');

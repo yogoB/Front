@@ -36,19 +36,17 @@
     <p class="auth-alt">계정이 없으신가요? <a href="./signup.html">회원가입</a></p>
   </section>
 
-  <!-- 2. 코드 입력 -->
-  <section data-step="code" hidden>
-    <p class="auth-sub">가입된 계정이면 <strong id="code-email"></strong>로 인증 코드를 보냈어요.</p>
-    <div class="code-inputs" id="code-inputs" role="group" aria-label="6자리 인증 코드">
-      <input class="code-box" inputmode="numeric" maxlength="1" aria-label="1번째 자리">
-      <input class="code-box" inputmode="numeric" maxlength="1" aria-label="2번째 자리">
-      <input class="code-box" inputmode="numeric" maxlength="1" aria-label="3번째 자리">
-      <input class="code-box" inputmode="numeric" maxlength="1" aria-label="4번째 자리">
-      <input class="code-box" inputmode="numeric" maxlength="1" aria-label="5번째 자리">
-      <input class="code-box" inputmode="numeric" maxlength="1" aria-label="6번째 자리">
-    </div>
+  <!-- 2. 비밀번호 입력 (BE POST /api/v1/auth/login) -->
+  <section data-step="password" hidden>
+    <p class="auth-sub"><strong id="login-email"></strong>의 비밀번호를 입력해 주세요.</p>
+    <form id="password-form" novalidate>
+      <label class="sr-only" for="password">비밀번호</label>
+      <input class="auth-input" id="password" type="password" autocomplete="current-password" required>
+      <button class="btn btn-brand btn-block" type="submit">로그인</button>
+    </form>
     <p class="auth-status" id="verify-status" role="status" hidden>확인 중… <span class="spin-sm" aria-hidden="true"></span></p>
-    <p class="auth-warn" id="code-warn" hidden>아직 계정이 없으신가요? 코드를 기다리는 중이라면 <a href="./signup.html">회원가입</a>을 진행해 보세요.</p>
+    <p class="auth-warn" id="login-error" role="alert" hidden></p>
+    <p class="auth-alt">비밀번호를 잊으셨나요? <a href="./account.html">재설정하기</a></p>
     <button type="button" class="link-muted" id="code-back">← 이메일 다시 입력</button>
   </section>
 

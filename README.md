@@ -16,8 +16,11 @@ python3 -m http.server 5173 --bind 127.0.0.1
 `file://`로 열면 모듈과 API 통신이 동작하지 않으므로 HTTP 서버를 사용합니다.
 
 - 로컬 API: 프론트와 같은 호스트의 `8080` 포트. `localhost`와 `127.0.0.1`을 섞지 않습니다.
-- 운영 API: 같은 사이트의 `/api/v1`을 기본으로 사용합니다. 별도 주소는 [`src/config.js`](src/config.js)에서 지정합니다.
-- 운영에서는 정적 프론트 서버가 `/api`, `/oauth2`, `/login/oauth2`를 BE로 프록시하거나, 같은 사이트의 별도 BE 오리진을 사용합니다. 현재 Spring 보안 설정은 프론트의 새 JS/CSS 경로를 허용하지 않으므로 BE static 폴더에 복사하는 것만으로는 실행할 수 없습니다.
+- 운영 API: 같은 사이트의 `/api/v1`을 사용합니다. 별도 주소가 필요하면 [`src/config.js`](src/config.js)에서 지정합니다.
+- 운영 구성: 프론트는 `yogob`(fly), BE는 **`yogob-api`**(fly)로 **앱을 분리**합니다.
+  [`nginx.conf`](nginx.conf)가 `/api`, `/oauth2`, `/login/oauth2`를 `yogob-api`로 프록시하므로 브라우저에는 오리진이 하나뿐입니다
+  (같은 오리진이라 CORS 설정도, 교차 사이트 쿠키도 필요 없습니다).
+  **두 레포의 `fly.toml` app 이름을 같게 두지 마세요** — 나중에 배포한 쪽이 앞선 배포를 덮어씁니다(2026-09-16 실제 발생).
 
 ## 백엔드 준비
 
@@ -38,7 +41,7 @@ Google 로그인은 BE의 Google OAuth 설정이 필요하고, 가입·비밀번
 메일 발송은 기본 비활성이므로 이 경우 서버의 오류를 화면에 표시합니다. 본인 확인 링크는 `account.html#action=signup|reset&token=...` 형식입니다.
 운영은 HTTPS 및 Secure 쿠키를 사용하고, 정확한 프론트 오리진을 허용해야 합니다. 서로 다른 사이트 간 쿠키 인증은 현재 BE의 SameSite=Lax 설정으로 지원하지 않습니다.
 
-요금제 시드가 없으면 추천은 422 또는 빈 목록 안내가 나옵니다. BE의 `dev` 프로파일과 개발 시드로 통신을 검증할 수 있지만, 개발용 가격을 실제 상품 가격으로 취급하면 안 됩니다.
+카탈로그에 없는 조건이면 오류가 아니라 **빈 결과 + 안내**가 나옵니다(BE G-12). 화면은 그 안내를 그대로 보여줍니다.
 
 ## 구성
 
@@ -46,16 +49,15 @@ Google 로그인은 BE의 Google OAuth 설정이 필요하고, 가입·비밀번
 index.html              랜딩 + 모드 선택 (라이트/디테일)
 light.html              라이트 입력 3단계 (데이터 범위 → 통신비 → 구독)
 detail.html             디테일 입력 3단계 (통신사·약정 → 희망요금 → 희망구독)
-results.html            결과 비교표 (현재·추천·최저 3열, 1/6/12개월, 추천 사유)
-calendar.html           전환 액션 캘린더 (단계 가이드 + 월/주간, 목업)
+results.html            결과 비교표 (BE 추천 연동, 계산 근거·출처, 정보 오류 제보)
+calendar.html           전환 액션 캘린더 (금액은 결과 화면 값, 단계 가이드·날짜는 예시)
 app.html                기존 통신 → 구독 → 조건 → 결과 앱 (BE 연동 동작본)
 account.html            회원·로그인 세션 관리
 src/landing.js          랜딩·모드선택 뷰 전환
 src/light.js, detail.js 입력 흐름 로직
 src/results.js          결과 비교표 렌더·기간 탭
 src/calendar.js         전환 캘린더 렌더
-src/recommend-mock.js   목업 추천 계산(운영 시 POST /recommendations로 교체)
-src/catalog-data.js     목업 카탈로그·통신사·구간 데이터
+src/catalog-data.js     BE 카탈로그 로더(loadCatalog) + 통신사·구간 상수
 src/redesign.css        리디자인 공통 스타일(디자인 토큰)
 src/app.js              app.html의 화면 이벤트·카탈로그·추천·직접 계산
 src/account.js          인증·이메일 확인·Google 연결·세션 종료

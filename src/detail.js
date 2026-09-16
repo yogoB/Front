@@ -1,8 +1,9 @@
-import { CATALOG, CARRIERS, DATA_BUCKETS } from './catalog-data.js';
+import { loadCatalog, CARRIERS, DATA_BUCKETS } from './catalog-data.js';
 
 const $ = id => document.getElementById(id);
 const won = n => `${n.toLocaleString('ko-KR')}원`;
-const svc = id => CATALOG.find(s => s.id === id);
+let catalog = [];                    // BE 카탈로그 (로드 전에는 비어 있다)
+const svc = id => catalog.find(s => s.id === id);
 
 const state = {
   step: 1,
@@ -101,7 +102,7 @@ function openModal() {
 function renderModal() {
   const q = $('modal-search').value.trim();
   const chosen = new Set(state.wish.map(w => w.id));
-  $('modal-list').replaceChildren(...CATALOG
+  $('modal-list').replaceChildren(...catalog
     .filter(s => !chosen.has(s.id) && (!q || s.name.includes(q)))
     .map(s => {
       const el = document.createElement('label');
@@ -175,4 +176,8 @@ document.querySelectorAll('[data-next]').forEach(b => b.addEventListener('click'
 }));
 $('analyze').addEventListener('click', analyze);
 
+/* 시작: 구독 카탈로그를 BE 에서 받아온 뒤 화면을 그린다. */
 renderCarriers(); renderData(); renderWish(); updateStatement(); showStep(1);
+loadCatalog()
+  .then(list => { catalog = list; renderModal(); })
+  .catch(e => error(e.message || '구독 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'));

@@ -273,6 +273,34 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
 .disclaimer { background: #fff6e9; color: #8a5a08; border-radius: 12px; padding: 12px 16px;
   font-size: 14px; margin: 16px 0; }
 .disclaimer strong { color: #7a4e06; }
+
+/* 결론 먼저(절대 원칙 5-③): 목록·표보다 금액 한 문장이 위에 온다. */
+.headline { font-size: 20px; font-weight: 700; line-height: 1.45; margin: 4px 0 10px;
+  color: var(--brand-ink); }
+/* 빠진 입력·결손 안내(5-①). 막지 않고 무엇을 더 주면 정확해지는지 적는다. */
+.notices { list-style: none; display: grid; gap: 6px; margin: 0 0 16px; padding: 12px 16px;
+  background: var(--bg-soft); border-radius: 12px; font-size: 13.5px; color: var(--ink-soft); }
+.notices li::before { content: 'ⓘ '; color: var(--brand-ink); }
+/* 근거는 접되 버리지 않는다(5-④): 기본은 금액만, 펼치면 계산 과정과 출처. */
+.breakdown { margin: 16px 0; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.breakdown summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.breakdown ul { list-style: none; margin-top: 10px; display: grid; gap: 8px; }
+.breakdown li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: baseline;
+  font-size: 14px; }
+.breakdown li strong { font-variant-numeric: tabular-nums; }
+.breakdown li em { font-style: normal; font-size: 12px; color: var(--ink-soft); }
+.breakdown li p { grid-column: 1 / -1; font-size: 12px; color: var(--ink-soft); }
+
+/* 정보 오류 제보. 접수만 하고 카탈로그를 바꾸지 않는다. */
+.report { border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin: 20px 0; }
+.report h2 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.report form { display: grid; gap: 8px; margin-top: 14px; max-width: 520px; }
+.report label { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.report select, .report textarea, .report input {
+  width: 100%; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px;
+  font: inherit; font-size: 14px; background: var(--bg); color: var(--ink); }
+.report textarea { resize: vertical; }
+.report button { justify-self: start; margin-top: 4px; }
 .upsell { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   background: var(--brand-tint); border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; }
 .upsell p { color: var(--ink-soft); font-size: 14px; margin-top: 4px; }
