@@ -342,25 +342,21 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
 .breakdown li p { grid-column: 1 / -1; font-size: 12px; color: var(--ink-soft); }
 
 /* ── 비회원 게이트 ── */
-/* 블러는 가림막이지 접근 통제가 아니다. 개발자도구로 걷어낼 수 있고, 금액·표는 공개 API 값이다.
-   정말 막아야 할 값이 생기면 BE 가 내려주지 않아야 한다. */
-.results.gated > *:not(.gate) { filter: blur(6px); pointer-events: none; user-select: none; }
-.gate { border: 0; border-radius: 22px; padding: 36px 32px; width: min(460px, 92vw);
-  background: var(--brand); color: #fff; text-align: center; box-shadow: 0 30px 60px rgba(20,20,43,.25); }
-.gate::backdrop { background: rgba(255,255,255,.35); }
-.gate-art { font-size: 44px; margin: 0 0 14px; }
-.gate h2 { font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
-.gate-lead { font-size: 19px; font-weight: 700; margin: 10px 0 0; line-height: 1.5; }
-.gate-lead b { background: rgba(255,255,255,.28); border-radius: 6px; padding: 2px 8px; font-weight: 800; }
-.gate-sub { font-size: 16px; font-weight: 600; margin: 6px 0 24px; }
-.gate-cta { width: 100%; background: #17182a; color: #fff; border: 0; border-radius: 12px;
-  padding: 17px; font: inherit; font-size: 16px; font-weight: 800; cursor: pointer; }
+/* 리포트를 가리는 게 아니라 **대신 그리는** 화면이다. 금액은 한 줄도 없다(ux-flow D-36).
+   화면 게이트일 뿐 API 는 공개다 — 정말 막아야 할 값이 생기면 BE 가 내려주지 않아야 한다. */
+.gate-page { max-width: 460px; margin: 0 auto; padding: 72px 24px 100px; text-align: center; }
+.gate-art { font-size: 52px; margin: 0 0 18px; }
+.gate-page h1 { font-size: 26px; font-weight: 800; letter-spacing: -.01em; }
+.gate-lead { color: var(--ink-soft); font-size: 15px; line-height: 1.7; margin: 14px 0 30px; }
+.gate-cta { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+  background: #17182a; color: #fff; border: 0; border-radius: 12px; padding: 17px;
+  font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
 .gate-cta:hover { background: #000; }
-.gate-foot { font-size: 13px; margin-top: 16px; color: rgba(255,255,255,.9); }
+.gate-cta svg { width: 20px; height: 20px; background: #fff; border-radius: 3px; padding: 2px; flex: none; }
 /* 막다른 길을 만들지 않는다 — 로그인하지 않기로 한 사람도 나갈 곳이 있어야 한다. */
-.gate-back { background: none; border: 0; color: rgba(255,255,255,.85); font: inherit; font-size: 13px;
-  margin-top: 10px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
-.gate-back:hover { color: #fff; }
+.gate-back { background: none; border: 0; color: var(--muted); font: inherit; font-size: 14px;
+  margin-top: 16px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.gate-back:hover { color: var(--ink-soft); }
 
 /* 공식 시세 대조 결과. 신뢰 표시이지 금액이 아니므로 숫자를 강조하지 않는다(UX_POLICY 1-⑧). */
 .cross-check { font-size: 13px; color: var(--muted); margin: 12px 0; }

@@ -1,6 +1,6 @@
 // 결과 비교표. 금액·순서·출처는 전부 BE(POST /api/v1/recommendations)가 만든다 — 절대 원칙 2·4.
 // '현재' 열만 사용자가 입력한 값의 합계이며, 화면에도 그렇게 적는다.
-import { request, ApiError } from './api.js';
+import { request, ApiError, backendUrl } from './api.js';
 import { provenance, splitLines } from './model.js';
 
 const $ = id => document.getElementById(id);
@@ -50,6 +50,10 @@ function buildRequest(source) {
 
 async function start(source) {
   if (!keptSubs(source).length) { fail('추천에 포함할 구독 서비스를 고르지 않았어요. 다시 선택해 주세요.'); return; }
+  // 비회원이면 **계산도 하지 않고** 게이트로 끝낸다. 금액이 한 줄도 비치지 않아야 하므로
+  // 블러로 가리는 대신 애초에 받아오지 않는다(ux-flow D-36).
+  const member = await request('/api/v1/me', { member: true }).then(() => true).catch(() => false);
+  if (!member) { openGate(); return; }
   try {
     const { data } = await request('/api/v1/recommendations', { method: 'POST', body: buildRequest(source) });
     render(source, data);
@@ -79,7 +83,6 @@ function render(source, data) {
   renderBreakdown(best);
   renderCrossCheck(best);
   renderTotals(source, best);
-  gateForGuests(best);
   wireReport(best);
   fillPlanSpecs(source, best);
 }
@@ -250,38 +253,17 @@ function renderTotals(source, best) {
   }));
 }
 
-/* 비회원 게이트. 결과는 계산해서 **절감액까지 보여주고** 상세는 로그인 뒤에 본다(제품 결정).
-   블러는 가림막이지 접근 통제가 아니다 — 금액도 표도 공개 API 가 이미 내려준 값이고,
-   개발자도구로 걷어낼 수 있다. 정말 막아야 할 값이 생기면 BE 가 내려주지 않아야 한다. */
-function gateForGuests(best) {
-  const gate = $('gate');
-  if (!gate) return;
-  request('/api/v1/me', { member: true })
-    .then(() => { /* 회원이면 그대로 본다 */ })
-    .catch(() => openGate(gate, best));
-}
-
-function openGate(gate, best) {
-  document.getElementById('results').classList.add('gated');
-  const lead = $('gate-lead');
-  // 절감액은 BE 값 그대로다. 없으면 금액을 지어내지 않고 문장을 바꾼다.
-  if (best.monthlySavings > 0) {
-    lead.replaceChildren(document.createTextNode('최대 '));
-    const amount = document.createElement('b');
-    amount.textContent = won(best.monthlySavings);
-    lead.append(amount, document.createTextNode(' 절감 받을 수 있어요.'));
-  } else {
-    lead.textContent = '지금 조건에 맞는 조합을 찾았어요.';
-  }
-  $('gate-login').addEventListener('click', () => {
-    // 로그인 뒤 이 화면으로 돌아온다. 입력은 sessionStorage 에 있어 같은 탭이면 그대로 다시 계산된다.
+/* 비회원 게이트. 리포트 대신 이 화면 하나를 그린다(ux-flow D-36, 사용자 결정 2026-09-17).
+   미리 알리지도, 금액을 비치지도 않는다 — 로그인 후 결과 화면에서 한 번에 전부 연다.
+   화면 게이트일 뿐 API 는 공개다. CBT 이탈율을 보고 되돌릴 수 있게 그렇게 두었다. */
+function openGate() {
+  $('gate').hidden = false;
+  $('gate-google').addEventListener('click', () => {
+    // 로그인 뒤 이 화면으로 돌아온다. 입력은 sessionStorage 에 남아 같은 자리에서 이어진다.
     sessionStorage.setItem('yogobi:next', 'results.html');
-    location.assign('./login.html');
+    location.href = backendUrl('/oauth2/authorization/google');
   });
   $('gate-back').addEventListener('click', () => { location.assign('./#modes'); });
-  // Esc 로 닫으면 블러만 남은 막다른 화면이 된다 — 나가는 길은 위 두 버튼뿐이다.
-  gate.addEventListener('cancel', event => event.preventDefault());
-  gate.showModal();
 }
 
 /* 정보 오류 제보(POST /api/v1/catalog/reports). 접수만 하고 카탈로그를 바꾸지 않는다 — BE 가 PENDING 으로 저장한다. */
