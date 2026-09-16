@@ -8,11 +8,12 @@
   <link rel="stylesheet" href="./assets/fonts.css">
   <link rel="stylesheet" href="./src/redesign.css">
   <script type="module" src="./src/results.js"></script>
+  <script type="module" src="./src/header-auth.js"></script>
 </head>
 <body>
 <header class="site-header">
   <a class="brand" href="./"><span class="brand-mark">B</span>YogoB</a>
-  <nav class="header-nav"><a class="plain" href="./mypage.html">마이페이지</a><a class="btn btn-brand" href="./login.html">로그인</a></nav>
+  <nav class="header-nav"><a class="plain" data-auth="member" href="./mypage.html" hidden>마이페이지</a><button type="button" class="btn btn-ghost" data-auth="member" data-logout hidden>로그아웃</button><a class="btn btn-brand" data-auth="guest" href="./login.html">로그인</a></nav>
 </header>
 
 <main class="results" id="results" role="main" hidden>
