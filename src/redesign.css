@@ -22,7 +22,8 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; } /* explicit display on flex/grid elements must not defeat the hidden attribute */
 body { margin: 0; color: var(--ink); background: var(--bg); line-height: 1.5;
-  -webkit-font-smoothing: antialiased; }
+  -webkit-font-smoothing: antialiased;
+  word-break: keep-all; /* 한국어는 어절 단위로 끊는다 — "질문 3/개면" 같은 줄바꿈 방지 */ }
 a { color: inherit; text-decoration: none; }
 img { max-width: 100%; }
 h1, h2, h3, p { margin: 0; }
@@ -61,24 +62,44 @@ h1, h2, h3, p { margin: 0; }
 .hero h1 { font-size: 40px; line-height: 1.25; font-weight: 800; letter-spacing: -.02em; }
 .hero h1 .accent { color: var(--brand); }
 .hero .lead { color: var(--ink-soft); font-size: 16px; margin: 18px 0 26px; max-width: 30em; }
+.hero-cta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cta-note { color: var(--muted); font-size: 13px; }
+/* 신뢰 칩 — 검증 가능한 사실만 적는다(계좌 미연결·출처 표시·미사용 혜택 0원). */
+.trust-chips { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; padding: 0; }
+.trust-chips li { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line);
+  border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.trust-chips li::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--brand); }
 
 /* Phone mockup (decorative) */
-.phone { justify-self: center; width: 260px; height: 520px; border-radius: 40px;
+.phone { justify-self: center; width: 260px; height: 480px; border-radius: 40px;
   background: linear-gradient(160deg, #eef1f6, #dfe4ee); padding: 14px;
   box-shadow: 0 30px 60px rgba(20, 20, 43, .18); }
-.phone-screen { width: 100%; height: 100%; border-radius: 28px; background: #fff; padding: 20px 16px;
-  display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
-.phone-row { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.phone-screen { width: 100%; height: 100%; border-radius: 28px; background: #fff; padding: 18px 16px;
+  display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.phone-tag { align-self: flex-start; background: #f0f1f5; color: var(--muted); font-size: 10px;
+  font-weight: 700; padding: 3px 8px; border-radius: 999px; }
+/* 절대 총액이 아니라 절감액이 화면에서 가장 크다 — UX_POLICY 1-①. */
+.phone-hero small { color: var(--muted); font-size: 11px; }
+.phone-hero strong { display: block; font-size: 32px; font-weight: 800; letter-spacing: -.02em;
+  color: var(--brand-strong); line-height: 1.15; }
+.phone-delta { color: var(--ink-soft); font-size: 11px; font-weight: 600; }
+.phone-gauge { height: 5px; border-radius: 999px; background: #eceef2; overflow: hidden; }
+.phone-gauge i { display: block; height: 100%; width: 62%; background: var(--brand); }
+.phone-compare { color: var(--muted); font-size: 10.5px; line-height: 1.4; }
+.phone-compare b { color: var(--ink-soft); }
+.phone-row { display: flex; justify-content: space-between; align-items: baseline;
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
 .phone-row small { color: var(--muted); font-size: 11px; }
-.phone-row strong { display: block; font-size: 18px; margin-top: 4px; }
-.phone-cta { margin-top: auto; background: var(--brand-tint); color: var(--brand-ink);
-  border-radius: 12px; padding: 12px; text-align: center; font-weight: 700; font-size: 14px; }
+.phone-row strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+.phone-cta { margin-top: auto; background: var(--brand); color: #fff;
+  border-radius: 12px; padding: 12px; text-align: center; font-weight: 700; font-size: 13px; }
 
 /* Stats */
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 28px; }
+/* auto-fit: 카탈로그를 못 받아 카드를 숨겨도 남은 카드가 빈칸 없이 채운다. */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-top: 40px; }
 .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 20px; box-shadow: var(--shadow); }
-.stat .value { font-size: 26px; font-weight: 800; letter-spacing: -.01em; }
+.stat .value { font-size: 26px; font-weight: 800; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
 .stat .label { font-weight: 600; margin-top: 6px; }
 .stat .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
 
@@ -86,9 +107,11 @@ h1, h2, h3, p { margin: 0; }
 .how { background: var(--bg-soft); border-radius: var(--radius); padding: 36px; margin-top: 36px; }
 .how h2 { font-size: 24px; font-weight: 800; }
 .how .lead { color: var(--ink-soft); margin-top: 8px; }
-.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 28px; }
-.step .num { color: var(--brand); font-weight: 800; font-size: 14px; }
-.step h3 { font-size: 16px; font-weight: 700; margin-top: 10px; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 28px; }
+.step { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+.step .num { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 999px;
+  background: var(--brand-tint); color: var(--brand-ink); font-weight: 800; font-size: 13px; }
+.step h3 { font-size: 16px; font-weight: 700; margin-top: 12px; }
 .step p { color: var(--muted); font-size: 14px; margin-top: 6px; }
 
 /* Footer */
@@ -100,6 +123,8 @@ h1, h2, h3, p { margin: 0; }
 
 /* Mode select */
 .modes-wrap { max-width: 900px; margin: 0 auto; text-align: center; padding: 48px 0; }
+/* 가운데 정렬된 블록 안에서 뒤로가기만 왼쪽에 둔다 */
+.modes-wrap > .back-link { display: block; width: fit-content; margin-right: auto; }
 .modes-wrap h1 { font-size: 30px; font-weight: 800; line-height: 1.4; letter-spacing: -.01em; }
 .chip { display: inline-block; background: #f0f1f5; color: var(--ink-soft); font-size: .78em;
   font-weight: 700; padding: 3px 12px; border-radius: 999px; vertical-align: middle; margin: 0 2px; }
@@ -276,13 +301,29 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
   font-size: 14px; margin: 16px 0; }
 .disclaimer strong { color: #7a4e06; }
 
-/* 결론 먼저(절대 원칙 5-③): 목록·표보다 금액 한 문장이 위에 온다. */
-.headline { font-size: 20px; font-weight: 700; line-height: 1.45; margin: 4px 0 10px;
-  color: var(--brand-ink); }
+/* 결론 먼저(절대 원칙 5-③): 표보다 절감액이 위에, 그리고 가장 크게. */
+.save-hero { display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  flex-wrap: wrap; background: var(--brand-tint); border-radius: var(--radius);
+  padding: 22px 26px; margin: 14px 0 16px; }
+.save-label { display: block; color: var(--brand-ink); font-size: 14px; font-weight: 600; }
+.save-amount { display: block; font-size: 40px; font-weight: 800; letter-spacing: -.02em;
+  line-height: 1.15; color: var(--brand-strong); font-variant-numeric: tabular-nums; }
+.save-annual { display: block; color: var(--ink-soft); font-size: 14px; font-weight: 600; }
+.save-delta { display: flex; gap: 10px; margin: 0; }
+.save-delta > div { background: #fff; border-radius: 12px; padding: 12px 16px; min-width: 128px; }
+.save-delta dt { color: var(--muted); font-size: 12px; font-weight: 600; }
+.save-delta dd { margin: 2px 0 0; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* 문장·항목 단위 줄바꿈. 줄 중간이 아니라 의미 단위로 끊는다. */
+.line { display: block; }
+.line + .line { margin-top: 3px; }
 /* 빠진 입력·결손 안내(5-①). 막지 않고 무엇을 더 주면 정확해지는지 적는다. */
-.notices { list-style: none; display: grid; gap: 6px; margin: 0 0 16px; padding: 12px 16px;
-  background: var(--bg-soft); border-radius: 12px; font-size: 13.5px; color: var(--ink-soft); }
+.notices { list-style: none; display: grid; gap: 8px; margin: 0 0 16px; padding: 12px 16px;
+  background: var(--bg-soft); border-radius: 12px; font-size: 13.5px; line-height: 1.6;
+  color: var(--ink-soft); }
+.notices li { max-width: 72ch; }
 .notices li::before { content: 'ⓘ '; color: var(--brand-ink); }
+.notices li > .line:first-child { display: inline; } /* ⓘ 표시가 첫 문장과 같은 줄에 붙게 */
 /* 근거는 접되 버리지 않는다(5-④): 기본은 금액만, 펼치면 계산 과정과 출처. */
 .breakdown { margin: 16px 0; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
 .breakdown summary { cursor: pointer; font-weight: 600; font-size: 14px; }
@@ -316,6 +357,18 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
 /* 일정 기준일 안내 — 무엇을 근거로 날짜를 잡았는지 화면에 적는다. */
 .cal-anchor { background: var(--brand-tint); color: var(--brand-ink); border-radius: 12px;
   padding: 10px 14px; font-size: 14px; font-weight: 600; margin: 10px 0 4px; }
+
+/* 복구 코드 — 지금 한 번만 보이므로 눈에 띄고 옮겨 적기 쉬워야 한다. */
+.recovery-code { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 20px; font-weight: 700; letter-spacing: .06em; text-align: center;
+  background: var(--bg-soft); border: 1px dashed var(--line); border-radius: 12px;
+  padding: 16px 12px; margin: 12px 0; user-select: all; word-break: break-all; }
+/* 문장 안에서 링크처럼 보이는 버튼 */
+.link-inline { background: none; border: 0; padding: 0; font: inherit; cursor: pointer;
+  color: var(--brand-ink); text-decoration: underline; }
+/* 마이페이지 닉네임 편집 */
+.nick-form { display: grid; gap: 8px; margin: 10px 0; }
+.nick-actions { display: flex; gap: 8px; }
 .upsell { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   background: var(--brand-tint); border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; }
 .upsell p { color: var(--ink-soft); font-size: 14px; margin-top: 4px; }
@@ -327,18 +380,24 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
 .period-tabs button.active { background: #fff; color: var(--ink); box-shadow: var(--shadow); }
 
 .compare-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
-.compare { width: 100%; min-width: 720px; border-collapse: collapse; }
+/* fixed: 내용 길이와 무관하게 비교 3열의 가로 폭을 똑같이 준다. */
+.compare { width: 100%; min-width: 760px; border-collapse: collapse; table-layout: fixed; }
+.compare col { width: 27%; }
+.compare col.col-label { width: 19%; }
 .compare th, .compare td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--line);
   font-size: 14px; vertical-align: top; }
-.compare thead th { border-bottom: 2px solid var(--line); vertical-align: bottom; }
+.compare thead th { border-bottom: 2px solid var(--line); }
 .compare .rowhead { background: var(--bg-soft); }
-.compare tbody th[scope=row] { font-weight: 600; color: var(--ink-soft); background: var(--bg-soft); width: 22%; }
-.col-chip { display: block; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+.compare tbody th[scope=row] { font-weight: 600; color: var(--ink-soft); background: var(--bg-soft); }
+/* 머리 셀 3개의 각 줄에 같은 높이를 주어 총액이 한 선에 놓이게 한다(세로 균일). */
+.col-chip { display: block; min-height: 20px; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
 .col-chip em { font-style: normal; background: var(--brand); color: #fff; font-size: 11px; padding: 1px 7px;
   border-radius: 999px; margin-left: 4px; }
-.col-sub { display: block; color: var(--muted); font-size: 12px; margin: 6px 0 8px; font-weight: 500; }
-.col-total { display: block; font-size: 22px; font-weight: 800; }
-.col-save { display: block; color: var(--brand-strong); font-size: 12px; font-weight: 700; margin-top: 4px; }
+.col-sub { display: block; min-height: 2.9em; color: var(--muted); font-size: 12px; margin: 6px 0 8px;
+  font-weight: 500; }
+.col-total { display: block; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.col-save { display: block; min-height: 1.5em; color: var(--brand-strong); font-size: 12px;
+  font-weight: 700; margin-top: 4px; }
 .compare .best { background: rgba(34,197,94,.06); }
 .compare thead .best { border-bottom-color: var(--brand); }
 .compare thead .best .col-total { color: var(--brand-strong); }
@@ -347,7 +406,7 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
 .reason { background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px; margin-top: 24px; }
 .reason h2 { font-size: 17px; font-weight: 800; margin-bottom: 12px; }
 .reason ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
-.reason li { font-size: 14px; color: var(--ink-soft); line-height: 1.6; }
+.reason li { font-size: 14px; color: var(--ink-soft); line-height: 1.65; max-width: 62ch; }
 .reason .hint { margin-top: 14px; }
 .result-actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
 
@@ -474,13 +533,11 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
 @media (max-width: 860px) {
   .hero { grid-template-columns: 1fr; }
   .phone { display: none; }
-  .stats { grid-template-columns: repeat(2, 1fr); }
   .steps { grid-template-columns: repeat(2, 1fr); }
   .mode-cards { grid-template-columns: 1fr; }
   .hero h1 { font-size: 32px; }
 }
 @media (max-width: 520px) {
-  .stats { grid-template-columns: 1fr; }
   .steps { grid-template-columns: 1fr; }
   .site-footer .row { flex-direction: column; }
 }

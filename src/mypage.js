@@ -11,15 +11,58 @@ function el(tag, cls, text) {
   return node;
 }
 
-/* 회원 정보: /me 로 이메일만 실제 반영(이름·닉네임은 BE 미제공이라 데모 유지) */
+/* 회원 정보. 이름·닉네임·이메일 모두 BE 값이다(D-22 이후 실제로 내려온다). */
+let member = null;
+
 request('/api/v1/me', { member: true })
-  .then(({ data }) => {
-    if (data?.email) {
-      $('pc-email').textContent = data.email;
-      $('pc-nick').textContent = '@' + data.email.split('@')[0];
-    }
-  })
-  .catch(() => { /* 미로그인/무BE → 데모 유지 */ });
+  .then(({ data }) => { member = data; paintMember(); })
+  .catch(() => { $('pc-name').textContent = '로그인이 필요해요'; });
+
+function paintMember() {
+  if (!member) return;
+  // 이름이 없는 계정(Google 로그인)은 닉네임을 이름 자리에 쓴다.
+  const display = member.name || member.nickname || member.email.split('@')[0];
+  $('pc-name').textContent = display;
+  $('pc-avatar').textContent = [...display][0] ?? '·';
+  $('pc-nick').textContent = member.nickname ? '@' + member.nickname : '';
+  $('pc-email').textContent = member.email;
+  $('pc-login').textContent = [member.localLogin && '비밀번호', member.googleLogin && 'Google']
+    .filter(Boolean).join(' · ') || '—';
+}
+
+/* 닉네임 변경 (POST /api/v1/me/nickname) */
+$('nick-edit').addEventListener('click', () => {
+  $('nick-input').value = member?.nickname ?? '';
+  $('nick-form').hidden = false;
+  $('nick-edit').hidden = true;
+  $('nick-input').focus();
+});
+$('nick-cancel').addEventListener('click', () => {
+  $('nick-form').hidden = true;
+  $('nick-edit').hidden = false;
+  $('nick-status').textContent = '';
+});
+$('nick-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const nickname = $('nick-input').value.trim();
+  if (!nickname) { $('nick-input').focus(); return; }
+  const button = $('nick-form').querySelector('button[type="submit"]');
+  button.disabled = true;
+  $('nick-status').textContent = '저장 중…';
+  try {
+    const { data } = await request('/api/v1/me/nickname', { method: 'POST', member: true, body: { nickname } });
+    member = data;
+    paintMember();
+    $('nick-form').hidden = true;
+    $('nick-edit').hidden = false;
+    $('nick-status').textContent = '';
+  } catch (error) {
+    // 중복이면 서버가 그 사실을 알려준다.
+    $('nick-status').textContent = error.message || '닉네임을 바꾸지 못했어요.';
+  } finally {
+    button.disabled = false;
+  }
+});
 
 /* 분석 리포트 아카이브 (데모). 운영: 회원별 저장 리포트 목록 API 필요(BE 신설). */
 const REPORTS = [

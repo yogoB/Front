@@ -19,7 +19,17 @@
 <main class="results" id="results" role="main" hidden>
   <span class="badge">AI 최적화 분석 완료</span>
   <h1>최적 요금 조합 비교 분석</h1>
-  <p class="headline" id="headline" hidden></p>
+  <section class="save-hero" id="save-hero" hidden>
+    <div class="save-main">
+      <span class="save-label" id="save-label">이 조합으로 바꾸면 매달</span>
+      <strong class="save-amount" id="save-amount">—</strong>
+      <span class="save-annual" id="save-annual"></span>
+    </div>
+    <dl class="save-delta">
+      <div><dt>지금</dt><dd id="save-current">—</dd></div>
+      <div><dt>추천 조합</dt><dd id="save-rec">—</dd></div>
+    </dl>
+  </section>
   <p class="flow-sub">현재 상황을 바탕으로 최적값과 정가 기준을 비교했어요.</p>
   <p class="disclaimer">‘추천·정가’ 금액과 요금제는 계산 서버가 카탈로그로 계산한 값입니다. ‘현재’ 열은 <strong>입력하신 값의 합계</strong>예요.</p>
   <ul class="notices" id="notices" hidden></ul>
@@ -37,6 +47,7 @@
 
   <div class="compare-scroll">
     <table class="compare">
+      <colgroup><col class="col-label"><col><col><col></colgroup>
       <thead>
         <tr>
           <th class="rowhead" scope="col"><span class="muted">상세 구분 항목</span></th>
@@ -69,6 +80,12 @@
       </tbody>
     </table>
   </div>
+
+  <ul class="trust-chips">
+    <li>금액마다 출처 표시</li>
+    <li>안 쓰는 혜택은 0원으로 계산</li>
+    <li>카드·계좌 연결 없음</li>
+  </ul>
 
   <details class="breakdown" id="breakdown" hidden>
     <summary>계산 과정과 출처 보기</summary>

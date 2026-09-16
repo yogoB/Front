@@ -1,12 +1,23 @@
 // 결과 비교표. 금액·순서·출처는 전부 BE(POST /api/v1/recommendations)가 만든다 — 절대 원칙 2·4.
 // '현재' 열만 사용자가 입력한 값의 합계이며, 화면에도 그렇게 적는다.
 import { request, ApiError } from './api.js';
-import { provenance } from './model.js';
+import { provenance, splitLines } from './model.js';
 
 const $ = id => document.getElementById(id);
 const won = n => `₩${n.toLocaleString('ko-KR')}`;
 // 데이터 사용량을 건너뛴 경우의 계산 기준. 숨기지 않고 화면에 근거로 적는다(절대 원칙 5-①).
 const DEFAULT_GB = 10;
+
+/** 한 줄씩 끊어 넣는다. 배열이면 그 항목대로, 문자열이면 문장(./!/?) 경계로 잘라
+    긴 설명이 줄 중간에서 끊기지 않게 한다. textContent 만 쓰므로 마크업으로 해석되지 않는다. */
+function lines(parent, parts) {
+  parent.replaceChildren(...splitLines(parts).map(text => {
+    const line = document.createElement('span');
+    line.className = 'line';
+    line.textContent = text;
+    return line;
+  }));
+}
 
 const input = JSON.parse(sessionStorage.getItem('yogobi:input') || 'null');
 if (!input) {
@@ -73,18 +84,26 @@ function render(source, data) {
 /* 결론을 먼저 낸다(절대 원칙 5-③): 입력하신 금액 대비 월·연 절감을 한 문장으로.
    두 수의 뺄셈만 하며 금액을 새로 만들지 않는다 — 추천 금액은 BE, 현재 금액은 사용자 입력이다. */
 function renderHeadline(source, best) {
-  const box = $('headline');
+  const box = $('save-hero');
   if (!box) return;
   const current = currentTotal(source);
-  if (current === null) {
-    box.textContent = `추천 조합은 월 ${won(best.monthlyTotal)}이에요. 현재 내는 금액을 입력하면 절감액까지 보여드려요.`;
-    box.hidden = false;
-    return;
+  const saving = current === null ? null : current - best.monthlyTotal;
+
+  if (saving !== null && saving > 0) {
+    $('save-label').textContent = '이 조합으로 바꾸면 매달';
+    $('save-amount').textContent = won(saving);
+    $('save-annual').textContent = `1년이면 ${won(saving * 12)}`;
+  } else if (saving !== null) {
+    $('save-label').textContent = '지금이 이미 더 저렴해요';
+    $('save-amount').textContent = won(best.monthlyTotal);
+    $('save-annual').textContent = '추천 조합의 월 요금이에요';
+  } else {
+    $('save-label').textContent = '추천 조합은 매달';
+    $('save-amount').textContent = won(best.monthlyTotal);
+    $('save-annual').textContent = '현재 내는 금액을 넣으면 절감액까지 보여드려요';
   }
-  const saving = current - best.monthlyTotal;
-  box.textContent = saving > 0
-    ? `입력하신 금액보다 매달 ${won(saving)}, 1년이면 ${won(saving * 12)} 아낄 수 있어요.`
-    : `입력하신 금액이 이미 추천 조합(월 ${won(best.monthlyTotal)})보다 저렴해요.`;
+  $('save-current').textContent = current === null ? '입력 안 함' : won(current);
+  $('save-rec').textContent = won(best.monthlyTotal);
   box.hidden = false;
 }
 
@@ -98,8 +117,9 @@ function currentTotal(source) {
 function renderCurrentColumn(source) {
   $('cur-plan').textContent = source.carrier ? `${source.carrier} · 현재 요금제` : '현재 요금제';
   $('cur-data').textContent = source.data ? source.data.label : '모름';
-  $('cur-contract').textContent = source.contract?.has
-    ? `약정 있음${source.contract.endDate ? ` (종료 ${source.contract.endDate})` : ''}` : '무약정';
+  lines($('cur-contract'), source.contract?.has
+    ? ['약정 있음', source.contract.endDate && `종료 ${source.contract.endDate}`].filter(Boolean)
+    : ['무약정']);
   $('cur-penalty').textContent = source.contract?.has ? '확인 필요' : '없음';
 }
 
@@ -115,10 +135,10 @@ function renderPlanRows(source, best) {
   // 내역 줄의 금액은 '비용'이다. 제휴 혜택은 note 로 표시되므로 그 줄만 혜택으로 센다(비용을 혜택으로 적지 않는다).
   const benefits = best.breakdown.filter(line => line.note === '제휴 혜택 적용');
   const discounts = best.breakdown.filter(line => line.amount < 0);
-  $('rec-benefit').textContent = benefits.length
-    ? benefits.map(line => `${line.label} ${won(line.amount)}`).join(', ') : '포함된 구독 혜택 없음';
-  $('rec-discount').textContent = discounts.length
-    ? discounts.map(line => `${line.label} ${won(line.amount)}`).join(', ') : '적용된 할인 없음';
+  const asLines = (rows, empty) => rows.length
+    ? rows.map(line => `${line.label} ${won(line.amount)}`) : [empty];
+  lines($('rec-benefit'), asLines(benefits, '포함된 구독 혜택 없음'));
+  lines($('rec-discount'), asLines(discounts, '적용된 할인 없음'));
 }
 
 // 추천 사유는 BE(/recommendations 응답의 reasons)가 만든다 — AI 큐레이션이며 요청에 없는 금액은
@@ -128,7 +148,7 @@ function renderReasons(data) {
   const reasons = Array.isArray(data.reasons) ? data.reasons : [];
   $('reason-list').closest('.reason').hidden = reasons.length === 0;
   $('reason-list').replaceChildren(...reasons.map(text => {
-    const li = document.createElement('li'); li.textContent = text; return li;
+    const li = document.createElement('li'); lines(li, text); return li;
   }));
 }
 
@@ -158,7 +178,7 @@ function renderNotices(source, data, best) {
   const box = $('notices');
   if (!box) return;
   box.replaceChildren(...notices.map(text => {
-    const item = document.createElement('li'); item.textContent = text; return item;
+    const item = document.createElement('li'); lines(item, text); return item;
   }));
   box.hidden = notices.length === 0;
 }

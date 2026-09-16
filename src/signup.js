@@ -3,7 +3,7 @@
 import { request, backendUrl, ApiError } from './api.js';
 
 const $ = id => document.getElementById(id);
-const titles = { info: '요고비 회원가입', password: '비밀번호 만들기' };
+const titles = { info: '요고비 회원가입', password: '비밀번호 만들기', recovery: '복구 코드 저장' };
 
 function step(name) {
   document.querySelectorAll('[data-step]').forEach(s => { s.hidden = s.dataset.step !== name; });
@@ -17,7 +17,6 @@ $('info-form').addEventListener('submit', event => {
   const email = $('email').value.trim();
   if (!$('name').value.trim()) { $('name').focus(); return; }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $('email').focus(); return; }
-  if (!$('nickname').value.trim()) { $('nickname').focus(); return; }
   $('password-email').textContent = email;
   step('password');
   $('password').focus();
@@ -41,16 +40,21 @@ $('password-form').addEventListener('submit', async event => {
   $('verify-status').hidden = false;
   button.disabled = true;
   try {
-    await request('/api/v1/auth/signup', {
+    const nickname = $('nickname').value.trim();
+    const { data } = await request('/api/v1/auth/signup', {
       method: 'POST', member: true,
       body: {
         name: $('name').value.trim(),
         email: $('password-email').textContent,
         password: $('password').value,
-        nickname: $('nickname').value.trim(),
+        // 비우면 보내지 않는다 — 서버가 '이름 + 숫자 5자'로 만들어 준다.
+        ...(nickname ? { nickname } : {}),
       },
     });
-    location.assign('./account.html');            // 가입과 동시에 로그인 상태다
+    // 복구 코드는 지금 한 번만 볼 수 있다. 저장할 기회를 주고 넘어간다.
+    $('recovery-code').textContent = data.recoveryCode ?? '—';
+    $('verify-status').hidden = true;
+    step('recovery');
   } catch (error) {
     $('verify-status').hidden = true;
     button.disabled = false;
@@ -61,3 +65,14 @@ $('password-form').addEventListener('submit', async event => {
     if (error.field === 'email' || error.field === 'nickname') { step('info'); $(error.field).focus(); }
   }
 });
+
+/* 복구 코드 — 지금 한 번만 볼 수 있다 */
+$('recovery-copy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText($('recovery-code').textContent);
+    $('recovery-status').textContent = '복사했어요.';
+  } catch {
+    $('recovery-status').textContent = '복사하지 못했어요. 코드를 직접 적어 주세요.';
+  }
+});
+$('recovery-done').addEventListener('click', () => { location.assign('./account.html'); });

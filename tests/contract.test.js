@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request, ApiError } from '../src/api.js';
-import { integer, optionalInputs, recommendationRequest, calculatorRequest, validPassword, comparisonCsv } from '../src/model.js';
+import { integer, optionalInputs, recommendationRequest, calculatorRequest, validPassword, comparisonCsv, splitLines } from '../src/model.js';
 
 const values = { monthlyDataGb: '20', currentCarrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: 'false', fee: '55000', budget: '70000', contractEnd: '2027-01-01' };
 const subs = [{ id: 1, tierId: 2, wanted: true }, { id: 3, tierId: 8, wanted: false }];
@@ -75,4 +75,14 @@ test('CSRF failure stops mutation and cancellation preserves AbortError', async 
   fetch.mock.mockImplementation(async (url, options) => { options.signal.throwIfAborted(); return new Promise((resolve, reject) => options.signal.addEventListener('abort', () => reject(options.signal.reason))); });
   const controller = new AbortController(); const promise = request('/api/v1/chat/messages', { signal: controller.signal }); controller.abort();
   await assert.rejects(promise, e => e.name === 'AbortError');
+});
+
+test('splitLines breaks on sentence ends only — amounts, dates and IDs stay on one line', () => {
+  assert.deepEqual(
+    splitLines('10GB 기준으로 계산했어요. 실제 사용량을 넣으면 정확해져요.'),
+    ['10GB 기준으로 계산했어요.', '실제 사용량을 넣으면 정확해져요.']);
+  // 마침표가 있어도 뒤에 공백이 없으면 한 덩어리다 — 날짜·소수·금액이 쪼개지면 안 된다.
+  assert.deepEqual(splitLines('약정 종료 2026-11-30 기준 1.5GB ₩4,900'), ['약정 종료 2026-11-30 기준 1.5GB ₩4,900']);
+  // 배열은 그대로 줄이 되고, 빈 값은 버린다.
+  assert.deepEqual(splitLines(['약정 있음', '', null, '종료 2026-11-30']), ['약정 있음', '종료 2026-11-30']);
 });

@@ -21,26 +21,44 @@
 <main id="view-landing" class="view" role="main">
   <section id="main" class="hero">
     <div>
-      <span class="badge">AI 요금 최적화 서비스</span>
-      <h1>38세 곽두팔님,<br>얼마전 월 <span class="accent">38,000원</span> 아끼셨네요!</h1>
-      <p class="lead">몇 가지 질문에 답하다 보면 내 소비 구조가 정리되고, 나에게 딱 맞는 선택지가 만들어집니다.</p>
-      <button type="button" id="start-btn" class="btn btn-brand btn-lg">내 요금제 진단받기</button>
+      <span class="badge">통신비 + 구독료를 한 번에</span>
+      <h1>지금 내는 요금,<br><span class="accent">얼마나 줄어드는지</span>부터 알려드려요.</h1>
+      <p class="lead">요금제와 구독을 같이 계산해 더 싼 조합과 바꾸기 좋은 시점을 찾아요. 질문 3개면 예상 절감액이 나옵니다.</p>
+      <div class="hero-cta">
+        <button type="button" id="start-btn" class="btn btn-brand btn-lg">1분 만에 절감액 확인</button>
+        <span class="cta-note">가입·로그인 없이 결과까지</span>
+      </div>
+      <ul class="trust-chips">
+        <li>카드·계좌 연결 없음</li>
+        <li>금액마다 출처 표시</li>
+        <li>안 쓰는 혜택은 0원으로 계산</li>
+      </ul>
     </div>
     <div class="phone" aria-hidden="true">
       <div class="phone-screen">
-        <div class="phone-row"><small>현재 월 지출</small><strong>82,000원</strong></div>
-        <div class="phone-row"><small>추천 조합 예상</small><strong>73,900원</strong></div>
-        <div class="phone-row"><small>월 절감</small><strong style="color:var(--brand)">8,100원</strong></div>
-        <div class="phone-cta">내 요금제 진단받기</div>
+        <span class="phone-tag">예시 화면</span>
+        <div class="phone-hero">
+          <small>이 조합으로 바꾸면 월</small>
+          <strong>8,100원</strong>
+          <span class="phone-delta">1년이면 97,200원</span>
+        </div>
+        <!-- ponytail: 또래 평균 비교는 아직 출처 미확보(ux-flow A9-①). 사인오프 전까지 '예시 화면' 안에서만 쓴다. -->
+        <div class="phone-gauge"><i></i></div>
+        <p class="phone-compare">비슷한 사용량인 사람보다 <b>월 12,000원</b> 적게 내는 수준</p>
+        <div class="phone-row"><small>지금</small><strong>82,000원</strong></div>
+        <div class="phone-row"><small>추천 조합</small><strong>73,900원</strong></div>
+        <div class="phone-row"><small>바꾸기 좋은 날</small><strong>10월 1일</strong></div>
+        <div class="phone-cta">이 조합으로 바꾸기</div>
       </div>
     </div>
   </section>
 
+  <!-- 지표는 실제 카탈로그 수를 채운다(landing.js). 못 받으면 수치를 비우고 라벨만 남긴다. -->
   <section class="stats" aria-label="서비스 지표">
-    <div class="stat"><div class="value">1,200+</div><div class="label">분석된 요금제</div><div class="sub">3사 + 알뜰폰</div></div>
-    <div class="stat"><div class="value">50+</div><div class="label">구독 서비스</div><div class="sub">주요 플랫폼</div></div>
-    <div class="stat"><div class="value">₩34,000</div><div class="label">평균 월 절감액</div><div class="sub">실사용자 기준</div></div>
-    <div class="stat"><div class="value">96%</div><div class="label">이용자 만족도</div><div class="sub">추천 이후 설문</div></div>
+    <div class="stat"><div class="value" id="stat-plans">—</div><div class="label">비교하는 요금제</div><div class="sub">3사 + 알뜰폰</div></div>
+    <div class="stat"><div class="value" id="stat-services">—</div><div class="label">계산에 넣는 구독</div><div class="sub">OTT·음악 등</div></div>
+    <div class="stat"><div class="value">3개</div><div class="label">답하면 끝나는 질문</div><div class="sub">라이트 모드 기준</div></div>
+    <div class="stat"><div class="value">전부</div><div class="label">출처를 붙인 금액</div><div class="sub">어디서 온 값인지 표시</div></div>
   </section>
 
   <section class="how">
@@ -56,7 +74,7 @@
 
   <footer class="site-footer">
     <div class="row">
-      <div><strong>요금비교</strong><p>통신비·구독료 최적화 서비스 · 정보 제공 목적으로만 운영됩니다.</p></div>
+      <div><strong>요고비</strong><p>통신비·구독료 최적화 서비스 · 정보 제공 목적으로만 운영됩니다.</p></div>
       <div class="links"><a href="./terms.html">이용약관</a><a href="./privacy.html">개인정보처리방침</a><a href="./data-sources.html">데이터 출처</a></div>
     </div>
   </footer>

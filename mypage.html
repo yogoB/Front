@@ -26,16 +26,24 @@
   <aside class="mp-left">
     <section class="profile-card">
       <div class="pc-top">
-        <div class="avatar" aria-hidden="true">곽</div>
+        <div class="avatar" id="pc-avatar" aria-hidden="true">—</div>
         <span class="status-badge">이용 중</span>
       </div>
-      <div class="pc-name"><strong id="pc-name">곽두팔</strong><span class="tag-new">회원</span></div>
-      <p class="pc-nick" id="pc-nick">@yogo_kwak</p>
-      <a class="btn btn-ghost btn-block" href="#">회원정보 수정</a>
+      <div class="pc-name"><strong id="pc-name">—</strong><span class="tag-new">회원</span></div>
+      <p class="pc-nick" id="pc-nick">—</p>
+      <button type="button" class="btn btn-ghost btn-block" id="nick-edit">닉네임 바꾸기</button>
+      <form class="nick-form" id="nick-form" hidden>
+        <label class="sr-only" for="nick-input">새 닉네임</label>
+        <input class="text-input" id="nick-input" maxlength="30" placeholder="새 닉네임" required>
+        <div class="nick-actions">
+          <button class="btn btn-brand" type="submit">저장</button>
+          <button class="btn btn-ghost" type="button" id="nick-cancel">취소</button>
+        </div>
+        <p class="hint" id="nick-status" role="status"></p>
+      </form>
       <dl class="pc-info">
-        <div><dt>이메일</dt><dd id="pc-email">kwak@yogobi.com</dd></div>
-        <div><dt>가입일</dt><dd>2026년 9월</dd></div>
-        <div><dt>상태</dt><dd>이용 중</dd></div>
+        <div><dt>이메일</dt><dd id="pc-email">—</dd></div>
+        <div><dt>로그인</dt><dd id="pc-login">—</dd></div>
       </dl>
     </section>
 

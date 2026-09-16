@@ -1,4 +1,9 @@
 export const won = amount => `${amount.toLocaleString('ko-KR')}원`;
+/** 문장(./!/?) 경계로 자른 줄 목록. 배열이면 그대로 쓴다.
+    긴 설명·목록이 줄 중간에서 끊기지 않도록 화면이 한 줄씩 그린다. */
+export const splitLines = parts =>
+  (Array.isArray(parts) ? parts : String(parts).split(/(?<=[.!?])\s+/)).filter(Boolean);
+
 export const provenance = { OFFICIAL: '공식 가격', DERIVED: '계산값', USER_PROVIDED: '사용자 입력', ESTIMATED: '추정값' };
 
 export function integer(value, label, min = 0, max = Number.MAX_SAFE_INTEGER) {

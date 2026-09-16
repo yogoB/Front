@@ -46,11 +46,38 @@
     </form>
     <p class="auth-status" id="verify-status" role="status" hidden>확인 중… <span class="spin-sm" aria-hidden="true"></span></p>
     <p class="auth-warn" id="login-error" role="alert" hidden></p>
-    <p class="auth-alt">계정이 없으신가요? <a href="./signup.html">회원가입</a></p>
+    <p class="auth-alt">비밀번호를 잊으셨나요? <button type="button" class="link-inline" id="to-recover">복구 코드로 재설정</button></p>
     <button type="button" class="link-muted" id="code-back">← 이메일 다시 입력</button>
   </section>
 
-  <!-- 3. 이동 중 -->
+  <!-- 3. 복구 코드로 재설정 (가입 때 받은 코드) -->
+  <section data-step="recover" hidden>
+    <p class="auth-sub"><strong id="recover-email"></strong>의 비밀번호를 다시 정해요.</p>
+    <form id="recover-form" novalidate>
+      <label class="sr-only" for="recover-code">복구 코드</label>
+      <input class="auth-input" id="recover-code" placeholder="가입할 때 받은 복구 코드" autocomplete="one-time-code" required>
+      <label class="sr-only" for="recover-password">새 비밀번호</label>
+      <input class="auth-input" id="recover-password" type="password" autocomplete="new-password"
+             placeholder="새 비밀번호 (15자 이상)" required>
+      <button class="btn btn-brand btn-block" type="submit">비밀번호 재설정</button>
+    </form>
+    <p class="auth-status" id="recover-status" role="status" hidden>확인 중… <span class="spin-sm" aria-hidden="true"></span></p>
+    <p class="auth-warn" id="recover-error" role="alert" hidden></p>
+    <p class="hint">복구 코드를 잃어버렸다면 Google 로그인을 쓰거나 운영자에게 문의해 주세요.</p>
+    <button type="button" class="link-muted" id="recover-back">← 로그인으로 돌아가기</button>
+  </section>
+
+  <!-- 4. 재설정 완료 — 새 복구 코드는 지금만 보인다 -->
+  <section data-step="recovered" hidden>
+    <p class="auth-sub" style="text-align:left">비밀번호를 바꿨어요. <strong>새 복구 코드</strong>를 저장해 주세요.</p>
+    <p class="recovery-code" id="new-recovery-code">—</p>
+    <p class="hint">이전 코드는 더 이상 쓸 수 없어요. 다시 보여드릴 방법이 없으니 지금 복사해 두세요.</p>
+    <button type="button" class="btn btn-ghost btn-block" id="new-recovery-copy">복사하기</button>
+    <p class="auth-status" id="new-recovery-status" role="status"></p>
+    <button class="btn btn-brand btn-block" type="button" id="new-recovery-done">저장했어요, 계속하기</button>
+  </section>
+
+  <!-- 5. 이동 중 -->
   <section data-step="redirect" hidden>
     <div class="spinner" aria-hidden="true"></div>
     <p class="auth-sub" style="margin-top:16px">로그인된 화면으로 이동 중…</p>

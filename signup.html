@@ -27,8 +27,8 @@
           <input class="text-input" id="name" autocomplete="name" placeholder="이름" required></div>
         <div class="field"><label for="email">이메일</label>
           <input class="text-input" id="email" type="email" inputmode="email" autocomplete="email" placeholder="이메일 주소" required></div>
-        <div class="field"><label for="nickname">닉네임</label>
-          <input class="text-input" id="nickname" autocomplete="nickname" placeholder="닉네임" required></div>
+        <div class="field"><label for="nickname">닉네임 (선택)</label>
+          <input class="text-input" id="nickname" autocomplete="nickname" placeholder="비워두면 자동으로 만들어 드려요"></div>
         <button class="btn btn-brand btn-block" type="submit">계속하기</button>
       </form>
       <div class="or-divider">또는</div>
@@ -52,6 +52,16 @@
       </form>
       <p class="auth-status" id="verify-status" role="status" hidden>가입 중… <span class="spin-sm" aria-hidden="true"></span></p>
       <p class="auth-warn" id="signup-error" role="alert" hidden></p>
+    </section>
+
+    <section data-step="recovery" hidden>
+      <p class="auth-sub" style="text-align:left;margin:0 0 12px">가입이 끝났어요. <strong>복구 코드</strong>를 저장해 주세요.</p>
+      <p class="recovery-code" id="recovery-code">—</p>
+      <p class="hint">비밀번호를 잊으면 <strong>이 코드로만</strong> 재설정할 수 있어요.
+        메일 발송 기능이 없어서 다시 보여드릴 방법이 없으니 지금 복사해 두세요.</p>
+      <button type="button" class="btn btn-ghost btn-block" id="recovery-copy">복사하기</button>
+      <p class="auth-status" id="recovery-status" role="status"></p>
+      <button class="btn btn-brand btn-block" type="button" id="recovery-done">저장했어요, 시작하기</button>
     </section>
 
   <button type="button" class="link-muted" id="back" hidden>← 뒤로</button>
