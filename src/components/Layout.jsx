@@ -1,0 +1,61 @@
+import { Link, useNavigate } from 'react-router-dom';
+import { request } from '../lib/api.js';
+import { useMember } from '../lib/useMember.js';
+
+/** 헤더는 전 화면 공용이다. 로그인 여부는 실제 세션(GET /me)으로만 판단한다. */
+export function Header() {
+  const member = useMember();
+  const navigate = useNavigate();
+
+  async function logout() {
+    try { await request('/api/v1/auth/logout', { method: 'POST', member: true, body: {} }); }
+    catch { /* 이미 만료됐어도 화면은 로그아웃 상태로 보낸다 */ }
+    navigate('/', { replace: true });
+    location.reload();
+  }
+
+  return (
+    <header className="mx-auto flex w-full max-w-page items-center justify-between px-6 py-4">
+      <Link to="/" className="inline-flex items-center gap-2 text-lg font-bold">
+        <span className="grid size-7 place-items-center rounded-lg bg-brand text-[15px] font-extrabold text-white">B</span>
+        YogoB
+      </Link>
+      <nav className="flex items-center gap-4">
+        {member && <Link to="/mypage" className="text-sm text-muted">마이페이지</Link>}
+        {member && <button type="button" onClick={logout} className="btn btn-ghost">로그아웃</button>}
+        {member === null && <Link to="/login" className="btn btn-brand">로그인</Link>}
+      </nav>
+    </header>
+  );
+}
+
+export function Footer() {
+  return (
+    <footer className="mt-10 border-t border-line py-7">
+      <div className="flex flex-wrap justify-between gap-6">
+        <div>
+          <strong className="font-bold">요고비</strong>
+          <p className="mt-1.5 max-w-[34em] text-[13px] text-muted">
+            통신비·구독료 최적화 서비스 · 정보 제공 목적으로만 운영됩니다.
+          </p>
+        </div>
+        <div className="flex items-center gap-[18px] text-[13px] text-muted">
+          <Link to="/terms">이용약관</Link>
+          <Link to="/privacy">개인정보처리방침</Link>
+          <Link to="/data-sources">데이터 출처</Link>
+        </div>
+      </div>
+      {/* 운영자용. 누구나 열 수 있는 정적 페이지지만 데이터는 전부 인증이 필요하다(backoffice.md §2). */}
+      <div className="mt-[18px]">
+        <a href="/admin.html" rel="nofollow" className="text-xs text-muted hover:text-ink-soft hover:underline">
+          관리자 로그인
+        </a>
+      </div>
+    </footer>
+  );
+}
+
+/** 본문 폭·여백을 한 곳에서 정한다. 화면마다 다른 max-width 를 쓰지 않는다. */
+export function Page({ children, width = 'max-w-page' }) {
+  return <main className={`mx-auto ${width} px-6 py-6`}>{children}</main>;
+}

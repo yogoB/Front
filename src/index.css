@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/* 기존 redesign.css 의 토큰을 값 그대로 옮긴다. 색을 새로 고르지 않는다 —
+   화면이 바뀌는 게 아니라 스택만 바뀌는 작업이다. */
+@theme {
+  --color-brand: #22c55e;
+  --color-brand-strong: #16a34a;
+  --color-brand-tint: #e9f9f0;
+  --color-brand-ink: #1a9d5f;
+  --color-detail: #4f6bed;
+  --color-detail-tint: #eaeffe;
+  --color-ink: #17182a;
+  --color-ink-soft: #414257;
+  --color-muted: #8a8b9e;
+  --color-line: #ececf1;
+  --color-bg-soft: #f6f8f7;
+  --color-warn-tint: #fff6e9;
+  --color-warn-ink: #8a5a08;
+  --color-danger: #c0362c;
+  --color-danger-tint: #fdecea;
+
+  --radius-card: 16px;
+  --radius-field: 10px;
+
+  --shadow-card: 0 1px 2px rgb(20 20 43 / 3%), 0 4px 16px rgb(20 20 43 / 4%);
+
+  --font-sans: 'Pretendard Variable', Pretendard, 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --container-page: 1120px;
+}
+
+@layer base {
+  html { color-scheme: light; }
+  body {
+    @apply bg-white text-ink antialiased;
+    /* 한국어는 어절 단위로 끊는다 — "질문 3/개면" 같은 줄바꿈 방지 */
+    word-break: keep-all;
+  }
+  :focus-visible { @apply outline-2 outline-brand-strong outline-offset-2 rounded-md; }
+  /* 숫자는 자릿수가 바뀌어도 흔들리지 않게 */
+  .tnum { font-variant-numeric: tabular-nums; }
+}
+
+@layer components {
+  /* v4 의 @apply 는 유틸리티만 받는다 — 컴포넌트 클래스를 다시 @apply 할 수 없다.
+     그래서 .btn 을 상속하지 않고, 마크업에서 "btn btn-brand" 처럼 두 개를 함께 쓴다. */
+  .btn { @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-field
+         border border-transparent px-[18px] py-[11px] text-[15px] font-semibold; }
+  .btn-brand { @apply border-brand bg-brand text-white hover:bg-brand-strong; }
+  .btn-ghost { @apply border-line bg-white text-ink-soft hover:border-[#d9d9e2]; }
+  .btn-dark  { @apply border-ink bg-ink text-white hover:border-black hover:bg-black; }
+  .btn-lg    { @apply rounded-xl px-[26px] py-[15px] text-base; }
+  .btn-block { @apply w-full; }
+
+  .field { @apply w-full rounded-field border border-line bg-white px-3.5 py-3 outline-none
+           focus:border-brand focus:ring-[3px] focus:ring-brand-tint; }
+  .card  { @apply rounded-card border border-line bg-white shadow-card; }
+  .chip  { @apply inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5
+           text-[13px] font-semibold text-ink-soft; }
+
+  /* 정책 문서(약관·방침·출처). 문구를 그대로 옮기므로 태그 선택자로 서식을 준다. */
+  .policy { @apply mx-auto max-w-[760px] px-6 pb-20 pt-8; }
+  .policy h1 { @apply text-[30px] font-extrabold tracking-[-.01em]; }
+  .policy .updated { @apply my-2 mb-6 text-sm text-muted; }
+  .policy .note { @apply my-4 mb-7 rounded-xl border border-line bg-bg-soft px-4 py-3.5
+                  text-sm leading-relaxed text-muted; }
+  .policy article h2 { @apply mb-2.5 mt-8 text-[19px] font-extrabold; }
+  .policy article h3 { @apply mb-2 mt-5 text-base font-bold; }
+  .policy article p { @apply my-2 text-[15px] leading-[1.8] text-ink-soft; }
+  .policy article ul { @apply my-2.5 list-disc pl-5; }
+  .policy article li { @apply my-1 text-[15px] leading-[1.8] text-ink-soft; }
+  .policy article strong { @apply text-ink; }
+}

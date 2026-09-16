@@ -5,86 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <title>요고비 · 통신비와 구독료 조합 추천</title>
-  <link rel="stylesheet" href="./assets/fonts.css">
-  <link rel="stylesheet" href="./src/redesign.css">
-  <script type="module" src="./src/landing.js"></script>
-  <script type="module" src="./src/header-auth.js"></script>
+  <link rel="stylesheet" href="/assets/fonts.css">
 </head>
-<body class="landing-page">
-<a class="skip-link" href="#main">본문으로 이동</a>
-<!-- OAuth 복귀 안내. BE 가 returnUrl + "#auth=..." 로 돌려보낸다(GoogleLogin). -->
-<p class="auth-note" id="auth-note" role="status" aria-live="polite" hidden></p>
-<header class="site-header">
-  <a class="brand" href="./"><span class="brand-mark">B</span>YogoB</a>
-  <nav class="header-nav"><a class="plain" data-auth="member" href="./mypage.html" hidden>마이페이지</a><button type="button" class="btn btn-ghost" data-auth="member" data-logout hidden>로그아웃</button><a class="btn btn-brand" data-auth="guest" href="./login.html">로그인</a></nav>
-</header>
-
-<!-- 랜딩 -->
-<main id="view-landing" class="view" role="main">
-  <section id="main" class="hero">
-    <div class="hero-copy">
-      <!-- ⚠️ DUMMY: 아래 data-dummy 세 곳은 시안 값이다. 집계가 아직 없다.
-           서비스 후 대상이 추려지면 실제 사용자 기반 값으로 바꾼다(이름·금액·인원).
-           바꿀 때 `grep -rn data-dummy` 로 한 번에 찾는다. -->
-      <p class="hero-meta">
-        <span class="badge">통신비 · 구독료 최적화 진단</span>
-        <span class="hero-stat" data-dummy="집계 전 시안 값">평균 <b>월 31,200원</b> 절감 · <b>23,847명</b> 이용</span>
-      </p>
-      <h1 data-dummy="집계 전 시안 값">38세 곽두팔님,<br>
-        <span class="accent">얼마 전 월 38,000원</span> 아끼셨네요!</h1>
-      <p class="lead">몇 가지 질문에 답하다 보면 복잡한 내 통신비와 요금제가 정리되고,
-        내 상황에 딱 맞는 선택지가 만들어집니다.</p>
-      <button type="button" id="start-btn" class="btn btn-dark btn-lg">내 요금제 진단받기</button>
-      <ul class="trust-chips">
-        <li>카드·계좌 연결 없음</li>
-        <li>금액마다 출처 표시</li>
-        <li>안 쓰는 혜택은 0원으로 계산</li>
-      </ul>
-    </div>
-    <div class="hero-art" aria-hidden="true">
-      <span class="coin coin-a">₩</span>
-      <span class="coin coin-b">₩</span>
-      <span class="coin coin-c">₩</span>
-      <span class="hero-bag">💰</span>
-    </div>
-  </section>
-
-  <footer class="site-footer">
-    <div class="row">
-      <div><strong>요고비</strong><p>통신비·구독료 최적화 서비스 · 정보 제공 목적으로만 운영됩니다.</p></div>
-      <div class="links"><a href="./terms.html">이용약관</a><a href="./privacy.html">개인정보처리방침</a><a href="./data-sources.html">데이터 출처</a></div>
-    </div>
-    <div class="row admin-row">
-      <!-- 운영자용. 누구나 열 수 있는 정적 페이지지만 데이터는 전부 인증이 필요하다(backoffice.md §2). -->
-      <a class="admin-link" href="./admin.html" rel="nofollow">관리자 로그인</a>
-    </div>
-  </footer>
-</main>
-
-<!-- 진입 · 모드 선택 -->
-<main id="view-modes" class="view modes" role="main" hidden>
-  <div class="modes-wrap">
-    <div class="modes-art" aria-hidden="true">
-      <span class="coin coin-a">₩</span>
-      <span class="coin coin-b">₩</span>
-      <span class="coin coin-c">₩</span>
-      <span class="modes-glass">🔍</span>
-    </div>
-    <button type="button" class="back-link" id="modes-back">← 처음으로</button>
-    <h1>나의 <span class="chip">데이터사용량</span> <span class="chip">통신비</span> <span class="chip">구독서비스</span> 를 분석해서<br>얼마나 절감할 수 있을지 바로 알려드려요!</h1>
-    <div class="mode-cards">
-      <a class="mode-card light" href="./light.html">
-        <h2>라이트모드</h2>
-        <p>3개의 질문으로 분석해드려요!<br>단 정확도는 조금 떨어질 수 있어요</p>
-        <span class="go" aria-hidden="true">→</span>
-      </a>
-      <a class="mode-card detail" href="./detail.html">
-        <h2>디테일모드</h2>
-        <p>통신사·약정·희망 조건까지 넣어<br>더 정확한 조합을 찾아드려요</p>
-        <span class="go" aria-hidden="true">→</span>
-      </a>
-    </div>
-  </div>
-</main>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

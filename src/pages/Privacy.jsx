@@ -1,0 +1,54 @@
+import { Link } from 'react-router-dom';
+import { Header, Footer } from '../components/Layout.jsx';
+import PolicyNav from '../components/PolicyNav.jsx';
+
+/* 개인정보처리방침. 문구는 기존 privacy.html 에서 그대로 옮겼다 — 법적 문서라 내용을 고치지 않는다. */
+export default function Privacy() {
+  return (
+    <>
+      <Header />
+      <PolicyNav />
+      
+        <h1>개인정보처리방침</h1>
+        <p className="updated">최종 업데이트: 2026년 9월 16일</p>
+        <p className="note">아래는 요고비가 어떤 정보를 왜 다루는지 쉽게 설명한 초안입니다. 실제 데이터 처리 방식과 최대한 일치하도록 작성했으며, 법률 자문을 대체하지 않습니다.</p>
+      
+        <article>
+          <h2>1. 수집하는 정보</h2>
+          <ul>
+            <li><strong>회원 정보</strong>: 이메일 주소, 로그인에 필요한 정보(비밀번호는 서버에서 안전하게 보관, 소셜 로그인은 해당 제공자 인증).</li>
+            <li><strong>서비스 이용 정보</strong>: 추천·계산을 위해 입력한 데이터 사용량, 원하는 구독 서비스, 통신사·통신망·약정·결합 여부 등 <strong>추천 조건</strong>.</li>
+          </ul>
+          <p>현재 통신비·요금제 이름·약정 종료일·예산 등 <strong>화면 메모용 값은 서버로 전송하지 않습니다.</strong></p>
+      
+          <h2>2. 이용 목적</h2>
+          <ul>
+            <li>요금·구독 조합의 비교와 절감 추천 제공</li>
+            <li>회원 계정 관리 및 로그인 유지</li>
+          </ul>
+      
+          <h2>3. 보관과 파기</h2>
+          <ul>
+            <li><strong>로그인하지 않은 이용자의 입력값</strong>은 브라우저의 현재 탭 메모리에서만 유지되며, 새로고침하거나 화면을 이동하면 삭제됩니다. 서버에 영구 저장하지 않습니다.</li>
+            <li><strong>회원 정보</strong>는 계정을 이용하는 동안 보관하고, 회원 탈퇴 시 관련 정보를 파기합니다.</li>
+            <li>로그인 인증에는 <strong>HttpOnly 쿠키</strong>를 사용하며, 브라우저 코드가 읽거나 저장하는 토큰(JWT 등)은 두지 않습니다.</li>
+          </ul>
+      
+          <h2>4. 제3자 제공</h2>
+          <p>이용자의 개인정보를 <strong>외부에 판매하거나 제공하지 않습니다.</strong> 추천 조건은 요고비의 자체 계산 서버로 전송되고, 문장 추천은 자연어 처리 서버에서 처리됩니다. 이는 모두 서비스 제공을 위한 내부 처리입니다.</p>
+      
+          <h2>5. 쿠키</h2>
+          <p>로그인 세션 유지를 위한 인증 쿠키를 사용합니다. 추천·계산 등 공개 기능은 로그인 없이 이용할 수 있습니다.</p>
+      
+          <h2>6. 이용자의 권리</h2>
+          <p>이용자는 자신의 개인정보에 대해 열람·정정·삭제·처리정지 및 회원 탈퇴를 요청할 수 있습니다.</p>
+      
+          <h2>7. 안전성 확보</h2>
+          <p>비밀번호 보호, 전송 구간 암호화, 접근 권한 관리 등 합리적인 보호 조치를 적용합니다.</p>
+      
+          <Link className="btn btn-ghost mt-9 inline-block" to="/">← 홈으로</Link>
+        </article>
+      <div className="mx-auto max-w-page px-6"><Footer /></div>
+    </>
+  );
+}

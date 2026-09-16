@@ -1,9 +1,9 @@
 import test from 'node:test';
 import { readFileSync, readdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
-import { request, ApiError } from '../src/api.js';
-import { DATA_BUCKETS, FEE_BUCKETS, CARRIERS } from '../src/catalog-data.js';
-import { integer, optionalInputs, recommendationRequest, calculatorRequest, comparisonCsv, splitLines } from '../src/model.js';
+import { request, ApiError } from '../src/lib/api.js';
+import { DATA_BUCKETS, FEE_BUCKETS, CARRIERS } from '../src/lib/catalog-data.js';
+import { integer, optionalInputs, recommendationRequest, calculatorRequest, comparisonCsv, splitLines } from '../src/lib/model.js';
 
 const values = { monthlyDataGb: '20', currentCarrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: 'false', fee: '55000', budget: '70000', contractEnd: '2027-01-01' };
 const subs = [{ id: 1, tierId: 2, wanted: true }, { id: 3, tierId: 8, wanted: false }];
@@ -113,7 +113,7 @@ test('front never does arithmetic on server amounts', () => {
 
 // 검색: 공백·대소문자를 무시한다. "요고38"로 "KT 요고 38"을 못 찾던 문제(2026-09-16).
 test('matches — 띄어쓰기와 대소문자를 무시한다', async () => {
-  const { matches } = await import('../src/model.js');
+  const { matches } = await import('../src/lib/model.js');
   const plan = 'KT 요고 38';
   for (const query of ['요고 38', '요고38', 'KT요고38', 'kt 요고 38', ' 요고  38 ']) {
     assert.ok(matches(plan, query), `'${query}' 가 '${plan}' 을 찾지 못했다`);

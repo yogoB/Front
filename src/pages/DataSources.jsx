@@ -1,0 +1,46 @@
+import { Link } from 'react-router-dom';
+import { Header, Footer } from '../components/Layout.jsx';
+import PolicyNav from '../components/PolicyNav.jsx';
+
+/* 데이터 출처. 문구는 기존 data-sources.html 에서 그대로 옮겼다 — 법적 문서라 내용을 고치지 않는다. */
+export default function DataSources() {
+  return (
+    <>
+      <Header />
+      <PolicyNav />
+      
+        <h1>데이터 출처</h1>
+        <p className="updated">최종 업데이트: 2026년 9월 16일</p>
+        <p className="note">요고비의 추천과 절감액이 <strong>어떤 데이터를 근거로 계산되는지</strong> 투명하게 설명합니다.</p>
+      
+        <article>
+          <h2>1. 무엇을 기준으로 계산하나요</h2>
+          <p>요금제·구독 가격은 각 <strong>통신사·OTT 사업자의 공식 공개 정보</strong>를 팀이 확인·검수해 만든 <strong>스냅샷(정리된 표)</strong>을 기준으로 합니다. 검수하지 않은 값은 추천·최저가·알림 계산에 사용하지 않습니다.</p>
+      
+          <h2>2. 언제 기준의 데이터인가요</h2>
+          <ul>
+            <li>요고비는 요청을 처리할 때 <strong>실시간으로 외부 사이트를 크롤링하지 않습니다.</strong> 정해진 시점에 정리한 스냅샷을 사용합니다.</li>
+            <li>따라서 <strong>최신 프로모션·요금 변경이 아직 반영되지 않았을 수 있습니다.</strong> 실제 가입 가능한 요금·자격·제휴는 각 사업자 공식 홈페이지에서 확인해 주세요.</li>
+          </ul>
+      
+          <h2>3. 금액의 출처를 함께 보여줍니다</h2>
+          <p>결과의 각 금액에는 어디서 나온 값인지 <strong>출처(Provenance)</strong>를 표시합니다.</p>
+          <ul>
+            <li><strong>공식 가격</strong> — 사업자가 공개한 정가</li>
+            <li><strong>계산값</strong> — 할인·조합을 반영해 요고비가 계산한 값</li>
+            <li><strong>사용자 입력</strong> — 이용자가 직접 적은 금액</li>
+            <li><strong>추정값</strong> — 정보가 부족해 서비스가 채운 참고 값</li>
+          </ul>
+      
+          <h2>4. 미사용 혜택은 0원</h2>
+          <p>이용자가 원하지 않는 서비스의 제휴 혜택(예: 관심 없는 OTT 무료 제공)은 <strong>계산에도 추천 근거에도 반영하지 않습니다.</strong> 실제로 이용할 서비스만 절감 근거로 삼습니다.</p>
+      
+          <h2>5. 정확성 안내</h2>
+          <p>요고비는 정보 제공을 목적으로 하며, 데이터의 정확성·최신성을 완전히 보장하지 않습니다. 중요한 결정 전에는 공식 출처에서 최종 확인을 권장합니다. 서비스 성격은 <Link to="/terms">이용약관</Link>에서 확인할 수 있습니다.</p>
+      
+          <Link className="btn btn-ghost mt-9 inline-block" to="/">← 홈으로</Link>
+        </article>
+      <div className="mx-auto max-w-page px-6"><Footer /></div>
+    </>
+  );
+}
