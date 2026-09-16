@@ -330,6 +330,11 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
 .breakdown li em { font-style: normal; font-size: 12px; color: var(--ink-soft); }
 .breakdown li p { grid-column: 1 / -1; font-size: 12px; color: var(--ink-soft); }
 
+/* 공식 시세 대조 결과. 신뢰 표시이지 금액이 아니므로 숫자를 강조하지 않는다(UX_POLICY 1-⑧). */
+.cross-check { font-size: 13px; color: var(--muted); margin: 12px 0; }
+.cross-check.ok { color: var(--brand-ink); }
+.cross-check.warn { color: #8a5a08; }
+
 /* 정보 오류 제보. 접수만 하고 카탈로그를 바꾸지 않는다. */
 .report { border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin: 20px 0; }
 .report > summary { font-size: 15px; font-weight: 700; cursor: pointer; list-style: none; }

@@ -77,6 +77,7 @@ function render(source, data) {
   renderPlanRows(source, best);
   renderReasons(data);
   renderBreakdown(best);
+  renderCrossCheck(best);
   renderTotals(source, best);
   wireReport(best);
   fillPlanSpecs(source, best);
@@ -192,6 +193,25 @@ function renderBreakdown(best) {
     return item;
   }));
   $('breakdown').hidden = false;
+}
+
+/* 스마트초이스 공식 시세 대조 결과(BE priceCrossCheck). 표시 전용이며 금액을 바꾸지 않는다.
+   확인 못 한 경우를 "틀렸다"로 보이게 적지 않는다 — 서버가 준 status 를 그대로 옮긴다. */
+function renderCrossCheck(best) {
+  const box = $('cross-check');
+  const check = best.priceCrossCheck;
+  if (!box || !check) return;
+  if (check.status === 'MATCH') {
+    box.textContent = `요금제 기본료가 스마트초이스 공식 시세(${won(check.officialPrice)})와 같아요.`;
+    box.className = 'cross-check ok';
+  } else if (check.status === 'MISMATCH') {
+    box.textContent = `스마트초이스 공식 시세는 ${won(check.officialPrice)}로 나와요. 카탈로그 값과 달라서 확인 중이에요.`;
+    box.className = 'cross-check warn';
+  } else {
+    box.textContent = '이 요금제는 아직 스마트초이스 시세로 대조하지 못했어요. 값이 틀렸다는 뜻은 아니에요.';
+    box.className = 'cross-check';
+  }
+  box.hidden = false;
 }
 
 /* 모르면 막히지 않는다(절대 원칙 5-①): 빠진 입력과 카탈로그 결손을 그대로 안내한다. */
