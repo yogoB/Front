@@ -301,6 +301,15 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
   font: inherit; font-size: 14px; background: var(--bg); color: var(--ink); }
 .report textarea { resize: vertical; }
 .report button { justify-self: start; margin-top: 4px; }
+
+/* 캘린더 담기(링크 방식). 서버가 사용자의 캘린더를 대신 쓰지 않는다. */
+.gcal-panel { border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin: 16px 0; }
+.gcal-panel h2 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.gcal-list { list-style: none; display: grid; gap: 8px; margin: 14px 0; }
+.gcal-list li { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.gcal-when { font-size: 13px; color: var(--muted); min-width: 68px; font-variant-numeric: tabular-nums; }
+.gcal-link { font-size: 14px; font-weight: 600; color: var(--brand-ink); text-decoration: underline; }
+.gcal-link:hover { color: var(--brand-strong); }
 .upsell { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   background: var(--brand-tint); border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; }
 .upsell p { color: var(--ink-soft); font-size: 14px; margin-top: 4px; }
