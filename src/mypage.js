@@ -4,7 +4,7 @@
 // 전환 일정은 이 화면에서 흉내 내지 않고 실제 캘린더 화면으로 보낸다(같은 숫자는 한 곳에서만 — 원칙 5-⑤).
 import { request, ApiError } from './api.js';
 import { loadCatalog } from './catalog-data.js';
-import { won, integer } from './model.js';
+import { won, integer, tierPrice, tierKrwGuess } from './model.js';
 
 const $ = id => document.getElementById(id);
 function el(tag, cls, text) {
@@ -185,7 +185,7 @@ function renderTierOptions() {
   const service = services.find(item => String(item.id) === $('sub-service').value);
   const select = $('sub-tier');
   select.replaceChildren(...(service?.tiers ?? []).map(tier => {
-    const option = el('option', undefined, `${tier.name} · ${won(tier.price)}`);
+    const option = el('option', undefined, `${tier.name} · ${tierPrice(tier)}`);
     option.value = String(tier.id);
     return option;
   }));
@@ -194,7 +194,13 @@ function renderTierOptions() {
 
 function fillPrice() {
   const tier = services.flatMap(service => service.tiers).find(item => String(item.id) === $('sub-tier').value);
-  if (tier) $('sub-price').value = String(tier.price);
+  if (!tier) return;
+  // 해외 결제는 환율 환산 추정치를 채워 주고 사용자가 실제 결제액으로 고치게 한다(원칙 5-②).
+  const guess = tierKrwGuess(tier);
+  $('sub-price').value = guess === null ? '' : String(guess);
+  say('sub-status', guess === null || tier.currency === 'KRW'
+    ? '등급을 고르면 공식 가격을 채워드려요. 실제 내는 금액과 다르면 고쳐 주세요.'
+    : `해외 결제라 원화가 확정되지 않아 ${tier.krwRateDate} 환율로 환산한 추정치예요. 실제 결제액으로 고쳐 주세요.`);
 }
 
 $('sub-service').addEventListener('change', renderTierOptions);

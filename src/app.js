@@ -1,5 +1,5 @@
 import { request, ApiError } from './api.js';
-import { won, provenance, integer, optionalInputs, recommendationRequest, calculatorRequest, comparisonCsv } from './model.js';
+import { won, provenance, integer, optionalInputs, recommendationRequest, calculatorRequest, comparisonCsv, tierPrice, tierKrwGuess } from './model.js';
 
 const $ = id => document.getElementById(id);
 const form = $('recommend-form');
@@ -102,7 +102,8 @@ async function loadPlans() {
 function addSubscription(service) {
   if (state.subs.some(s => s.id === service.id) || !service.tiers.length) return;
   const tier = service.tiers[0];
-  state.subs.push({ id: service.id, name: service.name, service, tierId: tier.id, price: String(tier.price), wanted: true });
+  state.subs.push({ id: service.id, name: service.name, service, tierId: tier.id,
+    price: String(tierKrwGuess(tier) ?? ''), wanted: true });
   renderSubscriptions();
   $('subscriptions').lastElementChild.querySelector('select').focus();
 }
@@ -123,11 +124,11 @@ function renderSubscriptions() {
     } catch { /* Missing official links do not block catalog selection. */ }
     const tierField = element('div', undefined, 'tier-field'), select = element('select'); select.id = `tier-${sub.id}`;
     const tierLabel = element('label', '구독 등급'); tierLabel.htmlFor = select.id;
-    for (const tier of sub.service.tiers) select.add(new Option(`${tier.name} · ${won(tier.price)}`, tier.id));
+    for (const tier of sub.service.tiers) select.add(new Option(`${tier.name} · ${tierPrice(tier)}`, tier.id));
     select.value = sub.tierId;
     select.addEventListener('change', () => {
       sub.tierId = Number(select.value); const tier = sub.service.tiers.find(t => t.id === sub.tierId);
-      sub.price = String(tier.price); price.value = sub.price; note.textContent = tier.note || '카탈로그 공식 가격'; renderSummary();
+      sub.price = String(tierKrwGuess(tier) ?? ''); price.value = sub.price; note.textContent = tier.note || '카탈로그 공식 가격'; renderSummary();
     });
     const note = element('p', sub.unavailable ? '목록이 변경됐어요. 이 구독을 삭제하고 다시 선택해 주세요.' : sub.service.tiers.find(t => t.id === sub.tierId)?.note || '카탈로그 공식 가격', sub.unavailable ? 'error' : 'hint');
     select.disabled = Boolean(sub.unavailable);

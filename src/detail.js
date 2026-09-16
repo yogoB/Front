@@ -1,4 +1,5 @@
 import { loadCatalog, CARRIERS, DATA_BUCKETS, FEE_BUCKETS } from './catalog-data.js';
+import { tierPrice, tierKrwGuess, isForeign } from './model.js';
 
 const $ = id => document.getElementById(id);
 const won = n => `${n.toLocaleString('ko-KR')}원`;
@@ -205,7 +206,7 @@ function renderModal() {
       const name = document.createElement('span');
       name.className = 'sub-name'; name.textContent = `${s.icon}  ${s.name}`;
       const price = document.createElement('span');
-      price.className = 'sub-price'; price.textContent = won(s.tiers[0].price);
+      price.className = 'sub-price'; price.textContent = tierPrice(s.tiers[0]);
       el.append(check, name, price);
       return el;
     }));
@@ -243,7 +244,8 @@ function analyze() {
     hasFamilyBundle: state.hasFamilyBundle,
     subs: state.wish.map(w => {
       const t = w.service.tiers.find(t => t.id === w.tierId);
-      return { id: w.id, name: w.service.name, tierId: t.id, tierName: t.name, price: t.price, disposition: w.disposition };
+      return { id: w.id, name: w.service.name, tierId: t.id, tierName: t.name,
+               price: tierKrwGuess(t) ?? 0, estimated: isForeign(t), disposition: w.disposition };
     }),
   };
   sessionStorage.setItem('yogobi:input', JSON.stringify(input));
