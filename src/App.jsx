@@ -4,6 +4,7 @@ import Terms from './pages/Terms.jsx';
 import Privacy from './pages/Privacy.jsx';
 import DataSources from './pages/DataSources.jsx';
 import Light from './pages/Light.jsx';
+import Results from './pages/Results.jsx';
 
 /* 경로는 확장자를 뗀다(/results.html → /results). nginx 가 SPA 폴백을 하고,
    백오피스(/admin.html)는 그 앞의 별도 location 이 BE 로 프록시한다.
@@ -23,6 +24,7 @@ export default function App() {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/data-sources" element={<DataSources />} />
       <Route path="/light" element={<Light />} />
+      <Route path="/results" element={<Results />} />
       {Object.entries(LEGACY).map(([from, to]) => (
         <Route key={from} path={from} element={<Navigate to={to} replace />} />
       ))}
