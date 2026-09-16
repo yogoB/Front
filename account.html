@@ -4,40 +4,80 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>요고비 · 내 계정</title>
+<title>내 계정 · 요고비</title>
 <link rel="stylesheet" href="./assets/fonts.css">
-<link rel="stylesheet" href="./src/styles.css">
+<link rel="stylesheet" href="./src/redesign.css">
+<link rel="stylesheet" href="./src/account.css">
 </head>
 <body>
-<main class="account">
-<a href="./">요고비 홈</a><h1>내 계정</h1>
-<p>추천과 비용 계산은 로그인 없이 이용할 수 있어요. 계정 화면으로 이동하면 추천 입력은 초기화돼요.</p>
-<p id="message" role="status" aria-live="polite"></p>
-<button id="refresh-account" type="button">계정 상태 다시 확인</button>
-<section class="panel" id="confirmation" hidden>
-<h2 id="confirmation-title">비밀번호 설정</h2>
-<form id="confirm-form">
-<label for="new-password">새 비밀번호</label><input id="new-password" type="password" autocomplete="new-password" minlength="15" required aria-describedby="password-help">
-<p id="password-help">15자 이상으로 입력해 주세요. 한글 등을 포함하면 최대 길이가 달라질 수 있어요(72바이트 이내).</p>
-<label for="confirm-password">새 비밀번호 확인</label><input id="confirm-password" type="password" autocomplete="new-password" required>
-<button type="submit">확인하고 완료</button>
-</form></section>
-<section class="panel" id="login-section"><h2>로그인</h2>
-<form id="login-form"><label for="email">이메일</label><input id="email" type="email" autocomplete="username" maxlength="254" required>
-<label for="password">비밀번호</label><input id="password" type="password" autocomplete="current-password" required>
-<button type="submit">로그인</button></form>
-<p><a id="google-login" href="#">Google로 계속하기</a></p></section>
-<section class="panel" id="signup-hint"><h2>계정이 없으신가요?</h2>
-<p><a href="./signup.html">회원가입</a>에서 이름·이메일·비밀번호·닉네임만 입력하면 바로 가입돼요.
-Google 계정으로도 바로 시작할 수 있어요.</p>
-<p class="hint">비밀번호를 잊으셨다면 Google 로그인을 쓰거나, 운영자에게 문의해 주세요.
-메일로 재설정하는 기능은 현재 제공하지 않아요.</p></section>
-<section class="panel" id="member" hidden><h2>로그인한 계정</h2><p id="member-email"></p>
-<p>15분이 지나거나 5분 동안 이용하지 않으면 다시 로그인해 주세요.</p>
-<form id="link-form" hidden><label id="link-label" for="link-password">비밀번호 재확인</label><input id="link-password" type="password" required>
-<button id="link-button" type="submit">Google 계정 연결</button></form>
-<h2>현재 로그인 목록</h2><p>브라우저 정보와 로그인 시간을 확인하고 모르는 세션을 종료하세요.</p><ul id="sessions"></ul>
-<button id="logout" type="button">로그아웃</button> <button id="logout-all" type="button">모두 로그아웃</button></section>
+<header class="site-header">
+  <a class="brand" href="./"><span class="brand-mark">B</span>YogoB</a>
+  <nav class="header-nav"><a class="plain" href="./">홈</a><a class="btn btn-ghost" href="./login.html">로그인 화면</a></nav>
+</header>
+
+<main class="auth" role="main">
+  <div class="auth-logo" aria-hidden="true">요</div>
+  <h1>내 계정</h1>
+  <p class="auth-sub">추천과 계산은 로그인 없이도 이용할 수 있어요.</p>
+  <p id="message" class="auth-notice" role="status" aria-live="polite"></p>
+
+  <!-- 비밀번호 설정 (메일 링크로 진입) -->
+  <section class="auth-card" id="confirmation" hidden>
+    <h2 id="confirmation-title">비밀번호 설정</h2>
+    <form id="confirm-form">
+      <div class="field"><label for="new-password">새 비밀번호</label>
+        <input class="text-input" id="new-password" type="password" autocomplete="new-password" minlength="15" required aria-describedby="password-help"></div>
+      <p class="hint" id="password-help">15자 이상으로 입력해 주세요. 한글 등을 포함하면 최대 길이가 달라질 수 있어요(72바이트 이내).</p>
+      <div class="field"><label for="confirm-password">새 비밀번호 확인</label>
+        <input class="text-input" id="confirm-password" type="password" autocomplete="new-password" required></div>
+      <button class="btn btn-brand btn-block" type="submit">확인하고 완료</button>
+    </form>
+  </section>
+
+  <!-- 로그인 -->
+  <section class="auth-card" id="login-section">
+    <h2>로그인</h2>
+    <form id="login-form">
+      <div class="field"><label for="email">이메일</label>
+        <input class="text-input" id="email" type="email" autocomplete="username" maxlength="254" required></div>
+      <div class="field"><label for="password">비밀번호</label>
+        <input class="text-input" id="password" type="password" autocomplete="current-password" required></div>
+      <button class="btn btn-brand btn-block" type="submit">로그인</button>
+    </form>
+    <div class="or-divider">또는</div>
+    <a class="btn btn-social btn-block" id="google-login" href="#">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+      Google로 계속하기
+    </a>
+  </section>
+
+  <!-- 회원가입 안내 -->
+  <section class="auth-card" id="signup-hint">
+    <h2>계정이 없으신가요?</h2>
+    <p><a href="./signup.html">회원가입</a>에서 이름·이메일·비밀번호·닉네임만 입력하면 바로 가입돼요. Google 계정으로도 바로 시작할 수 있어요.</p>
+    <p class="hint">비밀번호를 잊으셨다면 Google 로그인을 쓰거나, 운영자에게 문의해 주세요. 메일로 재설정하는 기능은 현재 제공하지 않아요.</p>
+  </section>
+
+  <!-- 로그인한 계정 -->
+  <section class="auth-card" id="member" hidden>
+    <h2>로그인한 계정</h2>
+    <p class="member-email" id="member-email"></p>
+    <p class="hint">15분이 지나거나 5분 동안 이용하지 않으면 다시 로그인해 주세요.</p>
+    <form id="link-form" hidden>
+      <div class="field"><label id="link-label" for="link-password">비밀번호 재확인</label>
+        <input class="text-input" id="link-password" type="password" required></div>
+      <button class="btn btn-outline btn-block" id="link-button" type="submit">Google 계정 연결</button>
+    </form>
+    <h3>현재 로그인 목록</h3>
+    <p class="hint">브라우저 정보와 로그인 시간을 확인하고 모르는 세션을 종료하세요.</p>
+    <ul class="session-list" id="sessions"></ul>
+    <div class="member-actions">
+      <button class="btn btn-ghost" id="logout" type="button">로그아웃</button>
+      <button class="btn btn-ghost" id="logout-all" type="button">모두 로그아웃</button>
+    </div>
+  </section>
+
+  <button class="link-muted" id="refresh-account" type="button">계정 상태 다시 확인</button>
 </main>
 <script type="module" src="./src/account.js"></script>
 </body>
