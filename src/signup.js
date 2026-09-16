@@ -15,8 +15,9 @@ function step(name) {
 $('info-form').addEventListener('submit', e => {
   e.preventDefault();
   const email = $('email').value.trim();
-  if (!$('first').value.trim() || !$('last').value.trim()) { $('first').focus(); return; }
+  if (!$('name').value.trim()) { $('name').focus(); return; }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $('email').focus(); return; }
+  if (!$('nickname').value.trim()) { $('nickname').focus(); return; }
   $('email-ro').value = email;
   step('password');
   $('password').focus();

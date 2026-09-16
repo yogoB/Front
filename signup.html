@@ -23,14 +23,12 @@
     <!-- 1. 이름 + 이메일 -->
     <section data-step="info">
       <form id="info-form" novalidate>
-        <div class="field-row">
-          <div class="field"><label for="first">이름</label>
-            <input class="text-input" id="first" autocomplete="given-name" placeholder="이름" required></div>
-          <div class="field"><label for="last">성</label>
-            <input class="text-input" id="last" autocomplete="family-name" placeholder="성" required></div>
-        </div>
+        <div class="field"><label for="name">이름</label>
+          <input class="text-input" id="name" autocomplete="name" placeholder="이름" required></div>
         <div class="field"><label for="email">이메일</label>
           <input class="text-input" id="email" type="email" inputmode="email" autocomplete="email" placeholder="이메일 주소" required></div>
+        <div class="field"><label for="nickname">닉네임</label>
+          <input class="text-input" id="nickname" autocomplete="nickname" placeholder="닉네임" required></div>
         <button class="btn btn-brand btn-block" type="submit">계속하기</button>
       </form>
       <div class="or-divider">또는</div>
