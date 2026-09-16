@@ -244,6 +244,8 @@ input[type=range] { width: 100%; accent-color: var(--brand); height: 6px; }
   padding: 15px 18px; font: inherit; font-weight: 600; color: var(--ink-soft); cursor: pointer; }
 .choice-wide:hover { border-color: #d9d9e2; }
 .choice-wide.active { background: var(--brand-tint); border-color: var(--brand); color: var(--brand-ink); }
+.opt-group { margin-top: 20px; }
+.opt-label { font-size: 14px; font-weight: 700; color: var(--ink-soft); margin-bottom: 10px; }
 .warn { background: #fff6e9; color: #a2660b; border-radius: 10px; padding: 11px 14px; font-size: 14px;
   margin: 16px 0 12px; }
 #contract-detail label { display: block; font-size: 14px; font-weight: 600; margin: 6px 0 8px; }
@@ -310,6 +312,10 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
 .gcal-when { font-size: 13px; color: var(--muted); min-width: 68px; font-variant-numeric: tabular-nums; }
 .gcal-link { font-size: 14px; font-weight: 600; color: var(--brand-ink); text-decoration: underline; }
 .gcal-link:hover { color: var(--brand-strong); }
+
+/* 일정 기준일 안내 — 무엇을 근거로 날짜를 잡았는지 화면에 적는다. */
+.cal-anchor { background: var(--brand-tint); color: var(--brand-ink); border-radius: 12px;
+  padding: 10px 14px; font-size: 14px; font-weight: 600; margin: 10px 0 4px; }
 .upsell { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   background: var(--brand-tint); border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; }
 .upsell p { color: var(--ink-soft); font-size: 14px; margin-top: 4px; }

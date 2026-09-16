@@ -52,9 +52,9 @@
       <section class="flow-panel" data-panel="1">
         <span class="kicker detail">디테일 모드 · 현재 납부액</span>
         <h1 class="flow-q">어떤 통신사를 쓰고 계세요?</h1>
-        <p class="flow-sub">지금 사용 중인 통신사를 선택해 주세요.</p>
-        <div class="search"><input id="carrier-search" placeholder="통신사 검색" aria-label="통신사 검색"></div>
-        <div class="sub-list" id="carrier-list"></div>
+        <p class="flow-sub">이름 일부만 입력하면 통신사를 찾아드려요.</p>
+        <div class="search"><input id="carrier-search" placeholder="예: KT, 알뜰폰" aria-label="통신사 검색" autocomplete="off"></div>
+        <div class="sub-list" id="carrier-list" hidden></div>
 
         <div id="contract-block" hidden>
           <h2 class="flow-q sm">약정이 남아있나요?</h2>
@@ -94,23 +94,35 @@
         </div>
 
         <h2 class="flow-q sm">아래를 알려주시면 더 정확해져요</h2>
-        <div class="choice-stack" id="contract-type-choices" role="group" aria-label="선택약정 25% 할인 적용 여부">
-          <button type="button" class="choice" data-contract-type="SELECTIVE_25">선택약정 25% 할인을 받고 있어요</button>
-          <button type="button" class="choice" data-contract-type="NONE">받고 있지 않아요</button>
-          <button type="button" class="choice" data-contract-type="">잘 모르겠어요</button>
-        </div>
-        <div class="choice-row" id="network-choices" role="group" aria-label="희망 망 종류">
-          <button type="button" class="choice" data-network="5G">5G</button>
-          <button type="button" class="choice" data-network="LTE">LTE</button>
-          <button type="button" class="choice" data-network="3G">3G</button>
-          <button type="button" class="choice" data-network="">상관없어요</button>
-        </div>
-        <div class="choice-stack" id="family-choices" role="group" aria-label="가족 결합 여부">
-          <button type="button" class="choice" data-family="true">가족 결합을 하고 있어요</button>
-          <button type="button" class="choice" data-family="false">하고 있지 않아요</button>
-          <button type="button" class="choice" data-family="">잘 모르겠어요</button>
-        </div>
         <p class="hint">모르면 건너뛰어도 결과는 나와요. 아는 만큼만 골라주세요.</p>
+
+        <div class="opt-group">
+          <p class="opt-label">선택약정 25% 할인</p>
+          <div class="choice-stack" id="contract-type-choices" role="group" aria-label="선택약정 25% 할인 적용 여부">
+            <button type="button" class="choice" data-contract-type="SELECTIVE_25">받고 있어요</button>
+            <button type="button" class="choice" data-contract-type="NONE">받고 있지 않아요</button>
+            <button type="button" class="choice" data-contract-type="">잘 모르겠어요</button>
+          </div>
+        </div>
+
+        <div class="opt-group">
+          <p class="opt-label">사용 중인 통신망</p>
+          <div class="choice-row" id="network-choices" role="group" aria-label="희망 망 종류">
+            <button type="button" class="choice" data-network="5G">5G</button>
+            <button type="button" class="choice" data-network="LTE">LTE</button>
+            <button type="button" class="choice" data-network="3G">3G</button>
+            <button type="button" class="choice" data-network="">상관없어요</button>
+          </div>
+        </div>
+
+        <div class="opt-group">
+          <p class="opt-label">가족 결합</p>
+          <div class="choice-stack" id="family-choices" role="group" aria-label="가족 결합 여부">
+            <button type="button" class="choice" data-family="true">하고 있어요</button>
+            <button type="button" class="choice" data-family="false">하고 있지 않아요</button>
+            <button type="button" class="choice" data-family="">잘 모르겠어요</button>
+          </div>
+        </div>
 
         <div class="flow-actions">
           <button type="button" class="btn btn-brand btn-block" data-next>다음</button>

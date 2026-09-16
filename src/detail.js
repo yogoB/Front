@@ -47,26 +47,52 @@ function showStep(step) {
 }
 function error(message = '') { $('error').textContent = message; $('error').hidden = !message; }
 
-/* 1. 통신사 */
+/* 1. 통신사 — 검색 자동완성. 전체 목록을 나열하지 않고, 입력하면 일치하는 통신사만 제안한다. */
+function carrierMatches(q) {
+  const s = q.toLowerCase();
+  return CARRIERS.filter(c => c.name.toLowerCase().includes(s) || (c.mvno && '알뜰폰'.includes(q)));
+}
+function highlight(name, q) {
+  const frag = document.createDocumentFragment();
+  const i = name.toLowerCase().indexOf(q.toLowerCase());
+  if (i < 0) { frag.append(name); return frag; }
+  frag.append(name.slice(0, i));
+  const strong = document.createElement('strong');
+  strong.textContent = name.slice(i, i + q.length);
+  frag.append(strong, name.slice(i + q.length));
+  return frag;
+}
+function selectCarrier(c) {
+  state.carrier = { name: c.name, mvno: c.mvno };
+  $('carrier-search').value = c.name;
+  const list = $('carrier-list');
+  list.replaceChildren(); list.hidden = true;
+  $('contract-block').hidden = false;
+  updateStatement();
+}
 function renderCarriers() {
   const q = $('carrier-search').value.trim();
-  $('carrier-list').replaceChildren(...CARRIERS
-    .filter(c => !q || c.name.includes(q))
-    .map(c => {
-      const row = document.createElement('button');
-      row.type = 'button';
-      row.className = 'pick-row' + (state.carrier?.name === c.name ? ' on' : '');
-      row.textContent = c.name;
-      if (c.mvno) { const t = document.createElement('small'); t.textContent = '알뜰폰'; row.append(t); }
-      row.addEventListener('click', () => {
-        state.carrier = { name: c.name, mvno: c.mvno };
-        $('contract-block').hidden = false;
-        renderCarriers(); updateStatement();
-      });
-      return row;
-    }));
+  const list = $('carrier-list');
+  if (!q) { list.replaceChildren(); list.hidden = true; return; }  // 빈 입력이면 제안 숨김
+  const matches = carrierMatches(q);
+  list.hidden = false;
+  if (!matches.length) {
+    list.replaceChildren(Object.assign(document.createElement('p'),
+      { className: 'hint', textContent: '일치하는 통신사가 없어요. 다른 이름으로 검색해 보세요.', style: 'padding:14px 16px' }));
+    return;
+  }
+  list.replaceChildren(...matches.map(c => {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'pick-row' + (state.carrier?.name === c.name ? ' on' : '');
+    row.append(highlight(c.name, q));
+    if (c.mvno) { const t = document.createElement('small'); t.textContent = '알뜰폰'; row.append(t); }
+    row.addEventListener('click', () => selectCarrier(c));
+    return row;
+  }));
 }
 $('carrier-search').addEventListener('input', renderCarriers);
+$('carrier-search').addEventListener('focus', renderCarriers);
 
 /* 약정 */
 document.querySelectorAll('[data-contract]').forEach(b => b.addEventListener('click', () => {
