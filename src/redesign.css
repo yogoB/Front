@@ -377,9 +377,9 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
 .auth-alt a { color: var(--brand-ink); font-weight: 600; }
 .auth-foot { color: var(--muted); font-size: 12px; max-width: 340px; margin: 30px auto 0; line-height: 1.6; }
 .auth-foot a { text-decoration: underline; text-underline-offset: 2px; }
-.code-inputs { display: flex; gap: 10px; justify-content: center; margin: 8px 0 20px; }
-.code-box { width: 52px; height: 60px; border: 1px solid var(--line); border-radius: 12px; text-align: center;
-  font-family: inherit; font-size: 24px; font-weight: 700; outline: none; background: #fff; color: var(--ink); }
+.code-inputs { display: flex; gap: 8px; justify-content: center; margin: 8px 0 20px; }
+.code-box { width: 44px; height: 52px; border: 1px solid var(--line); border-radius: 10px; text-align: center;
+  font-family: inherit; font-size: 20px; font-weight: 700; outline: none; background: #fff; color: var(--ink); }
 .code-box:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint); }
 .code-box:disabled { background: var(--bg-soft); color: var(--muted); }
 .auth-status { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--ink-soft); font-weight: 600; }
