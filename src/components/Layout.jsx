@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { request } from '../lib/api.js';
-import { useMember } from '../lib/useMember.js';
+import { useMember, forgetMember } from '../lib/useMember.js';
 
 /** 헤더는 전 화면 공용이다. 로그인 여부는 실제 세션(GET /me)으로만 판단한다. */
 export function Header() {
@@ -10,6 +10,7 @@ export function Header() {
   async function logout() {
     try { await request('/api/v1/auth/logout', { method: 'POST', member: true, body: {} }); }
     catch { /* 이미 만료됐어도 화면은 로그아웃 상태로 보낸다 */ }
+    forgetMember();
     navigate('/', { replace: true });
     location.reload();
   }

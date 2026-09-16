@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Layout.jsx';
 import { request } from '../lib/api.js';
 import { won } from '../lib/model.js';
-import { getInput, getResult, setInput } from '../lib/session.js';
+import { getInput, getResult, setInput, setNext } from '../lib/session.js';
 import { useMember } from '../lib/useMember.js';
+import GuestGate from '../components/GuestGate.jsx';
+import { backendUrl } from '../lib/api.js';
 import {
   WEEKDAYS, STEPS, STEP_COLORS, EVENTS_FROM_TODAY, EVENTS_FROM_EXPIRY,
   parseDay, startOfToday, dateOf, dayText, relativeDay, googleUrl, icsText, monthGrid,
@@ -77,6 +79,14 @@ export default function Calendar() {
     URL.revokeObjectURL(url);
   }
 
+  // 전환 일정에도 현재·전환 예상 금액이 들어간다. 결과 화면만 막고 여기를 열어 두면
+  // 로그아웃 뒤 같은 탭에서 금액이 그대로 보인다(D-36 은 "금액은 한 줄도 비치지 않는다").
+  if (member === undefined) return <><Header /><p className="p-10 text-center text-muted">불러오는 중…</p></>;
+  if (member === null) {
+    return <GuestGate onGoogle={() => { setNext('/calendar'); location.href = backendUrl('/oauth2/authorization/google'); }}
+                      onBack={() => navigate('/modes')} />;
+  }
+
   return (
     <>
       <Header />
@@ -87,9 +97,7 @@ export default function Calendar() {
                     className="cursor-pointer border-0 bg-transparent text-sm text-muted">← 추천 결과로 돌아가기</button>
             <span className="ml-2 inline-block rounded-full bg-brand-tint px-3 py-1 text-xs font-bold text-brand-ink">A안 선택됨</span>
           </div>
-          {member
-            ? <button type="button" onClick={() => setShowExport(v => !v)} className="btn btn-brand">캘린더에 담기</button>
-            : <button type="button" onClick={() => navigate('/login')} className="btn btn-ghost">로그인하고 캘린더에 담기</button>}
+          <button type="button" onClick={() => setShowExport(v => !v)} className="btn btn-brand">캘린더에 담기</button>
         </div>
 
         <h1 className="my-1.5 text-[26px] font-extrabold">통신사 전환 액션 캘린더</h1>
