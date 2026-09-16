@@ -1,5 +1,5 @@
 import { loadCatalog, DATA_BUCKETS, FEE_BUCKETS } from './catalog-data.js';
-import { tierPrice, tierKrwGuess, isForeign } from './model.js';
+import { tierPrice, tierKrwGuess, isForeign, matches } from './model.js';
 
 const $ = id => document.getElementById(id);
 const won = n => `${n.toLocaleString('ko-KR')}원`;
@@ -72,7 +72,7 @@ $('fee-input').addEventListener('input', e => {
 function renderSubs() {
   const q = $('sub-search').value.trim();
   $('sub-list').replaceChildren(...state.subs
-    .filter(s => !q || s.service.name.includes(q))
+    .filter(s => matches(s.service.name, q))
     .map(row));
   renderSummary();
 }

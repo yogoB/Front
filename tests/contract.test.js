@@ -118,3 +118,14 @@ test('front never does arithmetic on server amounts', () => {
     });
   }
 });
+
+// 검색: 공백·대소문자를 무시한다. "요고38"로 "KT 요고 38"을 못 찾던 문제(2026-09-16).
+test('matches — 띄어쓰기와 대소문자를 무시한다', async () => {
+  const { matches } = await import('../src/model.js');
+  const plan = 'KT 요고 38';
+  for (const query of ['요고 38', '요고38', 'KT요고38', 'kt 요고 38', ' 요고  38 ']) {
+    assert.ok(matches(plan, query), `'${query}' 가 '${plan}' 을 찾지 못했다`);
+  }
+  assert.ok(matches(plan, ''), '빈 검색어는 전부 통과해야 한다');
+  assert.ok(!matches(plan, '요고39'), '다른 요금제까지 잡으면 안 된다');
+});

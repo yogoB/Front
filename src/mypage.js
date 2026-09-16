@@ -4,7 +4,7 @@
 // 전환 일정은 이 화면에서 흉내 내지 않고 실제 캘린더 화면으로 보낸다(같은 숫자는 한 곳에서만 — 원칙 5-⑤).
 import { request, ApiError } from './api.js';
 import { loadCatalog } from './catalog-data.js';
-import { won, integer, tierPrice, tierKrwGuess } from './model.js';
+import { won, integer, tierPrice, tierKrwGuess, matches } from './model.js';
 
 const $ = id => document.getElementById(id);
 function el(tag, cls, text) {
@@ -123,13 +123,14 @@ function paintCurrentPlan() {
 
 /** 1,700여 개 중 검색어에 맞는 8개만 보여준다 — 목록 전체를 그리면 화면이 못 쓰게 된다. */
 function renderPlanMatches() {
-  const query = $('plan-search').value.trim().toLowerCase();
+  const query = $('plan-search').value.trim();
   const box = $('plan-list');
   if (!query) { box.hidden = true; box.replaceChildren(); return; }
-  const matches = plans
-    .filter(plan => `${plan.carrier} ${plan.name}`.toLowerCase().includes(query))
+  // 공백·대소문자를 무시한다 — "요고38"로도 "KT 요고 38"을 찾는다.
+  const found = plans
+    .filter(plan => matches(`${plan.carrier} ${plan.name}`, query))
     .slice(0, 8);
-  box.replaceChildren(...(matches.length ? matches.map(planRow)
+  box.replaceChildren(...(found.length ? found.map(planRow)
     : [el('p', 'hint', '검색 결과가 없어요. 통신사나 요금제명 일부로 다시 찾아보세요.')]));
   box.hidden = false;
 }

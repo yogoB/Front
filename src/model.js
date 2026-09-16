@@ -4,6 +4,16 @@ export const won = amount => `${amount.toLocaleString('ko-KR')}원`;
 export const splitLines = parts =>
   (Array.isArray(parts) ? parts : String(parts).split(/(?<=[.!?])\s+/)).filter(Boolean);
 
+/** 검색 비교용으로 다듬는다 — 공백과 대소문자를 무시한다.
+    "요고38"로도 "KT 요고 38"을 찾게 한다. 사용자는 공식 표기의 띄어쓰기를 기억하지 않는다. */
+export const searchKey = text => String(text ?? '').toLowerCase().replace(/\s+/g, '');
+
+/** needle 이 haystack 에 들어 있는가(공백·대소문자 무시). 빈 검색어는 항상 참. */
+export const matches = (haystack, needle) => {
+  const key = searchKey(needle);
+  return !key || searchKey(haystack).includes(key);
+};
+
 /** 해외 결제 등급인가. 원화 확정 금액이 없어 계산에는 사용자가 확인한 금액이 필요하다. */
 export const isForeign = tier => Boolean(tier?.currency) && tier.currency !== 'KRW';
 

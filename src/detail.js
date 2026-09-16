@@ -1,5 +1,5 @@
 import { loadCatalog, CARRIERS, DATA_BUCKETS, FEE_BUCKETS } from './catalog-data.js';
-import { tierPrice, tierKrwGuess, isForeign } from './model.js';
+import { tierPrice, tierKrwGuess, isForeign, matches } from './model.js';
 
 const $ = id => document.getElementById(id);
 const won = n => `${n.toLocaleString('ko-KR')}원`;
@@ -50,8 +50,7 @@ function error(message = '') { $('error').textContent = message; $('error').hidd
 
 /* 1. 통신사 — 검색 자동완성. 전체 목록을 나열하지 않고, 입력하면 일치하는 통신사만 제안한다. */
 function carrierMatches(q) {
-  const s = q.toLowerCase();
-  return CARRIERS.filter(c => c.name.toLowerCase().includes(s) || (c.mvno && '알뜰폰'.includes(q)));
+  return CARRIERS.filter(c => matches(c.name, q) || (c.mvno && matches('알뜰폰', q)));
 }
 function highlight(name, q) {
   const frag = document.createDocumentFragment();
@@ -197,7 +196,7 @@ function renderModal() {
   const q = $('modal-search').value.trim();
   const chosen = new Set(state.wish.map(w => w.id));
   $('modal-list').replaceChildren(...catalog
-    .filter(s => !chosen.has(s.id) && (!q || s.name.includes(q)))
+    .filter(s => !chosen.has(s.id) && matches(s.name, q))
     .map(s => {
       const el = document.createElement('label');
       el.className = 'sub-row';
