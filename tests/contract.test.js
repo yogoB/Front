@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request, ApiError } from '../src/api.js';
+import { DATA_BUCKETS, FEE_BUCKETS, CARRIERS } from '../src/catalog-data.js';
 import { integer, optionalInputs, recommendationRequest, calculatorRequest, validPassword, comparisonCsv, splitLines } from '../src/model.js';
 
 const values = { monthlyDataGb: '20', currentCarrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: 'false', fee: '55000', budget: '70000', contractEnd: '2027-01-01' };
@@ -85,4 +86,19 @@ test('splitLines breaks on sentence ends only — amounts, dates and IDs stay on
   assert.deepEqual(splitLines('약정 종료 2026-11-30 기준 1.5GB ₩4,900'), ['약정 종료 2026-11-30 기준 1.5GB ₩4,900']);
   // 배열은 그대로 줄이 되고, 빈 값은 버린다.
   assert.deepEqual(splitLines(['약정 있음', '', null, '종료 2026-11-30']), ['약정 있음', '종료 2026-11-30']);
+});
+
+test('carriers include majors and flag MVNO brands for BE mapping', () => {
+  const names = CARRIERS.map(c => c.name);
+  for (const major of ['SKT', 'KT', 'LG U+']) assert.ok(names.includes(major), `missing ${major}`);
+  assert.ok(CARRIERS.some(c => c.mvno), 'need at least one 알뜰폰 brand flagged');
+  assert.ok(CARRIERS.filter(c => c.mvno).every(c => c.name), 'mvno entries need names');
+});
+
+test('range buckets carry a positive integer representative for BE (monthlyDataGb)', () => {
+  for (const list of [DATA_BUCKETS, FEE_BUCKETS])
+    for (const b of list)
+      assert.ok(Number.isInteger(b.rep) && b.rep > 0, `${b.label} rep must be positive int`);
+  // representative gb is what /recommendations receives; keep it in Java int range and non-skippable-safe
+  assert.deepEqual(DATA_BUCKETS.map(b => b.rep), [2, 4, 10, 30, 80, 100]);
 });

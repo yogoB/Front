@@ -43,9 +43,10 @@
   약정/종료일은 두 줄, 추천 사유·안내는 문장마다 한 줄로 그린다. 공백 없는 마침표는 자르지 않아
   `2026-11-30`·`1.5GB`·`₩4,900`이 쪼개지지 않는다. 한국어 줄바꿈은 `word-break: keep-all`로 통일.
 
-**검증.** `npm test` — `splitLines` 계약 테스트 추가, 10개 중 9개 통과.
-실패 1개(`tests/redesign.test.js`)는 이전 커밋에서 삭제된 `src/recommend-mock.js`·`CATALOG`를 import하는
-**죽은 테스트**로, 이번 변경과 무관하게 그 전부터 실패한다. 정리 대상.
+**검증.** `npm test` 11개 전부 통과. `splitLines` 계약 테스트를 추가했다.
+같은 날 죽은 테스트(`tests/redesign.test.js`)도 정리했다 — 삭제된 `src/recommend-mock.js`·`CATALOG`를
+import해 파일째 실패하고 있었다. 살아 있는 두 건(통신사 매핑, 구간 대표값)은 전부 BE 계약 검증이라
+`tests/contract.test.js`로 옮기고 파일을 지웠다. 프론트가 금액을 만들던 시절의 목업 검증은 되살리지 않는다(절대 원칙 2).
 레이아웃은 BE 없는 더미 데이터로 확인했고, 배포 후 `yogob.fly.dev`에서 지표가 실제 카탈로그 수
 (요금제 1,711 / 구독 6)로 채워지는 것까지 확인했다.
 
