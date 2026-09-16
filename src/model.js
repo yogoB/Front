@@ -7,9 +7,11 @@ export const splitLines = parts =>
 /** 해외 결제 등급인가. 원화 확정 금액이 없어 계산에는 사용자가 확인한 금액이 필요하다. */
 export const isForeign = tier => Boolean(tier?.currency) && tier.currency !== 'KRW';
 
-/** 등급 금액 표시. 해외 결제는 표기 통화와 원화 환산(추정)을 함께 보여준다 — 환산값을 정가처럼 적지 않는다. */
+/** 등급 금액 표시. 해외 결제는 표기 통화와 원화 환산(추정)을 함께 보여준다 — 환산값을 정가처럼 적지 않는다.
+    표기가가 세금 별도면(해외 사업자 관행) 그 사실을 적는다. 환산값에는 이미 부가세 10%가 들어 있다. */
 export const tierPrice = tier => !isForeign(tier) ? won(tier.price)
   : `${tier.currency === 'USD' ? '$' : tier.currency + ' '}${tier.price.toLocaleString('en-US')}`
+    + (tier.taxIncluded === false ? ' + 세금 10%' : '')
     + (tier.krwEstimate ? ` · 약 ${won(tier.krwEstimate)}(추정)` : '');
 
 /** 입력창에 채워 줄 기본 금액(원). 해외 결제는 환산 추정치를 넣고 사용자가 고치게 한다(원칙 5-②). */

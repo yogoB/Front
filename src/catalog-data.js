@@ -26,7 +26,8 @@ export async function loadCatalog(signal) {
       // 해외 결제 등급은 통화와 원화 환산(BE 가 하루 1회 환율로 계산한 표시용 값)을 함께 들고 온다.
       tiers: service.tiers.map(tier => ({
         id: tier.id, name: tier.name, price: tier.price,
-        currency: tier.currency ?? 'KRW', krwEstimate: tier.krwEstimate ?? null,
+        currency: tier.currency ?? 'KRW', taxIncluded: tier.taxIncluded ?? true,
+        krwEstimate: tier.krwEstimate ?? null,
         krwRateDate: tier.krwRateDate ?? null,
       })),
     }))
