@@ -369,6 +369,12 @@ input[type=date] { border: 1px solid var(--line); border-radius: 10px; padding: 
 /* 마이페이지 닉네임 편집 */
 .nick-form { display: grid; gap: 8px; margin: 10px 0; }
 .nick-actions { display: flex; gap: 8px; }
+
+/* 캘린더에서 약정 만료일을 직접 받는다(라이트 모드에는 약정 입력이 없다). */
+.cal-expiry { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0 14px; }
+.cal-expiry label { font-size: 13.5px; color: var(--ink-soft); }
+.cal-expiry input { border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 8px 10px; font: inherit; font-size: 14px; background: var(--bg); color: var(--ink); }
 .upsell { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   background: var(--brand-tint); border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; }
 .upsell p { color: var(--ink-soft); font-size: 14px; margin-top: 4px; }

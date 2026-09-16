@@ -273,12 +273,39 @@ async function confirmWithServer(member) {
   }
 }
 
-// 첫 그림: 기준일이 무엇인지 화면에 적고, 기준일이 있는 달을 보여준다.
-$('cal-anchor').textContent = futureExpiry
-  ? `약정 만료일 ${dayText(futureExpiry)} 기준으로 일정을 잡았어요.`
-  : expiry ? '입력하신 약정 만료일이 이미 지나서 오늘 기준으로 잡았어요.'
-    : '약정 정보가 없어 오늘 기준으로 잡았어요. 디테일 모드에서 약정 만료일을 넣으면 그 날에 맞춰 드려요.';
-$('cal-anchor').hidden = false;
-if (futureExpiry) view = new Date(futureExpiry.getFullYear(), futureExpiry.getMonth(), 1);
+/** 입력한 만료일로 일정을 다시 잡는다. 미래 날짜면 그 날 기준, 아니면 오늘 기준(G-16). */
+function applyExpiry(date) {
+  const future = date && date > today ? date : null;
+  if (future) {
+    useAnchor(future, EVENTS_FROM_EXPIRY, `약정 만료일 ${dayText(future)} 기준으로 일정을 잡았어요.`);
+    view = new Date(future.getFullYear(), future.getMonth(), 1);
+  } else {
+    useAnchor(today, EVENTS_FROM_TODAY, date
+      ? '입력하신 약정 만료일이 이미 지나서 오늘 기준으로 잡았어요.'
+      : '약정 만료일을 넣으면 그 날에 맞춰 드려요. 지금은 오늘 기준이에요.');
+    view = new Date(today.getFullYear(), today.getMonth(), 1);
+  }
+  render();
+}
 
-render();
+// 입력한 날짜는 결과 화면과 같은 곳에 둔다 — 같은 값을 두 벌로 관리하지 않는다.
+function rememberExpiry(text) {
+  const stored = JSON.parse(sessionStorage.getItem('yogobi:input') || 'null') ?? {};
+  stored.contract = { has: Boolean(text), endDate: text || null };
+  sessionStorage.setItem('yogobi:input', JSON.stringify(stored));
+}
+
+$('expiry-input').addEventListener('change', event => {
+  const text = event.target.value;
+  rememberExpiry(text);
+  applyExpiry(parseDay(text));
+});
+$('expiry-clear').addEventListener('click', () => {
+  $('expiry-input').value = '';
+  rememberExpiry('');
+  applyExpiry(null);
+});
+
+// 첫 그림: 디테일 모드에서 이미 넣었다면 그 값을 채워 보여준다(G-16 d).
+if (expiry) $('expiry-input').value = input.contract.endDate;
+applyExpiry(expiry);
