@@ -16,6 +16,9 @@ function el(tag, cls, text) {
 const say = (id, message) => { $(id).textContent = message; };
 const message = error => (error instanceof ApiError ? error.message : '요청을 처리하지 못했어요.');
 
+/** BE 카탈로그의 통신망 코드 → 화면 표기. 모르는 값은 그대로 보여준다. */
+const NETWORKS = { FIVE_G: '5G', LTE: 'LTE', THREE_G: '3G' };
+
 /** BE 탐지 규칙(docs/domain.md §7)의 화면 문구. 금액·판정은 BE 가 하고 여기선 이름만 붙인다. */
 const RULES = {
   BENEFIT_OVERLAP: ['요금제에 포함된 구독을 따로 결제 중', '요금제 혜택으로 이미 제공돼요. 개별 결제를 해지하면 그만큼 줄어요.'],
@@ -26,6 +29,9 @@ const RULES = {
 let member = null;
 let plans = [];       // GET /api/v1/catalog/plans — 현재 요금제 검색·이름 표시
 let services = [];    // GET /api/v1/catalog/services — 구독 추가 폼의 서비스·등급
+// 카탈로그는 회원 데이터와 따로 도착한다. 먼저 온 쪽을 그린 뒤 나머지가 오면 이름을 붙여 다시 그린다.
+let subscriptions = [];
+let findings = [];
 
 start();
 
@@ -132,7 +138,7 @@ function planRow(plan) {
   const row = el('button', 'pick-row' + (plan.id === member.currentPlanId ? ' on' : ''));
   row.type = 'button';
   row.append(el('span', undefined, `${plan.carrier} ${plan.name}`),
-    el('small', undefined, `${plan.networkType} · 월 ${won(plan.basePrice)}`));
+    el('small', undefined, `${NETWORKS[plan.networkType] ?? plan.networkType} · 월 ${won(plan.basePrice)}`));
   row.addEventListener('click', () => saveCurrentPlan(plan));
   return row;
 }
@@ -166,6 +172,9 @@ async function loadServices() {
       return option;
     }));
     renderTierOptions();
+    // 이미 그려진 목록이 있으면 서비스 이름을 붙여 다시 그린다(빈 목록이면 회원 데이터를 기다린다).
+    if (subscriptions.length) renderSubscriptions(subscriptions);
+    if (findings.length) renderDetections(findings);
   } catch (error) {
     say('sub-status', message(error));
   }
@@ -201,15 +210,23 @@ async function loadSubscriptions() {
 }
 
 function renderSubscriptions(rows) {
+  subscriptions = rows;
   $('sub-rows').replaceChildren(...(rows.length ? rows.map(subscriptionRow)
     : [el('li', 'empty-row', '등록한 구독이 없어요. 아래에서 추가하면 중복 결제를 점검해 드려요.')]));
   const total = rows.reduce((sum, row) => sum + row.monthlyPrice, 0);
   $('subs-total').textContent = rows.length ? `${rows.length}개 · 월 ${won(total)}` : '';
 }
 
+/** BE 는 등급 이름만 준다. 어떤 서비스의 등급인지는 카탈로그에서 찾아 붙인다(못 찾으면 등급 이름만). */
+function tierLabel(tierId, tierName) {
+  const service = services.find(item => item.tiers.some(tier => tier.id === tierId));
+  return service ? `${service.icon} ${service.name} · ${tierName}` : tierName;
+}
+
 function subscriptionRow(row) {
   const item = el('li', 'sub-row');
-  item.append(el('span', 'sub-name', row.tierName), el('span', 'sub-price', won(row.monthlyPrice)));
+  item.append(el('span', 'sub-name', tierLabel(row.tierId, row.tierName)),
+    el('span', 'sub-price', won(row.monthlyPrice)));
   const remove = el('button', 'sub-remove', '삭제');
   remove.type = 'button';
   remove.addEventListener('click', async () => {
@@ -266,13 +283,14 @@ async function loadDetections() {
   }
 }
 
-function renderDetections(findings) {
-  const total = findings.reduce((sum, finding) => sum + finding.wastedAmount, 0);
+function renderDetections(rows) {
+  findings = rows;
+  const total = rows.reduce((sum, finding) => sum + finding.wastedAmount, 0);
   // 결론을 먼저 낸다(원칙 5-③): 월·연 낭비 금액 한 줄.
   $('detect-total').textContent = total ? `월 ${won(total)} · 1년 ${won(total * 12)}` : '';
   $('detect-total').classList.toggle('warn-now', total > 0);
-  $('detect-rows').replaceChildren(...findings.map(detectionRow));
-  say('detect-status', findings.length
+  $('detect-rows').replaceChildren(...rows.map(detectionRow));
+  say('detect-status', rows.length
     ? '해지·변경은 각 서비스에서 직접 해주세요. 요고비는 금액만 알려드려요.'
     : (member.currentPlanId ? '중복으로 새는 금액이 없어요.'
       : '현재 요금제를 저장하면 요금제 혜택과 겹치는 구독까지 찾아드려요.'));
