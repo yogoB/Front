@@ -207,6 +207,10 @@ function renderCrossCheck(best) {
   } else if (check.status === 'MISMATCH') {
     box.textContent = `스마트초이스 공식 시세는 ${won(check.officialPrice)}로 나와요. 카탈로그 값과 달라서 확인 중이에요.`;
     box.className = 'cross-check warn';
+  } else if (check.status === 'NOT_APPLICABLE') {
+    // 알뜰폰은 스마트초이스가 응답에 주지 않는다. "나중에 확인될 수도 있다"는 기대를 주지 않는다.
+    box.textContent = '알뜰폰 요금제는 스마트초이스 시세 대조 대상이 아니에요(통신 3사만 제공). 금액 출처는 계산 근거에서 볼 수 있어요.';
+    box.className = 'cross-check';
   } else {
     box.textContent = '이 요금제는 아직 스마트초이스 시세로 대조하지 못했어요. 값이 틀렸다는 뜻은 아니에요.';
     box.className = 'cross-check';
