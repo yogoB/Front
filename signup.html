@@ -40,13 +40,18 @@
     </section>
 
     <!-- 2. 비밀번호 -->
-    <section data-step="verify" hidden>
-      <p class="auth-sub" style="text-align:left;margin:0 0 16px">본인 확인 메일을 보냈어요.<br><strong id="verify-email"></strong></p>
-      <p class="hint">메일 속 링크를 열면 비밀번호를 정하고 가입이 끝나요. 링크는 <strong>10분</strong> 동안 한 번만 쓸 수 있어요.</p>
-      <p class="auth-status" id="verify-status" role="status" hidden>보내는 중… <span class="spin-sm" aria-hidden="true"></span></p>
+    <section data-step="password" hidden>
+      <p class="auth-sub" style="text-align:left;margin:0 0 16px"><strong id="password-email"></strong>로 가입해요.</p>
+      <form id="password-form" novalidate>
+        <div class="field">
+          <input class="text-input" id="password" type="password" autocomplete="new-password"
+                 placeholder="비밀번호를 만들어 주세요" required>
+        </div>
+        <p class="hint" id="pw-hint">15자 이상으로 입력해 주세요.</p>
+        <button class="btn btn-brand btn-block" type="submit">가입 완료</button>
+      </form>
+      <p class="auth-status" id="verify-status" role="status" hidden>가입 중… <span class="spin-sm" aria-hidden="true"></span></p>
       <p class="auth-warn" id="signup-error" role="alert" hidden></p>
-      <p class="resend">메일을 못 받으셨나요? <button type="button" id="resend">다시 보내기</button></p>
-      <p class="auth-alt">이미 링크를 받으셨다면 <a href="./account.html">가입 이어서 하기</a></p>
     </section>
 
   <button type="button" class="link-muted" id="back" hidden>← 뒤로</button>
