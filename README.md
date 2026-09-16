@@ -7,13 +7,14 @@
 ## 실행
 
 ```sh
-npm run dev
-# npm 없이도 실행 가능
-python3 -m http.server 5173 --bind 127.0.0.1
+npm install
+npm run dev      # Vite 개발 서버 (http://127.0.0.1:5173)
+npm run build    # dist/ 로 정적 빌드
+npm test         # 계약·순수 로직 테스트
 ```
 
-브라우저에서 `http://127.0.0.1:5173`을 엽니다. 기존 `/yogo_v01.html` 주소도 새 화면으로 이동합니다.
-`file://`로 열면 모듈과 API 통신이 동작하지 않으므로 HTTP 서버를 사용합니다.
+Vite 개발 서버가 `/api`·`/oauth2`·`/login/oauth2` 를 `127.0.0.1:8080`(BE)으로 프록시합니다 —
+운영의 nginx 와 같은 모양이라 쿠키·CSRF 동작이 로컬과 운영에서 갈라지지 않습니다.
 
 - 로컬 API: 프론트와 같은 호스트의 `8080` 포트. `localhost`와 `127.0.0.1`을 섞지 않습니다.
 - 운영 API: 같은 사이트의 `/api/v1`을 사용합니다. 별도 주소가 필요하면 [`src/config.js`](src/config.js)에서 지정합니다.
@@ -47,28 +48,16 @@ Google 로그인은 BE의 Google OAuth 설정이 필요합니다.
 ## 구성
 
 ```text
-index.html              랜딩 + 모드 선택 (라이트/디테일)
-light.html              라이트 입력 3단계 (데이터 범위 → 통신비 → 구독)
-detail.html             디테일 입력 3단계 (통신사·약정 → 희망요금 → 희망구독)
-results.html            결과 비교표 (BE 추천 연동, 계산 근거·출처, 정보 오류 제보)
-calendar.html           전환 액션 캘린더 (금액은 결과 화면 값, 단계 가이드·날짜는 예시)
-app.html                기존 통신 → 구독 → 조건 → 결과 앱 (BE 연동 동작본)
-account.html            회원·로그인 세션 관리
-src/landing.js          랜딩·모드선택 뷰 전환
-src/light.js, detail.js 입력 흐름 로직
-src/results.js          결과 비교표 렌더·기간 탭
-src/calendar.js         전환 캘린더 렌더
-src/catalog-data.js     BE 카탈로그 로더(loadCatalog) + 통신사·구간 상수
-src/redesign.css        리디자인 공통 스타일(디자인 토큰)
-src/app.js              app.html의 화면 이벤트·카탈로그·추천·직접 계산
-src/account.js          로그인·Google 연결·세션 종료
-src/api.js              공통 fetch, 쿠키, CSRF, 오류, 취소, 시간 제한
-src/model.js            요청 변환, 입력 검증, CSV 내보내기
-src/config.js           API 주소
-src/styles.css          기존 app.html 테마를 보존한 공통·반응형 스타일
+index.html              Vite 진입점 (SPA 껍데기)
+src/main.jsx            React 진입점 · 라우터
+src/App.jsx             경로 표 (옛 .html 주소는 새 경로로 넘긴다)
+src/pages/              화면 — Landing Modes Light Detail Results Calendar Login MyPage + 정책 3종
+src/components/         공용 — Layout Flow Choice SubscriptionPicker Analyzing GuestGate PolicyNav
+src/lib/                프레임워크 무관 — api model config catalog-data schedule session useMember
+src/index.css           Tailwind + @theme 디자인 토큰
 assets/                 원본 HTML에서 추출한 폰트와 폰트 CSS
 docs/ux-flow.md         리디자인 화면·흐름 확정본과 BE 매핑
-tests/                 계약 테스트와 선택 실행 브라우저 검증
+tests/                  계약 테스트와 선택 실행 브라우저 검증
 ```
 
 **프론트 개발을 처음 시작하는 팀원은 [시작하기](docs/getting-started.md) → [개발 가이드](docs/frontend-guide.md) 순서로 읽으면 문서만 보고 구현할 수 있습니다.**

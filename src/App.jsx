@@ -9,6 +9,7 @@ import Modes from './pages/Modes.jsx';
 import Login from './pages/Login.jsx';
 import Detail from './pages/Detail.jsx';
 import Calendar from './pages/Calendar.jsx';
+import MyPage from './pages/MyPage.jsx';
 
 /* 경로는 확장자를 뗀다(/results.html → /results). nginx 가 SPA 폴백을 하고,
    백오피스(/admin.html)는 그 앞의 별도 location 이 BE 로 프록시한다.
@@ -33,6 +34,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/detail" element={<Detail />} />
       <Route path="/calendar" element={<Calendar />} />
+      <Route path="/mypage" element={<MyPage />} />
       {Object.entries(LEGACY).map(([from, to]) => (
         <Route key={from} path={from} element={<Navigate to={to} replace />} />
       ))}
