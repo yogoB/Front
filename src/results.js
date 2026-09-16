@@ -187,6 +187,7 @@ function renderPeriodTabs(source, best) {
 
   // 캘린더가 같은 숫자를 쓰도록 결과를 넘긴다(절대 원칙 5-⑤: 같은 숫자는 같은 출처).
   sessionStorage.setItem('yogobi:result', JSON.stringify({
+    planId: best.planId,                       // 캘린더가 /me/switch-timing 에 넘길 대상 요금제
     currentTotal: current, planLabel: `${best.carrier} ${best.planName}`,
     monthlyTotal: best.monthlyTotal, monthlySavings: best.monthlySavings, annualSavings: best.annualSavings,
   }));
