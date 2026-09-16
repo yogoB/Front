@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { request, ApiError } from '../src/api.js';
 import { DATA_BUCKETS, FEE_BUCKETS, CARRIERS } from '../src/catalog-data.js';
-import { integer, optionalInputs, recommendationRequest, calculatorRequest, validPassword, comparisonCsv, splitLines } from '../src/model.js';
+import { integer, optionalInputs, recommendationRequest, calculatorRequest, comparisonCsv, splitLines } from '../src/model.js';
 
 const values = { monthlyDataGb: '20', currentCarrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: 'false', fee: '55000', budget: '70000', contractEnd: '2027-01-01' };
 const subs = [{ id: 1, tierId: 2, wanted: true }, { id: 3, tierId: 8, wanted: false }];
@@ -24,14 +24,6 @@ test('integer inputs do not silently rewrite invalid amounts or fractional GB', 
   for (const bad of ['0', '-1', '2.5', '2147483648']) assert.throws(() => recommendationRequest({ ...values, monthlyDataGb: bad }, subs));
   assert.equal(integer('0', '금액'), 0);
   assert.equal(integer(' 20 ', 'GB', 1), 20);
-});
-test('password validation follows code point and UTF-8 byte limits', () => {
-  validPassword('abcd1234'); validPassword('가'.repeat(23) + '1');     // 문자+숫자 8자 이상
-  assert.throws(() => validPassword('abcd123'));                        // 7자
-  assert.throws(() => validPassword('abcdefgh'));                       // 숫자 없음
-  assert.throws(() => validPassword('12345678'));                       // 문자 없음
-  assert.throws(() => validPassword('가'.repeat(24) + '1'));            // 72바이트 초과(bcrypt 한계)
-  assert.throws(() => validPassword('a'.repeat(72) + '1'));
 });
 test('CSV preserves server amounts/provenance and neutralizes formula-like strings', () => {
   const csv = comparisonCsv([{ planId: 1, carrier: 'KT', planName: '=HYPERLINK("x")', monthlyTotal: 12345, baseline: 20000, monthlySavings: 7655, annualSavings: 91860,
@@ -59,7 +51,7 @@ test('each member mutation obtains fresh CSRF and uses cookies, including DELETE
     assert.equal(options.headers['X-CSRF-TOKEN'], `token-${tokens}`);
     return json({ data: { ok: true }, warnings: [] });
   });
-  await request('/api/v1/auth/login', { member: true, method: 'POST', body: { email: 'x@example.com', password: 'private' } });
+  await request('/api/v1/me/nickname', { member: true, method: 'POST', body: { nickname: '새닉' } });
   await request('/api/v1/me/sessions/abc', { member: true, method: 'DELETE' });
   assert.equal(tokens, 2); assert.equal(calls.length, 4);
 });
@@ -74,7 +66,7 @@ test('HTTP error code/field survives and network/non-JSON failures are actionabl
 test('CSRF failure stops mutation and cancellation preserves AbortError', async t => {
   const calls = [];
   const fetch = t.mock.method(globalThis, 'fetch', async url => { calls.push(url); return json({ error: { message: 'CSRF unavailable' } }, 503); });
-  await assert.rejects(request('/api/v1/auth/login', { member: true, method: 'POST', body: {} }), /CSRF unavailable/);
+  await assert.rejects(request('/api/v1/me/nickname', { member: true, method: 'POST', body: {} }), /CSRF unavailable/);
   assert.deepEqual(calls, ['/api/v1/auth/csrf']);
   fetch.mock.mockImplementation(async (url, options) => { options.signal.throwIfAborted(); return new Promise((resolve, reject) => options.signal.addEventListener('abort', () => reject(options.signal.reason))); });
   const controller = new AbortController(); const promise = request('/api/v1/chat/messages', { signal: controller.signal }); controller.abort();

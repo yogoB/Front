@@ -61,14 +61,6 @@ export function calculatorRequest(planId, optional, subscriptions) {
   return { planId: integer(planId, '요금제', 1), tierIds, optional };
 }
 
-/** 비밀번호 규칙(사용자 결정 2026-09-16): 문자와 숫자를 섞어 8자 이상.
-    72바이트 상한은 서버의 bcrypt 입력 한계라 함께 본다. 서버도 같은 규칙을 다시 검사한다. */
-export function validPassword(password) {
-  const long = [...password].length >= 8 && new TextEncoder().encode(password).length <= 72;
-  if (!long || !/\p{L}/u.test(password) || !/\d/u.test(password))
-    throw new Error('비밀번호는 문자와 숫자를 섞어 8자 이상으로 입력해 주세요.');
-}
-
 // CSV cells are quoted and formula-like text is neutralized for spreadsheet applications.
 export function comparisonCsv(results) {
   const rows = [['요금제 ID', '통신사', '요금제', '월 총액 (계산값)', '정가 합계 (계산값)', '월 절감액 (계산값)', '연 절감액 (계산값)', '항목', '금액', '출처', '설명']];

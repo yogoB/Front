@@ -1,5 +1,4 @@
 import { request, backendUrl } from './api.js';
-import { validPassword } from './model.js';
 
 const $ = id => document.getElementById(id);
 const fragment = new URLSearchParams(location.hash.slice(1));
@@ -23,19 +22,12 @@ async function run(callback) {
     document.querySelectorAll('button').forEach(b => { b.disabled = false; });
   }
 }
-function handle(id, callback) {
-  $(id).addEventListener('submit', event => { event.preventDefault(); run(callback); });
-}
 function showMember() {
   $('member').hidden = !member; $('login-section').hidden = Boolean(member);
   $('signup-hint').hidden = Boolean(member);
   $('sessions').replaceChildren();
-  if (!member) { $('member-email').textContent = ''; $('link-password').value = ''; return; }
+  if (!member) { $('member-email').textContent = ''; return; }
   $('member-email').textContent = member.email;
-  $('link-form').hidden = member.localLogin && member.googleLogin;
-  $('link-label').textContent = member.localLogin ? '현재 비밀번호 재확인' : '추가할 새 비밀번호';
-  $('link-password').autocomplete = member.localLogin ? 'current-password' : 'new-password';
-  $('link-button').textContent = member.localLogin ? 'Google 계정 연결' : '자체 비밀번호 추가';
 }
 async function refresh() {
   try { member = await api('/api/v1/me'); }
@@ -57,23 +49,9 @@ async function refresh() {
     item.append(button); $('sessions').append(item);
   }
 }
-if (fragment.get('auth') === 'success') show('로그인 또는 계정 연결이 완료되었습니다.');
-else if (fragment.get('auth') === 'account-conflict') show('같은 이메일의 계정이 있어요. 기존 방식으로 로그인한 뒤 Google 계정을 연결해 주세요.');
+if (fragment.get('auth') === 'success') show('로그인했습니다.');
+else if (fragment.get('auth') === 'account-conflict') show('같은 이메일로 만든 다른 Google 계정이 이미 있어요. 처음 가입할 때 쓴 계정으로 로그인해 주세요.');
 else if (fragment.has('auth')) show('로그인을 완료하지 못했어요. 다시 시도해 주세요.');
-handle('login-form', async () => {
-  try { await api('/api/v1/auth/login', 'POST', { email: $('email').value, password: $('password').value }); }
-  finally { $('password').value = ''; }
-  show('로그인했습니다.'); await refresh();
-});
-handle('link-form', async () => {
-  const password = $('link-password').value;
-  if (!member.localLogin) validPassword(password);
-  let result;
-  try { result = await api(member.localLogin ? '/api/v1/auth/google/link' : '/api/v1/auth/password', 'POST', { password }); }
-  finally { $('link-password').value = ''; }
-  if (result.authorizationUrl !== '/oauth2/authorization/google') throw new Error('연결을 시작하지 못했습니다.');
-  location.assign(googleUrl);
-});
 for (const id of ['logout', 'logout-all']) $(id).addEventListener('click', () => run(async () => {
   await api(`/api/v1/auth/${id}`, 'POST', {}); member = null; showMember();
   show('로그아웃했습니다.');
