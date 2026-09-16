@@ -1,4 +1,4 @@
-import { loadCatalog, CARRIERS, DATA_BUCKETS } from './catalog-data.js';
+import { loadCatalog, CARRIERS, DATA_BUCKETS, FEE_BUCKETS } from './catalog-data.js';
 
 const $ = id => document.getElementById(id);
 const won = n => `${n.toLocaleString('ko-KR')}원`;
@@ -11,8 +11,23 @@ const state = {
   contractHas: null,    // true | false | null
   contractEnd: '',
   dataIdx: 2,
-  wish: [1, 2, 6].map(id => ({ id, service: svc(id), tierId: svc(id).tiers[0].id, disposition: '유지' })),
+  fee: null,            // { label, amount } 또는 null(모름)
+  customFee: false,
+  networkType: null,    // '5G' | 'LTE' | '3G' | null(상관없음) — BE optional.networkType
+  contractType: null,   // 'SELECTIVE_25' | 'NONE' | null(모름) — BE optional.contractType
+  hasFamilyBundle: null,// true | false | null(모름) — BE optional.hasFamilyBundle
+  // 카탈로그를 받기 전에는 비어 있다. 여기서 svc(id)를 부르면 로드 전이라 undefined 가 나와 화면 전체가 멈춘다.
+  wish: [],
 };
+
+/** 카탈로그 도착 후 기본 선택을 채운다. 없는 서비스는 조용히 건너뛴다. */
+const DEFAULT_WISH = [1, 2, 6];
+function seedWish() {
+  state.wish = DEFAULT_WISH
+    .map(id => svc(id))
+    .filter(Boolean)
+    .map(service => ({ id: service.id, service, tierId: service.tiers[0].id, disposition: '유지' }));
+}
 
 /* 단계 전환 */
 function showStep(step) {
@@ -65,11 +80,63 @@ $('contract-end').addEventListener('change', e => { state.contractEnd = e.target
 function updateStatement() {
   $('st-carrier').textContent = state.carrier?.name || '—';
   $('st-contract').textContent = state.contractHas === null ? '—' : state.contractHas ? 'Y' : 'N';
+  const fee = $('st-fee');
+  if (fee) fee.textContent = state.fee ? won(state.fee.amount) : '—';
 }
 
-/* 2. 희망 데이터 */
+/* 2. 희망 데이터 + 현재 통신비 + 선택 입력 */
 function renderData() { $('data-value').textContent = DATA_BUCKETS[state.dataIdx].label; }
 $('data-range').addEventListener('input', e => { state.dataIdx = Number(e.target.value); renderData(); });
+
+// 통신비 구간 칩. 라이트 모드와 같은 구간을 쓴다(같은 질문은 같은 선택지).
+function renderFee() {
+  $('fee-choices').replaceChildren(
+    ...FEE_BUCKETS.map(b => feeChip(b.label, () => selectFee(b))),
+    feeChip('직접입력', () => selectFee(null, true)));
+  syncFee();
+}
+function feeChip(label, onClick) {
+  const button = document.createElement('button');
+  button.type = 'button'; button.className = 'choice'; button.textContent = label;
+  button.dataset.label = label; button.addEventListener('click', onClick);
+  return button;
+}
+function selectFee(bucket, custom = false) {
+  state.customFee = custom;
+  state.fee = custom ? state.fee : { label: bucket.label, amount: bucket.rep };
+  $('fee-custom').hidden = !custom;
+  if (custom) $('fee-input').focus();
+  syncFee();
+}
+function syncFee() {
+  const active = state.customFee ? '직접입력' : state.fee?.label;
+  $('fee-choices').querySelectorAll('.choice')
+    .forEach(b => b.classList.toggle('active', b.dataset.label === active));
+  updateStatement();
+}
+$('fee-input').addEventListener('input', event => {
+  const won = Number(event.target.value);
+  state.fee = Number.isSafeInteger(won) && won > 0 ? { label: `${won.toLocaleString('ko-KR')}원`, amount: won } : null;
+  updateStatement();
+});
+
+// 선택 입력: 고르면 BE optional 로 넘어가고, "잘 모르겠어요"(빈 값)면 보내지 않는다 — 안내로 남는다.
+function pickGroup(containerId, attribute, apply) {
+  // attribute 는 HTML 표기(data-contract-type), dataset 키는 카멜(contractType)이라 따로 변환한다.
+  const key = attribute.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+  $(containerId).addEventListener('click', event => {
+    const button = event.target.closest(`[data-${attribute}]`);
+    if (!button) return;
+    apply(button.dataset[key]);
+    $(containerId).querySelectorAll('.choice').forEach(b => b.classList.toggle('active', b === button));
+    updateStatement();
+  });
+}
+pickGroup('contract-type-choices', 'contract-type', value => { state.contractType = value || null; });
+pickGroup('network-choices', 'network', value => { state.networkType = value || null; });
+pickGroup('family-choices', 'family', value => {
+  state.hasFamilyBundle = value === '' ? null : value === 'true';
+});
 
 /* 3. 희망 구독 */
 function renderWish() {
@@ -143,9 +210,14 @@ function analyze() {
     mvno: state.carrier.mvno,
     contract: { has: state.contractHas === true, endDate: state.contractEnd || null },
     data: { label: b.label, gb: b.rep },
+    fee: state.fee,
+    // BE optional 로 그대로 넘어간다. null 은 보내지 않아 missingInputs 안내가 유지된다.
+    networkType: state.networkType,
+    contractType: state.contractType,
+    hasFamilyBundle: state.hasFamilyBundle,
     subs: state.wish.map(w => {
       const t = w.service.tiers.find(t => t.id === w.tierId);
-      return { id: w.id, name: w.service.name, tierName: t.name, price: t.price, disposition: w.disposition };
+      return { id: w.id, name: w.service.name, tierId: t.id, tierName: t.name, price: t.price, disposition: w.disposition };
     }),
   };
   sessionStorage.setItem('yogobi:input', JSON.stringify(input));
@@ -177,7 +249,7 @@ document.querySelectorAll('[data-next]').forEach(b => b.addEventListener('click'
 $('analyze').addEventListener('click', analyze);
 
 /* 시작: 구독 카탈로그를 BE 에서 받아온 뒤 화면을 그린다. */
-renderCarriers(); renderData(); renderWish(); updateStatement(); showStep(1);
+renderCarriers(); renderData(); renderFee(); renderWish(); updateStatement(); showStep(1);
 loadCatalog()
-  .then(list => { catalog = list; renderModal(); })
+  .then(list => { catalog = list; seedWish(); renderWish(); renderModal(); })
   .catch(e => error(e.message || '구독 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'));

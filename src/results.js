@@ -24,6 +24,10 @@ function buildRequest(source) {
   const optional = {};
   // 알뜰폰 브랜드는 BE 가 개별로 알지 못하므로 묶어서 보낸다(catalog-data.js CARRIERS 와 같은 규칙).
   if (source.carrier) optional.currentCarrier = source.mvno ? '알뜰폰' : source.carrier;
+  // 디테일 모드에서 고른 값만 보낸다. 모른다고 한 값은 빼서 missingInputs 안내가 그대로 남는다(5-①).
+  if (source.networkType) optional.networkType = source.networkType;
+  if (source.contractType) optional.contractType = source.contractType;
+  if (typeof source.hasFamilyBundle === 'boolean') optional.hasFamilyBundle = source.hasFamilyBundle;
   return {
     required: {
       monthlyDataGb: source.data?.gb ?? DEFAULT_GB,
@@ -60,7 +64,7 @@ function render(source, data) {
   renderHeadline(source, best);
   renderCurrentColumn(source);
   renderPlanRows(source, best);
-  renderReasons(source, data, best);
+  renderReasons(data);
   renderBreakdown(best);
   renderPeriodTabs(source, best);
   wireReport(best);
@@ -117,22 +121,12 @@ function renderPlanRows(source, best) {
     ? discounts.map(line => `${line.label} ${won(line.amount)}`).join(', ') : '적용된 할인 없음';
 }
 
-function renderReasons(source, data, best) {
-  const reasons = [];
-  // 정가 대비 절감은 제휴 혜택·할인이 있을 때만 생긴다. 0원을 "절감"이라고 적지 않는다.
-  reasons.push(best.monthlySavings > 0
-    ? `💰 ${best.carrier} ${best.planName} 기준 월 ${won(best.monthlyTotal)}이에요. `
-      + `정가 합계 ${won(best.baseline)}보다 월 ${won(best.monthlySavings)}·연 ${won(best.annualSavings)} 적어요.`
-    : `💰 ${best.carrier} ${best.planName} 기준 월 ${won(best.monthlyTotal)}이에요. `
-      + '이 요금제에 붙는 구독 제휴 혜택이 아직 카탈로그에 없어 정가 그대로예요.');
-  if (data.results.length > 1) {
-    const next = data.results[1];
-    reasons.push(`📊 후보 ${data.results.length}개 중 가장 싼 조합이에요. 2순위는 ${next.carrier} ${next.planName} `
-      + `월 ${won(next.monthlyTotal)}이에요.`);
-  }
-  reasons.push(source.contract?.has
-    ? `🗓️ 약정이 남아 있어 위약금을 확인한 뒤 옮기는 게 안전해요${source.contract.endDate ? ` (종료 ${source.contract.endDate})` : ''}.`
-    : '🗓️ 약정이 없어 언제든 옮길 수 있어요.');
+// 추천 사유는 BE(/recommendations 응답의 reasons)가 만든다 — AI 큐레이션이며 요청에 없는 금액은
+// BE·AI가 폐기한다(절대 원칙 1·2, D-19). AI 장애 시 빈 배열로 내려오고, 그때는 섹션을 숨긴다
+// (보조 정보이므로 결과·금액은 그대로 유효 — 절대 원칙 5-④).
+function renderReasons(data) {
+  const reasons = Array.isArray(data.reasons) ? data.reasons : [];
+  $('reason-list').closest('.reason').hidden = reasons.length === 0;
   $('reason-list').replaceChildren(...reasons.map(text => {
     const li = document.createElement('li'); li.textContent = text; return li;
   }));
