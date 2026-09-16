@@ -5,8 +5,41 @@ import { request } from './api.js';
 const set = (auth, on) => document.querySelectorAll(`[data-auth="${auth}"]`).forEach(e => { e.hidden = !on; });
 
 request('/api/v1/me', { member: true })
-  .then(() => { set('member', true); set('guest', false); })   // 로그인됨
-  .catch(() => { set('guest', true); set('member', false); });  // 미로그인/무세션
+  .then(({ data }) => { set('member', true); set('guest', false); return data; })   // 로그인됨
+  .catch(() => { set('guest', true); set('member', false); return null; })          // 미로그인/무세션
+  .then(noteOAuthReturn);
+
+/* Google 로그인 복귀 안내. BE 가 returnUrl + "#auth=success|failed|account-conflict" 로 돌려보낸다.
+   닉네임은 서버가 자동 발급하므로(D-22) 무엇으로 정해졌는지 여기서 한 번 알려준다.
+   안내 자리(#auth-note)가 있는 화면에서만 뜬다 — 없는 화면은 아무 일도 하지 않는다. */
+function noteOAuthReturn(member) {
+  const box = document.getElementById('auth-note');
+  const state = new URLSearchParams(location.hash.slice(1)).get('auth');
+  if (!box || !state) return;
+  if (state === 'success') {
+    box.className = 'auth-note ok';
+    if (member?.nickname) {
+      // 닉네임은 서버 문자열이므로 textContent 로만 넣는다. 링크는 우리가 만든 노드로 붙인다.
+      const head = document.createTextNode(`로그인됐어요. 닉네임은 "${member.nickname}"으로 설정되었습니다. 변경은 `);
+      const link = document.createElement('a');
+      link.href = './mypage.html';
+      link.className = 'auth-note-link';
+      link.textContent = '마이페이지';
+      box.replaceChildren(head, link, document.createTextNode('!'));
+    } else {
+      box.textContent = '로그인됐어요.';
+    }
+  } else if (state === 'account-conflict') {
+    box.textContent = '같은 이메일의 계정이 있어요. 기존 방식으로 로그인한 뒤 Google 계정을 연결해 주세요.';
+    box.className = 'auth-note warn';
+  } else {
+    box.textContent = '로그인을 완료하지 못했어요. 다시 시도해 주세요.';
+    box.className = 'auth-note warn';
+  }
+  box.hidden = false;
+  // 새로고침·뒤로가기에 같은 안내가 다시 뜨지 않게 흔적을 지운다(랜딩의 #modes 전환과도 섞이지 않는다).
+  history.replaceState(null, '', location.pathname + location.search);
+}
 
 // 로그아웃: 실제 세션 종료 후 홈으로.
 document.querySelectorAll('[data-logout]').forEach(btn => btn.addEventListener('click', async () => {
