@@ -104,7 +104,53 @@ function eventsForMonth(y, m) {
   return map;
 }
 
+/** 오늘로부터 며칠인지. 모든 날짜가 자정이라 하루 단위로 딱 떨어진다. */
+function relativeDay(date) {
+  const days = Math.round((date - today) / 86400000);
+  return days === 0 ? '오늘' : days > 0 ? `${days}일 뒤` : `${-days}일 전`;
+}
+
+/* 리스트 보기 — 캘린더와 같은 일정을 날짜순 목록으로 본다. 일정이 여러 달에 걸치면
+   달을 오가야 흐름이 보이는데, 목록은 한 번에 보여준다. 그래서 리스트에선 달 이동을 숨긴다. */
+function renderList() {
+  $('cal-list').replaceChildren(...EVENTS.map(event => {
+    const date = dateOf(event.offset);
+    const item = document.createElement('li');
+    item.className = 'cal-li';
+    if (date < today) item.classList.add('past');
+
+    const when = document.createElement('div');
+    when.className = 'cal-li-when';
+    const md = document.createElement('strong'); md.textContent = `${date.getMonth() + 1}/${date.getDate()}`;
+    const wd = document.createElement('span'); wd.textContent = WD[date.getDay()];
+    when.append(md, wd);
+
+    const dot = document.createElement('span');
+    dot.className = 'cal-li-dot';
+    dot.style.background = STEP_COLORS[event.step];
+
+    const body = document.createElement('div');
+    const label = document.createElement('span');
+    label.className = 'cal-li-label'; label.textContent = event.label;
+    const step = document.createElement('small');
+    step.textContent = `${event.step + 1}단계 · ${STEPS[event.step].when}`;
+    body.append(label, step);
+
+    const rel = document.createElement('span');
+    rel.className = 'cal-li-rel'; rel.textContent = relativeDay(date);
+
+    item.append(when, dot, body, rel);
+    return item;
+  }));
+}
+
 function render() {
+  const asList = mode === 'list';
+  $('cal-list').hidden = !asList;
+  $('cal-grid').hidden = asList;
+  $('cal-nav').hidden = asList;
+  if (asList) { renderList(); return; }
+
   const y = view.getFullYear(), m = view.getMonth();
   $('cal-title').textContent = `${y}년 ${m + 1}월`;
   const first = new Date(y, m, 1).getDay();

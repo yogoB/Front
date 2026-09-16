@@ -61,7 +61,7 @@
 
     <section class="cal-main">
       <div class="cal-controls">
-        <div class="cal-nav">
+        <div class="cal-nav" id="cal-nav">
           <button type="button" id="prev" aria-label="이전 달">‹</button>
           <strong id="cal-title">—</strong>
           <button type="button" id="next" aria-label="다음 달">›</button>
@@ -70,9 +70,11 @@
         <div class="seg" role="tablist" aria-label="보기">
           <button type="button" data-view="month" class="active">월간</button>
           <button type="button" data-view="week">주간</button>
+          <button type="button" data-view="list">리스트</button>
         </div>
       </div>
       <div class="cal-grid" id="cal-grid"></div>
+      <ol class="cal-list" id="cal-list" hidden></ol>
     </section>
   </div>
 </main>
