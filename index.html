@@ -53,10 +53,10 @@
     </div>
   </section>
 
-  <!-- 지표는 실제 카탈로그 수를 채운다(landing.js). 못 받으면 수치를 비우고 라벨만 남긴다. -->
+  <!-- 카탈로그 수를 받은 카드만 나타난다(landing.js). 못 받거나 늦으면 숨은 채로 둔다. -->
   <section class="stats" aria-label="서비스 지표">
-    <div class="stat"><div class="value" id="stat-plans">—</div><div class="label">비교하는 요금제</div><div class="sub">3사 + 알뜰폰</div></div>
-    <div class="stat"><div class="value" id="stat-services">—</div><div class="label">계산에 넣는 구독</div><div class="sub">OTT·음악 등</div></div>
+    <div class="stat" hidden><div class="value" id="stat-plans">—</div><div class="label">비교하는 요금제</div><div class="sub">3사 + 알뜰폰</div></div>
+    <div class="stat" hidden><div class="value" id="stat-services">—</div><div class="label">계산에 넣는 구독</div><div class="sub">OTT·음악 등</div></div>
     <div class="stat"><div class="value">3개</div><div class="label">답하면 끝나는 질문</div><div class="sub">라이트 모드 기준</div></div>
     <div class="stat"><div class="value">전부</div><div class="label">출처를 붙인 금액</div><div class="sub">어디서 온 값인지 표시</div></div>
   </section>
