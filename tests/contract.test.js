@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { request, ApiError } from '../src/lib/api.js';
 import { DATA_BUCKETS, FEE_BUCKETS, CARRIERS } from '../src/lib/catalog-data.js';
+import { parseDay, icsEscape, icsText, monthGrid, relativeDay, EVENTS_FROM_EXPIRY } from '../src/lib/schedule.js';
 import { integer, optionalInputs, recommendationRequest, calculatorRequest, comparisonCsv, splitLines } from '../src/lib/model.js';
 
 const values = { monthlyDataGb: '20', currentCarrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: 'false', fee: '55000', budget: '70000', contractEnd: '2027-01-01' };
@@ -120,4 +121,33 @@ test('matches — 띄어쓰기와 대소문자를 무시한다', async () => {
   }
   assert.ok(matches(plan, ''), '빈 검색어는 전부 통과해야 한다');
   assert.ok(!matches(plan, '요고39'), '다른 요금제까지 잡으면 안 된다');
+});
+
+test('parseDay rejects impossible dates instead of rolling them over', () => {
+  // new Date(2026,1,31) 은 3월 3일로 굴러간다 — 그걸 유효한 2/31 로 받아들이면 일정이 엉뚱한 날에 잡힌다.
+  assert.equal(parseDay('2026-02-31'), null);
+  assert.equal(parseDay('2026-13-01'), null);
+  assert.equal(parseDay('20261130'), null);
+  assert.equal(parseDay(''), null);
+  assert.equal(parseDay('2026-11-30').getDate(), 30);
+});
+
+test('ICS escapes its own delimiters and keeps CRLF line endings', () => {
+  // 쉼표·세미콜론·역슬래시는 ICS 의 구분자다. 그대로 두면 캘린더 앱이 필드를 잘못 나눈다.
+  assert.equal(icsEscape('a,b;c\\d'), 'a\\,b\\;c\\\\d');
+  assert.equal(icsEscape('첫 줄\n둘째 줄'), '첫 줄\\n둘째 줄');
+
+  const anchor = parseDay('2026-11-30');
+  const text = icsText(EVENTS_FROM_EXPIRY, anchor, { planLabel: 'SKT 5G', monthlyTotal: 73900 }, anchor);
+  assert.ok(text.startsWith('BEGIN:VCALENDAR\r\n'), 'RFC 5545 는 CRLF 를 요구한다');
+  assert.equal((text.match(/BEGIN:VEVENT/g) || []).length, EVENTS_FROM_EXPIRY.length);
+  // 만료 14일 전 준비가 첫 일정이다.
+  assert.ok(text.includes('DTSTART;VALUE=DATE:20261116'));
+});
+
+test('month grid pads to whole weeks and keeps day numbers', () => {
+  const weeks = monthGrid(2026, 10);              // 2026-11: 1일이 일요일
+  assert.ok(weeks.every(w => w.length === 7));
+  assert.equal(weeks.flat().filter(Boolean).length, 30);
+  assert.equal(relativeDay(new Date(2026, 10, 30), new Date(2026, 10, 30)), '오늘');
 });
