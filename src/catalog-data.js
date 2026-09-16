@@ -1,11 +1,18 @@
 // 구독 카탈로그는 BE 가 원본이다(검수 CSV → DB). 프론트는 가격을 만들지 않는다 — 절대 원칙 2·4.
 import { request } from './api.js';
 
-// 화면용 아이콘만 프론트가 가진다. 이름이 없으면 기본 아이콘을 쓴다(가격·등급은 전부 BE 값).
+// 화면용 아이콘만 프론트가 가진다(가격·등급은 전부 BE 값).
+// 이름에 없으면 카테고리로, 그것도 없으면 기본 아이콘 — 새 서비스가 늘어도 📦만 줄줄이 나오지 않는다.
 const ICONS = {
-  '넷플릭스': '🎬', '유튜브 프리미엄': '▶️', '티빙': '📺', '웨이브': '🌊',
-  '쿠팡플레이': '🛒', '디즈니+': '✨', '애플TV+': '🍎', '멜론': '🎵', '스포티파이': '🟢',
+  '넷플릭스': '🎬', '유튜브 프리미엄': '▶️', '티빙': '📺', '웨이브': '🌊', '왓챠': '🎞️',
+  '쿠팡플레이': '🛒', '디즈니+': '✨', '애플TV+': '🍎',
+  '멜론': '🍈', '지니뮤직': '🧞', 'FLO': '🌊', '벅스': '🐞',
+  'Spotify': '🟢', 'Apple Music': '🎧', 'YouTube Music': '🎶',
+  'Gemini': '♊', 'ChatGPT': '🤖', 'Claude': '🧠', 'Perplexity': '🔎',
+  '리디셀렉트': '📖', '윌라': '🎧', '크레마클럽': '📚', '교보 sam': '📕',
+  'iCloud+': '☁️', 'Microsoft 365': '🗂️', 'Dropbox': '📦',
 };
+const CATEGORY_ICONS = { OTT: '📺', VIDEO_MUSIC: '▶️', MUSIC: '🎵', AI: '🤖', EBOOK: '📚', CLOUD: '☁️' };
 
 /** GET /api/v1/catalog/services → 화면이 쓰는 {id, name, icon, tiers[]}. 등급이 없는 서비스는 고를 수 없으므로 뺀다. */
 export async function loadCatalog(signal) {
@@ -14,7 +21,8 @@ export async function loadCatalog(signal) {
     .map(service => ({
       id: service.id,
       name: service.name,
-      icon: ICONS[service.name] ?? '📦',
+      category: service.category,
+      icon: ICONS[service.name] ?? CATEGORY_ICONS[service.category] ?? '📦',
       tiers: service.tiers.map(tier => ({ id: tier.id, name: tier.name, price: tier.price })),
     }))
     .filter(service => service.tiers.length > 0);
