@@ -1,0 +1,59 @@
+/* 마이페이지 (Fiverr 프로필 참고). redesign.css 토큰·컴포넌트 재사용. */
+.mypage { max-width: 1120px; margin: 0 auto; padding: 24px;
+  display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start; }
+.mp-left { display: grid; gap: 20px; }
+
+.profile-card, .gcal-card { border: 1px solid var(--line); border-radius: 16px; padding: 24px;
+  background: #fff; box-shadow: var(--shadow); }
+
+.pc-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.avatar { width: 88px; height: 88px; border-radius: 999px; background: var(--brand-tint);
+  color: var(--brand-strong); display: grid; place-items: center; font-size: 36px; font-weight: 800; }
+.status-badge { font-size: 12px; font-weight: 700; color: var(--brand-ink);
+  background: var(--brand-tint); padding: 4px 10px; border-radius: 999px; }
+.pc-name { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+.pc-name strong { font-size: 20px; font-weight: 800; }
+.tag-new { font-size: 11px; font-weight: 700; color: #fff; background: var(--brand); padding: 2px 8px; border-radius: 999px; }
+.pc-nick { color: var(--muted); margin: 4px 0 16px; }
+.profile-card .btn-block { margin-top: 4px; }
+.pc-info { margin: 20px 0 0; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 12px; }
+.pc-info div { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.pc-info dt { color: var(--muted); }
+.pc-info dd { margin: 0; font-weight: 600; word-break: break-all; text-align: right; }
+
+/* Google 캘린더 연동 */
+.gcal-head { display: flex; align-items: center; gap: 8px; }
+.gcal-head h3 { font-size: 16px; font-weight: 800; }
+.gcal-ico { font-size: 20px; }
+.gcal-on { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--brand-ink);
+  background: var(--brand-tint); padding: 3px 10px; border-radius: 999px; }
+.gcal-card p { color: var(--muted); font-size: 14px; margin: 10px 0 16px; line-height: 1.6; }
+.gcal-card .hint { margin-top: 12px; }
+.gcal-syncs { list-style: none; padding: 0; margin: 0 0 16px; display: grid; gap: 12px; }
+.gcal-syncs li { display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 600; }
+.gcal-syncs input { width: 18px; height: 18px; accent-color: var(--brand); }
+
+/* 분석 리포트 아카이브 */
+.mp-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
+.mp-head h2 { font-size: 20px; font-weight: 800; }
+.report-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.report-card { border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: #fff;
+  display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow); min-height: 150px; }
+.rc-top { display: flex; justify-content: space-between; align-items: center; }
+.rc-date { color: var(--muted); font-size: 13px; }
+.rc-mode { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+.rc-mode.light { background: var(--brand-tint); color: var(--brand-ink); }
+.rc-mode.detail { background: var(--detail-tint); color: var(--detail); }
+.rc-save { font-size: 20px; font-weight: 800; color: var(--brand-strong); }
+.rc-plan { font-weight: 600; }
+.rc-foot { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 8px; }
+.rc-foot span { color: var(--muted); font-size: 13px; }
+.rc-open { color: var(--brand-ink); font-weight: 600; font-size: 14px; }
+.report-card.new { align-items: center; justify-content: center; text-align: center; gap: 12px;
+  border-style: dashed; color: var(--muted); }
+.report-card.new .rc-plus { font-size: 26px; width: 48px; height: 48px; border-radius: 999px;
+  background: var(--bg-soft); display: grid; place-items: center; color: var(--ink); }
+.report-card.new:hover { border-color: var(--brand); color: var(--brand-ink); }
+
+@media (max-width: 860px) { .mypage { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .report-grid { grid-template-columns: 1fr; } }

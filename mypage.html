@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>마이페이지 · 요고비</title>
+  <link rel="stylesheet" href="./assets/fonts.css">
+  <link rel="stylesheet" href="./src/redesign.css">
+  <link rel="stylesheet" href="./src/mypage.css">
+  <script type="module" src="./src/mypage.js"></script>
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="./"><span class="brand-mark">B</span>YogoB</a>
+  <nav class="header-nav">
+    <a class="plain" href="./">홈</a>
+    <a class="btn btn-ghost" href="./login.html">로그아웃</a>
+  </nav>
+</header>
+
+<main class="mypage" role="main">
+  <!-- 좌: 프로필 + 구글 캘린더 -->
+  <aside class="mp-left">
+    <section class="profile-card">
+      <div class="pc-top">
+        <div class="avatar" aria-hidden="true">곽</div>
+        <span class="status-badge">이용 중</span>
+      </div>
+      <div class="pc-name"><strong id="pc-name">곽두팔</strong><span class="tag-new">회원</span></div>
+      <p class="pc-nick" id="pc-nick">@yogo_kwak</p>
+      <a class="btn btn-ghost btn-block" href="#">회원정보 수정</a>
+      <dl class="pc-info">
+        <div><dt>이메일</dt><dd id="pc-email">kwak@yogobi.com</dd></div>
+        <div><dt>가입일</dt><dd>2026년 9월</dd></div>
+        <div><dt>상태</dt><dd>이용 중</dd></div>
+      </dl>
+    </section>
+
+    <section class="gcal-card" id="gcal-card" aria-label="Google 캘린더 연동"></section>
+  </aside>
+
+  <!-- 우: 분석 리포트 아카이브 -->
+  <section class="mp-right">
+    <div class="mp-head"><h2>내 분석 리포트</h2><span class="muted" id="report-count"></span></div>
+    <div class="report-grid" id="report-grid"></div>
+  </section>
+</main>
+</body>
+</html>
