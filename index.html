@@ -23,12 +23,15 @@
 <main id="view-landing" class="view" role="main">
   <section id="main" class="hero">
     <div class="hero-copy">
+      <!-- ⚠️ DUMMY: 아래 data-dummy 세 곳은 시안 값이다. 집계가 아직 없다.
+           서비스 후 대상이 추려지면 실제 사용자 기반 값으로 바꾼다(이름·금액·인원).
+           바꿀 때 `grep -rn data-dummy` 로 한 번에 찾는다. -->
       <p class="hero-meta">
         <span class="badge">통신비 · 구독료 최적화 진단</span>
-        <!-- 숫자는 실제 카탈로그에서 채운다(landing.js). 못 받으면 이 줄은 뜨지 않는다. -->
-        <span class="hero-stat" id="hero-stat" hidden></span>
+        <span class="hero-stat" data-dummy="집계 전 시안 값">평균 <b>월 31,200원</b> 절감 · <b>23,847명</b> 이용</span>
       </p>
-      <h1>지금 내는 요금,<br><span class="accent">월 얼마나</span> 줄어들까요?</h1>
+      <h1 data-dummy="집계 전 시안 값">38세 곽두팔님,<br>
+        <span class="accent">얼마 전 월 38,000원</span> 아끼셨네요!</h1>
       <p class="lead">몇 가지 질문에 답하다 보면 복잡한 내 통신비와 요금제가 정리되고,
         내 상황에 딱 맞는 선택지가 만들어집니다.</p>
       <button type="button" id="start-btn" class="btn btn-dark btn-lg">내 요금제 진단받기</button>
