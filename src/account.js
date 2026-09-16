@@ -19,10 +19,9 @@ async function run(callback) {
   try { await callback(); }
   catch (error) {
     if (error.status === 401) { member = null; showMember(); }
+    // 메일 링크가 만료됐을 때 재발송할 경로가 없다(메일 기능 제거). 확인 화면만 닫고 메시지를 보여준다.
     if (error.code === 'YGB-AUTH-LINK') {
       proof = null; $('confirm-form').reset(); $('confirmation').hidden = true;
-      $('mail-action').value = action === 'reset' ? 'reset-request' : 'verification';
-      $('mail-section').hidden = false;
     }
     show(error.message);
   } finally {
@@ -34,7 +33,8 @@ function handle(id, callback) {
   $(id).addEventListener('submit', event => { event.preventDefault(); run(callback); });
 }
 function showMember() {
-  $('member').hidden = !member; $('login-section').hidden = Boolean(member); $('mail-section').hidden = Boolean(member);
+  $('member').hidden = !member; $('login-section').hidden = Boolean(member);
+  $('signup-hint').hidden = Boolean(member);
   $('sessions').replaceChildren();
   if (!member) { $('member-email').textContent = ''; $('link-password').value = ''; return; }
   $('member-email').textContent = member.email;
@@ -85,10 +85,6 @@ handle('login-form', async () => {
   try { await api('/api/v1/auth/login', 'POST', { email: $('email').value, password: $('password').value }); }
   finally { $('password').value = ''; }
   show('로그인했습니다.'); await refresh();
-});
-handle('mail-form', async () => {
-  const path = $('mail-action').value === 'verification' ? '/api/v1/auth/email/verification' : '/api/v1/auth/password/reset-request';
-  const result = await api(path, 'POST', { email: $('mail-email').value }); show(result.message);
 });
 handle('link-form', async () => {
   const password = $('link-password').value;

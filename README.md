@@ -37,8 +37,9 @@ AUTH_EMAIL_LINK_URL=http://127.0.0.1:5173/account.html
 ```
 
 회원 기능에는 BE의 `JWT_SECRET` 설정도 필요합니다. 프론트에 비밀 키를 넣지 않습니다.
-Google 로그인은 BE의 Google OAuth 설정이 필요하고, 가입·비밀번호 재설정 메일은 실제 SMTP 설정이 필요합니다.
-메일 발송은 기본 비활성이므로 이 경우 서버의 오류를 화면에 표시합니다. 본인 확인 링크는 `account.html#action=signup|reset&token=...` 형식입니다.
+가입은 메일 없이 바로 됩니다(D-20) — 이름·이메일·비밀번호·닉네임만 받고, 중복은 이메일/닉네임을 구분해 알려줍니다.
+**메일 발송 기능은 쓰지 않습니다.** 비밀번호 재설정 화면도 없으며, 잊었을 때는 Google 로그인을 쓰거나 운영자가 처리합니다.
+Google 로그인은 BE의 Google OAuth 설정이 필요합니다.
 운영은 HTTPS 및 Secure 쿠키를 사용하고, 정확한 프론트 오리진을 허용해야 합니다. 서로 다른 사이트 간 쿠키 인증은 현재 BE의 SameSite=Lax 설정으로 지원하지 않습니다.
 
 카탈로그에 없는 조건이면 오류가 아니라 **빈 결과 + 안내**가 나옵니다(BE G-12). 화면은 그 안내를 그대로 보여줍니다.
@@ -60,7 +61,7 @@ src/calendar.js         전환 캘린더 렌더
 src/catalog-data.js     BE 카탈로그 로더(loadCatalog) + 통신사·구간 상수
 src/redesign.css        리디자인 공통 스타일(디자인 토큰)
 src/app.js              app.html의 화면 이벤트·카탈로그·추천·직접 계산
-src/account.js          인증·이메일 확인·Google 연결·세션 종료
+src/account.js          로그인·Google 연결·세션 종료
 src/api.js              공통 fetch, 쿠키, CSRF, 오류, 취소, 시간 제한
 src/model.js            요청 변환, 입력 검증, CSV 내보내기
 src/config.js           API 주소
