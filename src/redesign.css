@@ -124,6 +124,10 @@ h1, h2, h3, p { margin: 0; }
 .site-footer strong { font-weight: 700; }
 .site-footer p { color: var(--muted); font-size: 13px; margin-top: 6px; max-width: 34em; }
 .site-footer .links { display: flex; gap: 18px; color: var(--muted); font-size: 13px; align-items: center; }
+/* 운영자 전용 입구. 일반 사용자 눈에 띄지 않게 맨 아래 왼쪽에 작게 둔다. */
+.site-footer .admin-row { margin-top: 18px; }
+.admin-link { color: var(--muted); font-size: 12px; }
+.admin-link:hover { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
 
 /* Mode select */
 .modes-wrap { max-width: 900px; margin: 0 auto; text-align: center; padding: 48px 0; }
