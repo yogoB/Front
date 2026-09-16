@@ -79,6 +79,35 @@ function render(source, data) {
   renderBreakdown(best);
   renderTotals(source, best);
   wireReport(best);
+  fillPlanSpecs(source, best);
+}
+
+/* 요금제가 실제로 주는 양(데이터·음성·문자)은 카탈로그가 원본이다(GET /api/v1/catalog/plans).
+   금액 표시를 붙잡아 두지 않도록 표를 먼저 그린 뒤 배경에서 받아 채운다. 실패하면 있던 문구를 그대로 둔다. */
+const UNLIMITED = 999999;                     // 시드 규칙: 무제한은 숫자 999999 (docs/data.md §7)
+const amountText = (value, unit) =>
+  value === null || value === undefined ? '공식 표기 없음'
+    : value >= UNLIMITED ? '무제한' : `${value.toLocaleString('ko-KR')}${unit}`;
+const dataText = mb =>
+  mb >= UNLIMITED ? '무제한'
+    : mb % 1024 === 0 ? `${mb / 1024}GB` : `${(mb / 1024).toFixed(1)}GB`;
+
+async function fillPlanSpecs(source, best) {
+  let plan;
+  try {
+    const { data } = await request('/api/v1/catalog/plans');
+    plan = data.find(row => row.id === best.planId);
+  } catch { /* 카탈로그를 못 받으면 기존 문구를 유지한다 */ }
+  const voice = plan
+    ? `음성 ${amountText(plan.voiceMin, '분')} · 문자 ${amountText(plan.smsCnt, '건')}`
+    : '확인 필요';
+  $('rec-voice').textContent = voice;
+  $('low-voice').textContent = voice;
+  if (!plan) return;
+  const asked = source.data ? source.data.label : `${DEFAULT_GB}GB`;
+  const label = `${dataText(plan.dataMb)} (요청 ${asked} 충족)`;
+  $('rec-data').textContent = label;
+  $('low-data').textContent = label;
 }
 
 /* 결론 먼저(절대 원칙 5-③) — 다만 금액은 하나도 만들지 않는다(절대 원칙 2).

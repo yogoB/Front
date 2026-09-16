@@ -22,7 +22,7 @@
 </header>
 
 <main class="mypage" role="main">
-  <!-- 좌: 프로필 + 구글 캘린더 -->
+  <!-- 좌: 프로필 + 전환 일정 -->
   <aside class="mp-left">
     <section class="profile-card">
       <div class="pc-top">
@@ -47,13 +47,58 @@
       </dl>
     </section>
 
-    <section class="gcal-card" id="gcal-card" aria-label="Google 캘린더 연동"></section>
+    <section class="gcal-card" aria-labelledby="gcal-title">
+      <div class="gcal-head"><span class="gcal-ico" aria-hidden="true">📅</span><h3 id="gcal-title">전환 일정 캘린더</h3></div>
+      <p>추천 결과의 전환 단계를 Google 캘린더에 담거나 <code>.ics</code> 파일로 내려받을 수 있어요.
+        서버가 캘린더를 대신 쓰지 않아 별도 권한이 필요 없어요.</p>
+      <a class="btn btn-brand btn-block" href="./calendar.html">전환 일정 보기</a>
+      <p class="hint">추천 결과를 먼저 받으면 금액·요금제까지 일정에 담겨요.</p>
+    </section>
   </aside>
 
-  <!-- 우: 분석 리포트 아카이브 -->
+  <!-- 우: 내 요금 상태 (모든 값은 BE 가 원본) -->
   <section class="mp-right">
-    <div class="mp-head"><h2>내 분석 리포트</h2><span class="muted" id="report-count"></span></div>
-    <div class="report-grid" id="report-grid"></div>
+    <div class="mp-head"><h2>내 요금 상태</h2><span class="muted" id="state-hint"></span></div>
+
+    <p class="guest-note" id="guest-note" hidden>
+      로그인하면 현재 요금제·구독을 저장하고 중복 결제를 점검할 수 있어요.
+      <a class="plain" href="./login.html">로그인하기 →</a>
+    </p>
+
+    <section class="state-card" id="plan-card" hidden>
+      <div class="state-head"><h3>현재 요금제</h3><span class="state-now" id="plan-now">아직 저장하지 않았어요</span></div>
+      <p class="state-why">저장하면 <strong>중복 결제 점검</strong>과 캘린더의 <strong>변경 시점 판정</strong>이 실제 요금제 기준으로 계산돼요.</p>
+      <label class="sr-only" for="plan-search">요금제 검색</label>
+      <input class="text-input" id="plan-search" autocomplete="off" placeholder="통신사·요금제명으로 검색 (예: SKT 베스트)">
+      <div class="sub-list" id="plan-list" hidden></div>
+      <p class="hint" id="plan-status" role="status"></p>
+    </section>
+
+    <section class="state-card" id="subs-card" hidden>
+      <div class="state-head"><h3>내 구독</h3><span class="state-now" id="subs-total"></span></div>
+      <ul class="sub-rows" id="sub-rows"></ul>
+      <form class="sub-add" id="sub-form">
+        <label class="sr-only" for="sub-service">구독 서비스</label>
+        <select id="sub-service"></select>
+        <label class="sr-only" for="sub-tier">구독 등급</label>
+        <select id="sub-tier"></select>
+        <label class="sr-only" for="sub-price">월 결제액</label>
+        <input class="text-input" id="sub-price" inputmode="numeric" placeholder="월 결제액">
+        <button class="btn btn-ghost" type="submit">추가</button>
+      </form>
+      <p class="hint" id="sub-status" role="status">등급을 고르면 공식 가격을 채워드려요. 실제 내는 금액과 다르면 고쳐 주세요.</p>
+    </section>
+
+    <section class="state-card" id="detect-card" hidden>
+      <div class="state-head"><h3>중복 결제 점검</h3><span class="state-now" id="detect-total"></span></div>
+      <ul class="detect-rows" id="detect-rows"></ul>
+      <p class="hint" id="detect-status" role="status"></p>
+    </section>
+
+    <div class="state-actions">
+      <a class="btn btn-ghost" href="./#modes">새 분석 시작</a>
+      <a class="btn btn-brand" href="./calendar.html">전환 일정 보기</a>
+    </div>
   </section>
 </main>
 </body>

@@ -1,25 +1,56 @@
-// 마이페이지. 회원 이메일은 실제 GET /api/v1/me 로 채우되, 미로그인/무BE 면 데모로 폴백한다.
-// 리포트 아카이브와 Google 캘린더 연동은 아직 대응 BE 가 없어 프로토타입(데모)이다.
-import { request } from './api.js';
+// 마이페이지. 화면의 값은 전부 BE 가 원본이다 — 프로필 GET /api/v1/me, 현재 요금제 POST /me/current-plan,
+// 내 구독 GET/POST/DELETE /me/subscriptions, 중복 결제 GET /me/detections.
+// 낭비 금액도 BE(DuplicateDetector)가 계산한 값을 그대로 쓴다 — 프론트는 숫자를 만들지 않는다(절대 원칙 2).
+// 전환 일정은 이 화면에서 흉내 내지 않고 실제 캘린더 화면으로 보낸다(같은 숫자는 한 곳에서만 — 원칙 5-⑤).
+import { request, ApiError } from './api.js';
+import { loadCatalog } from './catalog-data.js';
+import { won, integer } from './model.js';
 
 const $ = id => document.getElementById(id);
-const won = n => `${n.toLocaleString('ko-KR')}원`;
 function el(tag, cls, text) {
   const node = document.createElement(tag);
   if (cls) node.className = cls;
   if (text !== undefined) node.textContent = text;
   return node;
 }
+const say = (id, message) => { $(id).textContent = message; };
+const message = error => (error instanceof ApiError ? error.message : '요청을 처리하지 못했어요.');
 
-/* 회원 정보. 이름·닉네임·이메일 모두 BE 값이다(D-22 이후 실제로 내려온다). */
+/** BE 탐지 규칙(docs/domain.md §7)의 화면 문구. 금액·판정은 BE 가 하고 여기선 이름만 붙인다. */
+const RULES = {
+  BENEFIT_OVERLAP: ['요금제에 포함된 구독을 따로 결제 중', '요금제 혜택으로 이미 제공돼요. 개별 결제를 해지하면 그만큼 줄어요.'],
+  TIER_DUPLICATE: ['같은 서비스를 두 등급으로 결제 중', '더 비싼 등급 하나만 남기면 나머지가 줄어요.'],
+  BUNDLE_OVERLAP: ['묶음 상품이 더 싼 조합', '개별 결제 합계가 묶음 상품보다 비싸요.'],
+};
+
 let member = null;
+let plans = [];       // GET /api/v1/catalog/plans — 현재 요금제 검색·이름 표시
+let services = [];    // GET /api/v1/catalog/services — 구독 추가 폼의 서비스·등급
 
-request('/api/v1/me', { member: true })
-  .then(({ data }) => { member = data; paintMember(); })
-  .catch(() => { $('pc-name').textContent = '로그인이 필요해요'; });
+start();
+
+async function start() {
+  try {
+    ({ data: member } = await request('/api/v1/me', { member: true }));
+  } catch {
+    // 비회원도 화면은 열린다(원칙 5-①). 저장이 필요한 부분만 로그인 안내로 바꾼다.
+    $('pc-name').textContent = '로그인이 필요해요';
+    $('guest-note').hidden = false;
+    return;
+  }
+  paintMember();
+  wireNickname();
+  for (const id of ['plan-card', 'subs-card', 'detect-card']) $(id).hidden = false;
+  // 공개 카탈로그와 회원 데이터는 서로를 기다리지 않는다.
+  loadPlans();
+  loadServices();
+  loadSubscriptions();
+  loadDetections();
+}
+
+/* ── 프로필 ── */
 
 function paintMember() {
-  if (!member) return;
   // 이름이 없는 계정(Google 로그인)은 닉네임을 이름 자리에 쓴다.
   const display = member.name || member.nickname || member.email.split('@')[0];
   $('pc-name').textContent = display;
@@ -30,93 +61,238 @@ function paintMember() {
     .filter(Boolean).join(' · ') || '—';
 }
 
-/* 닉네임 변경 (POST /api/v1/me/nickname) */
-$('nick-edit').addEventListener('click', () => {
-  $('nick-input').value = member?.nickname ?? '';
-  $('nick-form').hidden = false;
-  $('nick-edit').hidden = true;
-  $('nick-input').focus();
-});
-$('nick-cancel').addEventListener('click', () => {
-  $('nick-form').hidden = true;
-  $('nick-edit').hidden = false;
-  $('nick-status').textContent = '';
-});
-$('nick-form').addEventListener('submit', async event => {
-  event.preventDefault();
-  const nickname = $('nick-input').value.trim();
-  if (!nickname) { $('nick-input').focus(); return; }
-  const button = $('nick-form').querySelector('button[type="submit"]');
-  button.disabled = true;
-  $('nick-status').textContent = '저장 중…';
-  try {
-    const { data } = await request('/api/v1/me/nickname', { method: 'POST', member: true, body: { nickname } });
-    member = data;
-    paintMember();
+/** 닉네임 변경 (POST /api/v1/me/nickname). 중복이면 서버가 그 사실을 알려준다. */
+function wireNickname() {
+  $('nick-edit').addEventListener('click', () => {
+    $('nick-input').value = member?.nickname ?? '';
+    $('nick-form').hidden = false;
+    $('nick-edit').hidden = true;
+    $('nick-input').focus();
+  });
+  $('nick-cancel').addEventListener('click', () => {
     $('nick-form').hidden = true;
     $('nick-edit').hidden = false;
-    $('nick-status').textContent = '';
+    say('nick-status', '');
+  });
+  $('nick-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    const nickname = $('nick-input').value.trim();
+    if (!nickname) { $('nick-input').focus(); return; }
+    const button = $('nick-form').querySelector('button[type="submit"]');
+    button.disabled = true;
+    say('nick-status', '저장 중…');
+    try {
+      const { data } = await request('/api/v1/me/nickname', { method: 'POST', member: true, body: { nickname } });
+      member = data;
+      paintMember();
+      $('nick-form').hidden = true;
+      $('nick-edit').hidden = false;
+      say('nick-status', '');
+    } catch (error) {
+      say('nick-status', message(error));
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+/* ── 현재 요금제 (POST /api/v1/me/current-plan) ── */
+
+async function loadPlans() {
+  try {
+    ({ data: plans } = await request('/api/v1/catalog/plans'));
+    paintCurrentPlan();
   } catch (error) {
-    // 중복이면 서버가 그 사실을 알려준다.
-    $('nick-status').textContent = error.message || '닉네임을 바꾸지 못했어요.';
+    say('plan-status', message(error));
+  }
+}
+
+function paintCurrentPlan() {
+  const current = plans.find(plan => plan.id === member.currentPlanId);
+  $('plan-now').textContent = current
+    ? `${current.carrier} ${current.name}`
+    : (member.currentPlanId ? `요금제 #${member.currentPlanId}` : '아직 저장하지 않았어요');
+  $('plan-now').classList.toggle('on', Boolean(member.currentPlanId));
+}
+
+/** 1,700여 개 중 검색어에 맞는 8개만 보여준다 — 목록 전체를 그리면 화면이 못 쓰게 된다. */
+function renderPlanMatches() {
+  const query = $('plan-search').value.trim().toLowerCase();
+  const box = $('plan-list');
+  if (!query) { box.hidden = true; box.replaceChildren(); return; }
+  const matches = plans
+    .filter(plan => `${plan.carrier} ${plan.name}`.toLowerCase().includes(query))
+    .slice(0, 8);
+  box.replaceChildren(...(matches.length ? matches.map(planRow)
+    : [el('p', 'hint', '검색 결과가 없어요. 통신사나 요금제명 일부로 다시 찾아보세요.')]));
+  box.hidden = false;
+}
+
+function planRow(plan) {
+  const row = el('button', 'pick-row' + (plan.id === member.currentPlanId ? ' on' : ''));
+  row.type = 'button';
+  row.append(el('span', undefined, `${plan.carrier} ${plan.name}`),
+    el('small', undefined, `${plan.networkType} · 월 ${won(plan.basePrice)}`));
+  row.addEventListener('click', () => saveCurrentPlan(plan));
+  return row;
+}
+
+async function saveCurrentPlan(plan) {
+  say('plan-status', '저장 중…');
+  try {
+    await request('/api/v1/me/current-plan', { method: 'POST', member: true, body: { planId: plan.id } });
+    member.currentPlanId = plan.id;
+    paintCurrentPlan();
+    $('plan-search').value = '';
+    renderPlanMatches();
+    say('plan-status', '저장했어요. 이 요금제 기준으로 점검해요.');
+    loadDetections();                         // 혜택 중복은 현재 요금제에 달려 있다
+  } catch (error) {
+    say('plan-status', message(error));
+  }
+}
+
+$('plan-search').addEventListener('input', renderPlanMatches);
+
+/* ── 내 구독 (GET/POST/DELETE /api/v1/me/subscriptions) ── */
+
+async function loadServices() {
+  try {
+    services = await loadCatalog();
+    const select = $('sub-service');
+    select.replaceChildren(...services.map(service => {
+      const option = el('option', undefined, `${service.icon} ${service.name}`);
+      option.value = String(service.id);
+      return option;
+    }));
+    renderTierOptions();
+  } catch (error) {
+    say('sub-status', message(error));
+  }
+}
+
+/** 등급을 고르면 공식 가격을 채운다 — 빈 입력창을 사용자에게 떠넘기지 않는다(원칙 5-②). */
+function renderTierOptions() {
+  const service = services.find(item => String(item.id) === $('sub-service').value);
+  const select = $('sub-tier');
+  select.replaceChildren(...(service?.tiers ?? []).map(tier => {
+    const option = el('option', undefined, `${tier.name} · ${won(tier.price)}`);
+    option.value = String(tier.id);
+    return option;
+  }));
+  fillPrice();
+}
+
+function fillPrice() {
+  const tier = services.flatMap(service => service.tiers).find(item => String(item.id) === $('sub-tier').value);
+  if (tier) $('sub-price').value = String(tier.price);
+}
+
+$('sub-service').addEventListener('change', renderTierOptions);
+$('sub-tier').addEventListener('change', fillPrice);
+
+async function loadSubscriptions() {
+  try {
+    const { data } = await request('/api/v1/me/subscriptions', { member: true });
+    renderSubscriptions(data);
+  } catch (error) {
+    say('sub-status', message(error));
+  }
+}
+
+function renderSubscriptions(rows) {
+  $('sub-rows').replaceChildren(...(rows.length ? rows.map(subscriptionRow)
+    : [el('li', 'empty-row', '등록한 구독이 없어요. 아래에서 추가하면 중복 결제를 점검해 드려요.')]));
+  const total = rows.reduce((sum, row) => sum + row.monthlyPrice, 0);
+  $('subs-total').textContent = rows.length ? `${rows.length}개 · 월 ${won(total)}` : '';
+}
+
+function subscriptionRow(row) {
+  const item = el('li', 'sub-row');
+  item.append(el('span', 'sub-name', row.tierName), el('span', 'sub-price', won(row.monthlyPrice)));
+  const remove = el('button', 'sub-remove', '삭제');
+  remove.type = 'button';
+  remove.addEventListener('click', async () => {
+    remove.disabled = true;
+    try {
+      await request(`/api/v1/me/subscriptions/${row.id}`, { method: 'DELETE', member: true });
+      await loadSubscriptions();
+      loadDetections();
+    } catch (error) {
+      say('sub-status', message(error));
+      remove.disabled = false;
+    }
+  });
+  item.append(remove);
+  return item;
+}
+
+$('sub-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = $('sub-form').querySelector('button[type="submit"]');
+  let body;
+  try {
+    body = {
+      tierId: integer($('sub-tier').value, '구독 등급', 1),
+      monthlyPrice: integer($('sub-price').value, '월 결제액'),
+    };
+  } catch (error) {
+    say('sub-status', error.message);
+    return;
+  }
+  button.disabled = true;
+  say('sub-status', '추가하는 중…');
+  try {
+    await request('/api/v1/me/subscriptions', { method: 'POST', member: true, body });
+    await loadSubscriptions();
+    say('sub-status', '추가했어요.');
+    loadDetections();
+  } catch (error) {
+    say('sub-status', message(error));
   } finally {
     button.disabled = false;
   }
 });
 
-/* 분석 리포트 아카이브 (데모). 운영: 회원별 저장 리포트 목록 API 필요(BE 신설). */
-const REPORTS = [
-  { date: '2026.09.16', mode: 'light', save: 8100, plan: 'KT 다이렉트 5G (30GB)', keep: 3 },
-  { date: '2026.09.10', mode: 'detail', save: 12400, plan: 'SKT 0 청년 요금제', keep: 2 },
-  { date: '2026.08.28', mode: 'light', save: 5500, plan: 'LG U+ 유쓰 요금제', keep: 4 },
-];
-function renderReports() {
-  const cards = REPORTS.map(r => {
-    const card = el('article', 'report-card');
-    const top = el('div', 'rc-top');
-    top.append(el('span', 'rc-date', r.date), el('span', `rc-mode ${r.mode}`, r.mode === 'light' ? '라이트' : '디테일'));
-    const foot = el('div', 'rc-foot');
-    const open = el('a', 'rc-open', '리포트 열기 →'); open.href = './results.html';
-    foot.append(el('span', undefined, `구독 ${r.keep}개 유지`), open);
-    card.append(top, el('div', 'rc-save', `월 ${won(r.save)} 절감`), el('div', 'rc-plan', r.plan), foot);
-    return card;
-  });
-  const add = el('a', 'report-card new'); add.href = './#modes';
-  add.append(el('span', 'rc-plus', '+'), el('span', undefined, '새 분석 시작'));
-  $('report-grid').replaceChildren(...cards, add);
-  $('report-count').textContent = `${REPORTS.length}개`;
-}
+/* ── 중복 결제 점검 (GET /api/v1/me/detections) ── */
 
-/* Google 캘린더 연동 (데모). 실제 OAuth·이벤트 등록은 BE·Google 연동 필요. */
-const GKEY = 'yogobi:gcal';
-const SYNCS = ['구독 결제일 자동 등록', '요금·약정 변경 알림', '절감 리마인더'];
-function renderGcal() {
-  const on = localStorage.getItem(GKEY) === '1';
-  const card = $('gcal-card');
-  const head = el('div', 'gcal-head');
-  head.append(el('span', 'gcal-ico', '📅'), el('h3', undefined, on ? 'Google 캘린더' : 'Google 캘린더 연동'));
-  if (on) head.append(el('span', 'gcal-on', '연동됨'));
-  card.replaceChildren(head);
-
-  if (!on) {
-    card.append(el('p', undefined, '구독 결제일과 요고비 알림을 내 캘린더에서 한눈에 관리하세요.'));
-    const btn = el('button', 'btn btn-brand btn-block', 'Google 캘린더 연동하기'); btn.type = 'button';
-    btn.addEventListener('click', () => { localStorage.setItem(GKEY, '1'); renderGcal(); });
-    card.append(btn, el('p', 'hint', '원하는 분만 연동해요. 언제든 해제할 수 있어요.'));
-  } else {
-    card.append(el('p', undefined, '이 항목을 내 Google 캘린더에 등록·알림으로 받아요.'));
-    const list = el('ul', 'gcal-syncs');
-    SYNCS.forEach((label, i) => {
-      const li = el('li'); const id = `sync-${i}`;
-      const lab = el('label', undefined, label); lab.htmlFor = id;
-      const cb = el('input'); cb.type = 'checkbox'; cb.id = id; cb.checked = true;
-      li.append(lab, cb); list.append(li);
-    });
-    const off = el('button', 'btn btn-ghost btn-block', '연동 해제'); off.type = 'button';
-    off.addEventListener('click', () => { localStorage.removeItem(GKEY); renderGcal(); });
-    card.append(list, off, el('p', 'hint', '데모예요. 실제 Google 캘린더 연동은 준비 중이에요.'));
+async function loadDetections() {
+  say('detect-status', '점검하는 중…');
+  try {
+    const { data } = await request('/api/v1/me/detections', { member: true });
+    renderDetections(data);
+  } catch (error) {
+    say('detect-status', message(error));
   }
 }
 
-renderReports();
-renderGcal();
+function renderDetections(findings) {
+  const total = findings.reduce((sum, finding) => sum + finding.wastedAmount, 0);
+  // 결론을 먼저 낸다(원칙 5-③): 월·연 낭비 금액 한 줄.
+  $('detect-total').textContent = total ? `월 ${won(total)} · 1년 ${won(total * 12)}` : '';
+  $('detect-total').classList.toggle('warn-now', total > 0);
+  $('detect-rows').replaceChildren(...findings.map(detectionRow));
+  say('detect-status', findings.length
+    ? '해지·변경은 각 서비스에서 직접 해주세요. 요고비는 금액만 알려드려요.'
+    : (member.currentPlanId ? '중복으로 새는 금액이 없어요.'
+      : '현재 요금제를 저장하면 요금제 혜택과 겹치는 구독까지 찾아드려요.'));
+}
+
+function detectionRow(finding) {
+  const [title, how] = RULES[finding.rule] ?? [finding.rule, ''];
+  const item = el('li', 'detect-row');
+  const head = el('div', 'detect-head');
+  head.append(el('strong', undefined, title), el('span', 'detect-amount', `월 ${won(finding.wastedAmount)}`));
+  item.append(head, el('p', 'detect-target', targetName(finding.targetRef)), el('p', 'detect-how', how));
+  return item;
+}
+
+/** BE 가 주는 참조는 `service:{id}` / `bundle:{id}` 다. 서비스는 카탈로그 이름으로 바꾸고, 나머지는 그대로 둔다. */
+function targetName(targetRef) {
+  const [kind, id] = String(targetRef).split(':');
+  if (kind === 'service') {
+    const service = services.find(item => String(item.id) === id);
+    return service ? `${service.icon} ${service.name}` : `서비스 #${id}`;
+  }
+  return kind === 'bundle' ? '묶음 상품' : targetRef;
+}
