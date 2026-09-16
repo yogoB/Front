@@ -16,7 +16,11 @@ function noteOAuthReturn(member) {
   const box = document.getElementById('auth-note');
   const state = new URLSearchParams(location.hash.slice(1)).get('auth');
   if (!box || !state) return;
-  if (state === 'success') {
+  // success 로 돌아왔는데 세션이 안 잡혔으면(쿠키 차단 등) 로그인된 게 아니다 — 그렇게 적지 않는다.
+  if (state === 'success' && !member) {
+    box.textContent = '로그인은 됐지만 이 브라우저에 세션이 남지 않았어요. 쿠키를 허용한 뒤 다시 시도해 주세요.';
+    box.className = 'auth-note warn';
+  } else if (state === 'success') {
     box.className = 'auth-note ok';
     if (member?.nickname) {
       // 닉네임은 서버 문자열이므로 textContent 로만 넣는다. 링크는 우리가 만든 노드로 붙인다.
