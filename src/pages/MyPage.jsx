@@ -66,6 +66,7 @@ export default function MyPage() {
         <Profile member={member} onChange={setMember} />
         <CurrentPlan member={member} plans={plans} onSaved={id => { setMember(m => ({ ...m, currentPlanId: id })); reloadDetections(); }} />
         <Subscriptions services={services} rows={subscriptions} onChanged={() => { reloadSubs(); reloadDetections(); }} />
+        <PaymentImport onImported={() => { reloadSubs(); reloadDetections(); }} />
         <Detections findings={findings} services={services} hasPlan={Boolean(member?.currentPlanId)} />
         <DeleteAccount />
       </main>
@@ -315,6 +316,74 @@ function Subscriptions({ services, rows, onChanged }) {
                aria-label="월 결제액" className="field sm:w-28" />
         <button type="submit" className="btn btn-brand">추가</button>
       </form>
+      <Status>{status}</Status>
+    </Card>
+  );
+}
+
+/* 결제내역 업로드 — 보조 경로다(D-33). 없어도 구독을 직접 추가하면 점검은 끝까지 간다.
+   파일이 있으면 빠뜨린 구독까지 찾아 주므로 "더 정확해진다"로 안내한다. */
+const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
+
+function PaymentImport({ onImported }) {
+  const [status, setStatus] = useState('');
+  const [result, setResult] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  async function upload(file) {
+    if (!file) return;
+    setResult(null);
+    if (file.size > MAX_IMPORT_BYTES) {
+      setStatus('파일이 너무 커요. 2MB 이하로 올려 주세요.');
+      return;
+    }
+    setBusy(true);
+    setStatus('읽는 중이에요…');
+    try {
+      // 브라우저에서 먼저 형식을 본다 — 서버까지 갔다가 받는 오류보다 빨리 알려줄 수 있다.
+      const body = JSON.parse(await file.text());
+      const { data } = await request('/api/v1/me/payments/import', { method: 'POST', member: true, body });
+      setResult(data);
+      setStatus('');
+      onImported();
+    } catch (e) {
+      setStatus(e instanceof SyntaxError
+        ? '카드 승인내역(JSON) 파일이 아니에요. 내려받은 파일을 그대로 올려 주세요.'
+        : message(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card title="결제내역으로 채우기">
+      <p className="text-sm leading-relaxed text-ink-soft">
+        카드사에서 내려받은 <strong>승인내역 파일</strong>을 올리면 결제 중인 구독을 찾아 넣어 드려요.
+        <br />
+        올리지 않아도 괜찮아요 — 아래에서 직접 추가해도 중복 점검은 똑같이 됩니다.
+      </p>
+      <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-brand-ink hover:bg-bg-soft">
+        <input
+          type="file"
+          accept="application/json,.json"
+          className="sr-only"
+          disabled={busy}
+          onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; upload(f); }}
+        />
+        {busy ? '올리는 중…' : '파일 선택'}
+      </label>
+      {result && (
+        <div className="mt-3 rounded-xl border border-line bg-bg-soft px-4 py-3 text-sm">
+          <p>
+            결제 {result.imported}건을 읽어 구독 <strong className="text-brand-ink">{result.recognized}건</strong>을 찾았어요.
+          </p>
+          {result.unrecognized?.length > 0 && (
+            <p className="mt-1 text-[13px] text-muted">
+              알아보지 못한 결제: {result.unrecognized.join(', ')} — 필요하면 아래에서 직접 추가해 주세요.
+            </p>
+          )}
+        </div>
+      )}
       <Status>{status}</Status>
     </Card>
   );
