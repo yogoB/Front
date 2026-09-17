@@ -364,7 +364,7 @@ function Statement({ carrier, plan, contractHas, fee }) {
       <dl className="m-0 mt-4 grid gap-2.5 text-sm">
         <Row label="통신사" value={carrier?.name || '—'} />
         <Row label="요금제" value={plan ? plan.name : '—'} />
-        <Row label="약정" value={contractHas === null ? '—' : contractHas ? 'Y' : 'N'} />
+        <Row label="약정" value={contractHas === null ? '—' : contractHas ? '약정 중' : '무약정'} />
         <Row label="통신비" value={fee ? won(fee.amount) : plan ? `${won(plan.basePrice)} (요금제)` : '—'} />
       </dl>
     </aside>
