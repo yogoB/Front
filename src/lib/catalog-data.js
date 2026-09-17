@@ -61,9 +61,16 @@ export const FEE_BUCKETS = [
    SKT·KT·LG U+ 만 MNO 이고 나머지는 전부 MVNO. */
 const MNO = new Set(['SKT', 'KT', 'LG U+']);
 
-export async function loadCarriers(signal) {
+/** 요금제 전량(GET /catalog/plans). 통신사 목록과 "지금 쓰는 요금제" 검색이 같은 응답을 나눠 쓴다 — 두 번 받지 않는다. */
+export async function loadPlans(signal) {
   const { data } = await request('/api/v1/catalog/plans', { signal });
-  return [...new Set(data.map(plan => plan.carrier))]
-    .sort((a, b) => a.localeCompare(b, 'ko'))
-    .map(name => ({ name, mvno: !MNO.has(name) }));
+  return data;
+}
+
+export const carriersOf = plans => [...new Set(plans.map(plan => plan.carrier))]
+  .sort((a, b) => a.localeCompare(b, 'ko'))
+  .map(name => ({ name, mvno: !MNO.has(name) }));
+
+export async function loadCarriers(signal) {
+  return carriersOf(await loadPlans(signal));
 }

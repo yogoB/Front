@@ -42,6 +42,8 @@ export function optionalInputs(values) {
   if (values.currentCarrier) optional.currentCarrier = values.currentCarrier;
   if (values.networkType) optional.networkType = values.networkType;
   if (values.contractType) optional.contractType = values.contractType;
+  // 지금 쓰는 요금제 id(G-30). BE 가 '현재' 열을 같은 계산기로 내고, 그 요금제의 통신사를 현재 통신사로 확정한다.
+  { const plan = whole(values.currentPlanId); if (plan) optional.currentPlanId = plan; }
   if (['true', 'false'].includes(values.hasFamilyBundle)) optional.hasFamilyBundle = values.hasFamilyBundle === 'true';
   // 결합 중일 때만 회선 수·월 할인액을 보낸다(G-28). 빈 값·0 회선은 보내지 않는다 — missingInputs 안내가 그 자리를 채운다.
   // 할인액은 BE 가 사용자 입력(USER_PROVIDED)으로 그대로 빼고, 회선 수는 근거 문구에만 쓴다.

@@ -38,6 +38,7 @@ export default function Results() {
   if (!data) return <><Header /><p className="p-10 text-center text-muted">계산하는 중…</p></>;
 
   const best = data.results[0];
+  const current = data.current ?? null;   // currentPlanId 를 보냈고 카탈로그에 있을 때만. 없으면 입력값 합계 폴백
   const notices = buildNotices(input, data, best);
 
   return (
@@ -49,11 +50,12 @@ export default function Results() {
         </span>
         <h1 className="mb-2 mt-4 text-2xl font-extrabold tracking-[-.01em] md:text-[28px]">최적 요금 조합 비교 분석</h1>
 
-        {best && <SaveHero best={best} />}
+        {best && <SaveHero best={best} current={current} />}
         <Summary message={data.message} />
         <p className="my-6 max-w-prose rounded-xl bg-warn-tint px-4 py-3 text-sm leading-relaxed text-warn-ink">
-          ‘추천·정가’ 금액과 요금제는 계산 서버가 카탈로그로 계산한 값입니다. ‘현재’ 열은{' '}
-          <strong>입력하신 값의 합계</strong>예요.
+          {current
+            ? <>‘현재’ 열도 추천과 <strong>같은 계산기</strong>로 냈어요 — 지금 쓰는 요금제로 같은 구독을 유지했을 때의 금액이에요.</>
+            : <>‘추천·정가’ 금액과 요금제는 계산 서버가 카탈로그로 계산한 값입니다. ‘현재’ 열은{' '}<strong>입력하신 값의 합계</strong>예요.</>}
         </p>
 
         {notices.length > 0 && (
@@ -77,8 +79,8 @@ export default function Results() {
           </div>
         )}
 
-        {best && <CompareTable input={input} best={best} />}
-        {best && <SaveResult input={input} best={best} />}
+        {best && <CompareTable input={input} best={best} current={current} />}
+        {best && <SaveResult input={input} best={best} current={current} />}
 
         <ul className="mt-8 flex list-none flex-wrap gap-2.5 p-0">
           {['금액마다 출처 표시', '안 쓰는 혜택은 0원으로 계산', '카드·계좌 연결 없음'].map(t => (
@@ -103,21 +105,31 @@ export default function Results() {
 /* 결론 먼저(원칙 5-③) — 다만 금액을 하나도 만들지 않는다(원칙 2).
    월·연 절감은 BE 의 monthlySavings·annualSavings 를 그대로 쓴다. 기준은 정가(baseline)이며
    사용자의 현재 청구액이 아니다(integration.md 결과 해석). */
-function SaveHero({ best }) {
-  const saving = best.monthlySavings > 0;
+function SaveHero({ best, current }) {
+  // current 가 있으면 "지금보다" 가 기준이다(G-30). 차액은 BE 가 뺀 값(current.monthlySavings)을 그대로 쓴다 —
+  // 화면에서 current − best 를 다시 계산하지 않는다. 음수(지금이 더 쌈)도 숨기지 않는다.
+  let head, amount, foot;
+  if (current) {
+    const diff = current.monthlySavings;
+    if (diff > 0) { head = '지금보다 매달'; amount = won(diff); foot = `1년이면 ${won(current.annualSavings)}`; }
+    else if (diff < 0) { head = '지금 요금제가 더 싸요 — 매달'; amount = won(-diff); foot = '추천 조합으로 옮기면 그만큼 더 내요'; }
+    else { head = '지금과 같은 금액이에요'; amount = won(best.monthlyTotal); foot = '옮겨도 월 요금은 그대로예요'; }
+  } else {
+    const saving = best.monthlySavings > 0;
+    head = saving ? '정가 대비 매달' : '추천 조합은 매달';
+    amount = won(saving ? best.monthlySavings : best.monthlyTotal);
+    foot = saving ? `1년이면 ${won(best.annualSavings)}` : '정가보다 싼 조합을 찾지 못했어요';
+  }
   return (
     <section className="mb-6 mt-4 flex flex-wrap items-center justify-between gap-6 rounded-card bg-brand-tint px-6 py-6 md:px-8">
       <div>
-        <span className="block text-sm font-semibold text-brand-ink">{saving ? '정가 대비 매달' : '추천 조합은 매달'}</span>
-        <strong className="my-1 block text-[40px] font-extrabold leading-tight tracking-[-.02em] text-brand-strong tnum">
-          {won(saving ? best.monthlySavings : best.monthlyTotal)}
-        </strong>
-        <span className="block text-sm font-semibold text-ink-soft">
-          {saving ? `1년이면 ${won(best.annualSavings)}` : '정가보다 싼 조합을 찾지 못했어요'}
-        </span>
+        <span className="block text-sm font-semibold text-brand-ink">{head}</span>
+        <strong className="my-1 block text-[40px] font-extrabold leading-tight tracking-[-.02em] text-brand-strong tnum">{amount}</strong>
+        <span className="block text-sm font-semibold text-ink-soft">{foot}</span>
       </div>
-      <dl className="m-0 flex gap-2.5">
+      <dl className="m-0 flex flex-wrap gap-2.5">
         <Delta label="추천 조합" value={won(best.monthlyTotal)} />
+        {current && <Delta label="지금 요금제" value={won(current.cost.monthlyTotal)} />}
         <Delta label="정가 기준" value={won(best.baseline)} />
       </dl>
     </section>
@@ -136,6 +148,8 @@ function buildRequest(source) {
   // 통신사 이름을 그대로 보낸다. BE 는 금액에 쓰지 않고, 카탈로그에 없는 이름이면 결손(catalog_candidate)으로
   // 기록해 수집 우선순위를 만든다 — 그래서 '알뜰폰'으로 뭉뚱그리지 않는다(QA 2026-09-17).
   if (source.carrier) optional.currentCarrier = source.carrier;
+  // 지금 쓰는 요금제(G-30). BE 가 '현재' 열을 같은 계산기로 내고 요금제의 통신사를 현재 통신사로 확정한다.
+  if (source.currentPlanId) optional.currentPlanId = source.currentPlanId;
   // 모른다고 한 값은 빼서 missingInputs 안내가 그대로 남는다(원칙 5-①).
   if (source.networkType) optional.networkType = source.networkType;
   if (source.contractType) optional.contractType = source.contractType;
@@ -169,26 +183,37 @@ function buildNotices(source, data, best) {
   return notices;
 }
 
-/** 사용자가 입력한 현재 월 지출 합계 — 화면의 메모다. 절감액 계산에는 쓰지 않는다. */
+/** 사용자가 입력한 현재 월 지출 합계 — data.current 가 없을 때의 폴백 메모다. 절감액 계산에는 쓰지 않는다. */
 function currentTotal(source) {
   if (source.fee?.amount === undefined) return null;
   return source.fee.amount + keptSubs(source).reduce((sum, s) => sum + (s.price || 0), 0);
 }
 
-function CompareTable({ input, best }) {
-  const current = currentTotal(input);
+/** 결과 한 건(results[]·current.cost 모두 같은 모양)에서 비교표 열에 적을 사실을 뽑는다.
+    내역 줄의 금액은 '비용'이다. 제휴 혜택은 note 로 표시되므로 그 줄만 혜택으로 센다. */
+function columnFacts(cost) {
+  return {
+    plan: `${cost.carrier} ${cost.planName}`,
+    benefits: cost.breakdown.filter(l => l.note === '제휴 혜택 적용').map(l => `${l.label} ${won(l.amount)}`),
+    discounts: cost.breakdown.filter(l => l.amount < 0).map(l => `${l.label} ${won(l.amount)}`),
+  };
+}
+
+function CompareTable({ input, best, current }) {
   const dataLabel = input.data ? `${input.data.label} 충족` : `${DEFAULT_GB}GB 기준 충족`;
-  const planLabel = `${best.carrier} ${best.planName}`;
-  // 내역 줄의 금액은 '비용'이다. 제휴 혜택은 note 로 표시되므로 그 줄만 혜택으로 센다.
-  const benefits = best.breakdown.filter(l => l.note === '제휴 혜택 적용').map(l => `${l.label} ${won(l.amount)}`);
-  const discounts = best.breakdown.filter(l => l.amount < 0).map(l => `${l.label} ${won(l.amount)}`);
+  const rec = columnFacts(best);
+  // '현재' 열: BE 가 같은 계산기로 낸 current.cost 가 있으면 그것, 없으면 입력값 합계(폴백).
+  const cur = current ? columnFacts(current.cost) : null;
+  const curTotal = current ? won(current.cost.monthlyTotal) : (currentTotal(input) === null ? '—' : won(currentTotal(input)));
 
   const rows = [
-    ['요금제 (Plan)', input.carrier ? `${input.carrier} · 현재 요금제` : '현재 요금제', planLabel, planLabel],
+    ['요금제 (Plan)', cur ? cur.plan : input.carrier ? `${input.carrier} · 현재 요금제` : '현재 요금제', rec.plan, rec.plan],
     ['데이터 (Data)', input.data ? input.data.label : '모름', dataLabel, dataLabel],
     ['통화 (Calls)', '확인 필요', '확인 필요', '확인 필요'],
-    ['부가혜택 (Benefits)', '—', benefits.length ? benefits : ['포함된 구독 혜택 없음'], '정가 기준(혜택 미반영)'],
-    ['할인/적립 (Discounts)', '—', discounts.length ? discounts : ['적용된 할인 없음'], '할인 미적용'],
+    ['부가혜택 (Benefits)', cur ? (cur.benefits.length ? cur.benefits : ['포함된 구독 혜택 없음']) : '—',
+      rec.benefits.length ? rec.benefits : ['포함된 구독 혜택 없음'], '정가 기준(혜택 미반영)'],
+    ['할인/적립 (Discounts)', cur ? (cur.discounts.length ? cur.discounts : ['적용된 할인 없음']) : '—',
+      rec.discounts.length ? rec.discounts : ['적용된 할인 없음'], '할인 미적용'],
     ['약정 기간 (Contract)',
       input.contract?.has ? ['약정 있음', input.contract.endDate && `종료 ${input.contract.endDate}`].filter(Boolean) : ['무약정'],
       '선택약정 미반영', '선택약정 미반영'],
@@ -203,7 +228,7 @@ function CompareTable({ input, best }) {
         <thead>
           <tr>
             <th scope="col" className="border-b-2 border-line bg-bg-soft px-4.5 py-3.5 text-left align-top" />
-            <ColHead title="현재 상황" sub="현재 통신사 및 납부 요금" total={current === null ? '—' : won(current)} />
+            <ColHead title="현재 상황" sub={current ? '지금 요금제 · 같은 계산기' : '현재 통신사 및 납부 요금'} total={curTotal} />
             <ColHead title="추천 · 최적값 🌟" best sub="체감 환산 월 요금" total={won(best.monthlyTotal)}
                      save={best.monthlySavings > 0 ? `정가 대비 월 ${won(best.monthlySavings)} 절감` : ''} />
             <ColHead title="정가 기준" sub="할인 전 정가 합계" total={won(best.baseline)} />
@@ -368,15 +393,15 @@ function Reasons({ reasons }) {
 }
 
 /** 캘린더가 같은 숫자를 쓰도록 결과를 넘긴다(원칙 5-⑤: 같은 숫자는 같은 출처). */
-function SaveResult({ input, best }) {
+function SaveResult({ input, best, current }) {
   useEffect(() => {
     setResult({
       planId: best.planId,
-      currentTotal: currentTotal(input),
+      currentTotal: current ? current.cost.monthlyTotal : currentTotal(input),
       planLabel: `${best.carrier} ${best.planName}`,
       monthlyTotal: best.monthlyTotal, monthlySavings: best.monthlySavings, annualSavings: best.annualSavings,
     });
-  }, [input, best]);
+  }, [input, best, current]);
   return null;
 }
 
