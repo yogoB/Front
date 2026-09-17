@@ -52,14 +52,18 @@ export const FEE_BUCKETS = [
   { label: '7만원 이상', rep: 80000 },
 ];
 
-// 디테일 모드 통신사. 알뜰폰 브랜드는 BE currentCarrier enum에 개별로 없으므로 '알뜰폰'으로 매핑한다.
-// ponytail: 매핑은 mvnoCarrier 플래그로 표시만; 실제 전송은 결과 연동 단계에서 처리.
-export const CARRIERS = [
-  { name: 'SKT', mvno: false },
-  { name: 'KT', mvno: false },
-  { name: 'LG U+', mvno: false },
-  { name: '세븐모바일', mvno: true },
-  { name: 'M모바일', mvno: true },
-  { name: '헬로모바일', mvno: true },
-  { name: '스노우맨', mvno: true },
-];
+/* 디테일 모드 통신사 — 카탈로그에서 뽑는다.
+   예전에는 7개를 여기 적어 뒀는데 실제 카탈로그는 21개였고 이름도 달랐다("M모바일" vs 실제 "KT엠모바일",
+   "스노우맨"은 아예 없음). 그래서 "kt" 를 쳐도 KT엠모바일이 안 나왔다 — 걸릴 문자열 자체가 없었다.
+   목록을 적어 두는 한 카탈로그와 어긋나는 건 시간 문제라, 적지 않는다.
+
+   MNO/MVNO 구분은 BE 의 carrier_type 파생 규칙과 같다(docs/domain.md §2 "통신사 종류 파생"):
+   SKT·KT·LG U+ 만 MNO 이고 나머지는 전부 MVNO. */
+const MNO = new Set(['SKT', 'KT', 'LG U+']);
+
+export async function loadCarriers(signal) {
+  const { data } = await request('/api/v1/catalog/plans', { signal });
+  return [...new Set(data.map(plan => plan.carrier))]
+    .sort((a, b) => a.localeCompare(b, 'ko'))
+    .map(name => ({ name, mvno: !MNO.has(name) }));
+}

@@ -133,14 +133,20 @@ const Delta = ({ label, value }) => (
 
 function buildRequest(source) {
   const optional = {};
-  // 알뜰폰 브랜드는 BE 가 개별로 알지 못하므로 묶어서 보낸다(catalog-data.js CARRIERS 와 같은 규칙).
+  // 알뜰폰은 브랜드명 대신 '알뜰폰'으로 묶어 보낸다. BE 는 currentCarrier 를 계산에 쓰지 않고
+  // missingInputs 안내 여부만 본다 — 값이 무엇이든 금액은 같다.
   if (source.carrier) optional.currentCarrier = source.mvno ? '알뜰폰' : source.carrier;
   // 모른다고 한 값은 빼서 missingInputs 안내가 그대로 남는다(원칙 5-①).
   if (source.networkType) optional.networkType = source.networkType;
   if (source.contractType) optional.contractType = source.contractType;
   if (typeof source.hasFamilyBundle === 'boolean') optional.hasFamilyBundle = source.hasFamilyBundle;
   return {
-    required: { monthlyDataGb: source.data?.gb ?? DEFAULT_GB, wantedServiceIds: keptSubs(source).map(s => s.id) },
+    required: {
+      monthlyDataGb: source.data?.gb ?? DEFAULT_GB,
+      wantedServiceIds: keptSubs(source).map(s => s.id),
+      // 사용자가 고른 등급을 그대로 보낸다. 없으면 BE 가 대표 등급을 고른다(챗봇 경로와 같은 기본값).
+      wantedTierIds: keptSubs(source).map(s => s.tierId).filter(Boolean),
+    },
     optional,
   };
 }

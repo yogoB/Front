@@ -2,15 +2,15 @@ import test from 'node:test';
 import { readFileSync, readdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { request, ApiError } from '../src/lib/api.js';
-import { DATA_BUCKETS, FEE_BUCKETS, CARRIERS } from '../src/lib/catalog-data.js';
+import { DATA_BUCKETS, FEE_BUCKETS, loadCarriers } from '../src/lib/catalog-data.js';
 import { parseDay, icsEscape, icsText, monthGrid, relativeDay, EVENTS_FROM_EXPIRY, EVENTS_FROM_TODAY, googleUrl, startOfToday } from '../src/lib/schedule.js';
-import { integer, optionalInputs, recommendationRequest, calculatorRequest, comparisonCsv, splitLines } from '../src/lib/model.js';
+import { integer, optionalInputs, recommendationRequest, calculatorRequest, comparisonCsv, splitLines, matches } from '../src/lib/model.js';
 
 const values = { monthlyDataGb: '20', currentCarrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: 'false', fee: '55000', budget: '70000', contractEnd: '2027-01-01' };
 const subs = [{ id: 1, tierId: 2, wanted: true }, { id: 3, tierId: 8, wanted: false }];
 test('filter/calculator use server IDs, exact enums and only supported fields', () => {
   assert.deepEqual(recommendationRequest(values, subs), {
-    required: { monthlyDataGb: 20, wantedServiceIds: [1] },
+    required: { monthlyDataGb: 20, wantedServiceIds: [1], wantedTierIds: [2] },
     optional: { currentCarrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: false }
   });
   assert.deepEqual(calculatorRequest(5, optionalInputs(values), subs), { planId: 5, tierIds: [2], optional: optionalInputs(values) });
@@ -84,11 +84,28 @@ test('splitLines breaks on sentence ends only — amounts, dates and IDs stay on
   assert.deepEqual(splitLines(['약정 있음', '', null, '종료 2026-11-30']), ['약정 있음', '종료 2026-11-30']);
 });
 
-test('carriers include majors and flag MVNO brands for BE mapping', () => {
-  const names = CARRIERS.map(c => c.name);
-  for (const major of ['SKT', 'KT', 'LG U+']) assert.ok(names.includes(major), `missing ${major}`);
-  assert.ok(CARRIERS.some(c => c.mvno), 'need at least one 알뜰폰 brand flagged');
-  assert.ok(CARRIERS.filter(c => c.mvno).every(c => c.name), 'mvno entries need names');
+test('carrier list comes from the catalog and stays searchable', async () => {
+  // 카탈로그에 실제로 들어 있는 표기를 그대로 쓴다. 예전에는 7개를 하드코딩했고 그 안의 이름이
+  // 'M모바일' 이라 "kt" 를 쳐도 KT엠모바일이 나오지 않았다 — 걸릴 문자열이 없었다.
+  const plans = [{ carrier: 'KT' }, { carrier: 'KT엠모바일' }, { carrier: 'KT엠모바일' },
+    { carrier: 'SKT' }, { carrier: 'LG U+' }, { carrier: 'LG헬로모바일' }, { carrier: '토스모바일' }];
+  const saved = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ data: plans, warnings: [] }),
+    { status: 200, headers: { 'content-type': 'application/json' } });
+  try {
+    const carriers = await loadCarriers();
+    // 중복 표기는 한 번만 나온다.
+    assert.deepEqual([...new Set(carriers.map(c => c.name))].length, carriers.length);
+    assert.deepEqual(new Set(carriers.map(c => c.name)),
+      new Set(['KT', 'KT엠모바일', 'SKT', 'LG U+', 'LG헬로모바일', '토스모바일']));
+    // MNO/MVNO 는 BE 의 carrier_type 파생 규칙과 같아야 한다(docs/domain.md §2).
+    assert.deepEqual(carriers.filter(c => !c.mvno).map(c => c.name).sort(), ['KT', 'LG U+', 'SKT']);
+    // 이 줄이 원래 버그다: "kt" 검색에 KT엠모바일이 나와야 한다.
+    assert.ok(carriers.filter(c => matches(c.name, 'kt')).some(c => c.name === 'KT엠모바일'),
+      '"kt" 로 검색하면 KT엠모바일이 나와야 한다');
+    assert.deepEqual([...carriers].sort((a, b) => a.name.localeCompare(b.name, 'ko')).map(c => c.name),
+      carriers.map(c => c.name), '목록은 한글 기준 정렬이어야 한다');
+  } finally { globalThis.fetch = saved; }
 });
 
 test('range buckets carry a positive integer representative for BE (monthlyDataGb)', () => {

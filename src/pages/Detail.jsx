@@ -4,7 +4,7 @@ import { Header } from '../components/Layout.jsx';
 import { FlowHead, Question, ErrorLine, Actions, RangeCard } from '../components/Flow.jsx';
 import { Choice, ChoiceGroup } from '../components/Choice.jsx';
 import Analyzing from '../components/Analyzing.jsx';
-import { loadCatalog, CARRIERS, DATA_BUCKETS, FEE_BUCKETS } from '../lib/catalog-data.js';
+import { loadCatalog, loadCarriers, DATA_BUCKETS, FEE_BUCKETS } from '../lib/catalog-data.js';
 import { won, tierPrice, tierKrwGuess, isForeign, matches } from '../lib/model.js';
 import { setInput } from '../lib/session.js';
 
@@ -17,6 +17,7 @@ export default function Detail() {
   const [error, setError] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
   const [catalog, setCatalog] = useState([]);
+  const [carriers, setCarriers] = useState([]);
 
   const [carrier, setCarrier] = useState(null);       // { name, mvno }
   const [carrierQuery, setCarrierQuery] = useState('');
@@ -41,6 +42,8 @@ export default function Detail() {
           .map(service => ({ id: service.id, service, tierId: service.tiers[0].id, disposition: '유지' })));
       })
       .catch(e => setError(e.message || '구독 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'));
+    // 통신사 목록은 따로 받는다. 실패해도 구독 단계까지는 진행할 수 있어야 하므로 화면을 막지 않는다.
+    loadCarriers().then(setCarriers).catch(() => {});
   }, []);
 
   const go = next => { setError(''); setStep(next); };
@@ -93,6 +96,7 @@ export default function Detail() {
               <>
                 <Question kicker="현재 통신사">어떤 통신사를 쓰고 계세요?</Question>
                 <CarrierSearch
+                  carriers={carriers}
                   query={carrierQuery} onQuery={q => { setCarrierQuery(q); setShowSuggest(true); }}
                   open={showSuggest} selected={carrier}
                   onPick={c => { setCarrier({ name: c.name, mvno: c.mvno }); setCarrierQuery(c.name); setShowSuggest(false); }} />
@@ -162,17 +166,30 @@ export default function Detail() {
                 </Question>
                 <div className="mb-4 flex flex-col gap-2.5">
                   {wish.map(w => (
-                    <div key={w.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-xl border border-line bg-white py-2 pl-4 pr-1">
-                      <span className="font-semibold">{w.service.icon}  {w.service.name}</span>
-                      <select value={w.disposition} aria-label={`${w.service.name} 유지 여부`}
-                              onChange={e => setWish(list => list.map(x => x.id === w.id ? { ...x, disposition: e.target.value } : x))}
-                              className="min-h-10 rounded-lg border border-line bg-white px-2.5 py-1.5">
-                        <option value="유지">유지</option>
-                        <option value="해지">해지</option>
-                      </select>
-                      <button type="button" aria-label={`${w.service.name} 제거`}
-                              onClick={() => setWish(list => list.filter(x => x.id !== w.id))}
-                              className="grid size-10 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-[15px] text-muted hover:bg-bg-soft hover:text-ink-soft">✕</button>
+                    <div key={w.id} className="rounded-xl border border-line bg-white py-2 pl-4 pr-1">
+                      <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3">
+                        <span className="font-semibold">{w.service.icon}  {w.service.name}</span>
+                        <select value={w.disposition} aria-label={`${w.service.name} 유지 여부`}
+                                onChange={e => setWish(list => list.map(x => x.id === w.id ? { ...x, disposition: e.target.value } : x))}
+                                className="min-h-10 rounded-lg border border-line bg-white px-2.5 py-1.5">
+                          <option value="유지">유지</option>
+                          <option value="해지">해지</option>
+                        </select>
+                        <button type="button" aria-label={`${w.service.name} 제거`}
+                                onClick={() => setWish(list => list.filter(x => x.id !== w.id))}
+                                className="grid size-10 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-[15px] text-muted hover:bg-bg-soft hover:text-ink-soft">✕</button>
+                      </div>
+                      {/* 등급을 여기서 고른다. 고르기 전에는 화면은 첫 등급 금액을 보여주면서 서버는 대표 등급(스탠다드)으로
+                          계산해, 프리미엄 가입자가 스탠다드 금액을 추천받고 있었다. 이제 고른 값이 그대로 전송된다. */}
+                      <div className="mt-1.5 flex items-center gap-2 pr-2.5">
+                        <select value={w.tierId} aria-label={`${w.service.name} 등급`}
+                                onChange={e => setWish(list => list.map(x => x.id === w.id ? { ...x, tierId: Number(e.target.value) } : x))}
+                                className="min-h-10 min-w-0 flex-1 rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm">
+                          {w.service.tiers.map(t => (
+                            <option key={t.id} value={t.id}>{t.name} · {tierPrice(t)}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   ))}
                   {!wish.length && <p className="text-sm leading-relaxed text-muted">아직 고른 서비스가 없어요. 아래에서 추가해 주세요.</p>}
@@ -202,10 +219,10 @@ export default function Detail() {
 }
 
 /* 통신사 — 검색 자동완성. 전체 목록을 나열하지 않고 입력하면 일치하는 것만 제안한다. */
-function CarrierSearch({ query, onQuery, open, selected, onPick }) {
+function CarrierSearch({ query, onQuery, open, selected, onPick, carriers }) {
   const found = useMemo(
-    () => (query.trim() ? CARRIERS.filter(c => matches(c.name, query) || (c.mvno && matches('알뜰폰', query))) : []),
-    [query]);
+    () => (query.trim() ? carriers.filter(c => matches(c.name, query) || (c.mvno && matches('알뜰폰', query))) : []),
+    [query, carriers]);
   return (
     <div>
       <input value={query} onChange={e => onQuery(e.target.value)} onFocus={() => onQuery(query)}

@@ -49,9 +49,16 @@ export function optionalInputs(values) {
 export function recommendationRequest(values, subscriptions) {
   if (subscriptions.some(s => s.wanted && s.unavailable)) throw new Error('목록에서 변경된 구독을 삭제하고 다시 선택해 주세요.');
   const monthlyDataGb = integer(values.monthlyDataGb, '월 데이터 사용량', 1, 2147483647);
-  const wantedServiceIds = subscriptions.filter(s => s.wanted).map(s => s.id);
+  const wanted = subscriptions.filter(s => s.wanted);
+  const wantedServiceIds = wanted.map(s => s.id);
   if (!wantedServiceIds.length) throw new Error('추천에 포함할 구독 서비스를 하나 이상 골라주세요.');
-  return { required: { monthlyDataGb, wantedServiceIds }, optional: optionalInputs(values) };
+  // 고른 등급을 함께 보낸다. 계산기(calculatorRequest)는 이미 tierIds 로 보내고 있었는데 추천만
+  // 서비스 id 로 보내, 같은 화면의 두 숫자가 다른 등급으로 계산되고 있었다(절대 원칙 3).
+  const wantedTierIds = wanted.map(s => s.tierId).filter(Boolean);
+  return {
+    required: { monthlyDataGb, wantedServiceIds, ...(wantedTierIds.length ? { wantedTierIds } : {}) },
+    optional: optionalInputs(values),
+  };
 }
 
 export function calculatorRequest(planId, optional, subscriptions) {
