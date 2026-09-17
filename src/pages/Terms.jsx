@@ -7,12 +7,12 @@ export default function Terms() {
   return (
     <>
       <Header />
-      <PolicyNav />
-      
+      <main className="policy">
+        <PolicyNav />
         <h1>이용약관</h1>
         <p className="updated">최종 업데이트: 2026년 9월 16일</p>
         <p className="note">요고비는 학생·팀 프로젝트로 운영되는 <strong>정보 제공 서비스</strong>입니다. 아래 약관은 서비스 이용 조건을 쉽게 설명하기 위한 초안이며, 법률 자문을 대체하지 않습니다.</p>
-      
+
         <article>
           <h2>제1조 (목적)</h2>
           <p>이 약관은 요고비(이하 "서비스")가 제공하는 통신 요금제·구독 서비스의 <strong>실제 지불 총액 비교와 절감 조합 추천</strong> 기능의 이용 조건과 절차를 정하는 것을 목적으로 합니다.</p>
@@ -47,10 +47,11 @@ export default function Terms() {
           <h2>제8조 (문의)</h2>
           <p>약관과 서비스에 대한 문의는 서비스 내 안내된 연락처로 전달해 주세요.</p>
       
-          <p style="margin-top:24px;color:var(--muted)">부칙 · 이 약관은 2026년 9월 16일부터 적용됩니다.</p>
+          <p className="mt-6 text-muted">부칙 · 이 약관은 2026년 9월 16일부터 적용됩니다.</p>
       
           <Link className="btn btn-ghost mt-9 inline-block" to="/">← 홈으로</Link>
         </article>
+      </main>
       <div className="mx-auto max-w-page px-6"><Footer /></div>
     </>
   );

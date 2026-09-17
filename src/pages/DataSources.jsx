@@ -7,12 +7,12 @@ export default function DataSources() {
   return (
     <>
       <Header />
-      <PolicyNav />
-      
+      <main className="policy">
+        <PolicyNav />
         <h1>데이터 출처</h1>
         <p className="updated">최종 업데이트: 2026년 9월 16일</p>
         <p className="note">요고비의 추천과 절감액이 <strong>어떤 데이터를 근거로 계산되는지</strong> 투명하게 설명합니다.</p>
-      
+
         <article>
           <h2>1. 무엇을 기준으로 계산하나요</h2>
           <p>요금제·구독 가격은 각 <strong>통신사·OTT 사업자의 공식 공개 정보</strong>를 팀이 확인·검수해 만든 <strong>스냅샷(정리된 표)</strong>을 기준으로 합니다. 검수하지 않은 값은 추천·최저가·알림 계산에 사용하지 않습니다.</p>
@@ -40,6 +40,7 @@ export default function DataSources() {
       
           <Link className="btn btn-ghost mt-9 inline-block" to="/">← 홈으로</Link>
         </article>
+      </main>
       <div className="mx-auto max-w-page px-6"><Footer /></div>
     </>
   );

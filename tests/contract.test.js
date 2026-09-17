@@ -198,3 +198,32 @@ test('CSRF 면제 경로가 아닌 POST/DELETE 는 member:true 로 보낸다', (
     assert.match(opts, /member:\s*true/, `${file} 의 ${path} 가 CSRF 없이 나간다 — member: true 를 붙여야 한다`);
   }
 });
+
+// HTML→JSX 변환 잔재. 빌드는 통과하고(문법상 그냥 문자열 prop) 테스트도 렌더하지 않아
+// /terms 가 운영에서 React #62 로 빈 화면이 된 뒤에야 발견됐다(2026-09-17).
+test('JSX 에 HTML 속성이 남아 있지 않다', () => {
+  const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(e =>
+    e.isDirectory() ? walk(`${dir}/${e.name}`) : /\.jsx$/.test(e.name) ? [`${dir}/${e.name}`] : []);
+  const files = walk('src');
+  assert.ok(files.length > 10, `훑은 .jsx 가 ${files.length}개뿐이다 — 경로가 어긋났다`);
+  for (const file of files) {
+    readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
+      const where = `${file}:${i + 1}`;
+      // style 은 객체만 받는다. 문자열이면 렌더 순간 화면 전체가 죽는다.
+      assert.ok(!/\sstyle="/.test(line), `${where} 의 style 이 문자열이다 — {{ }} 객체로 바꾼다`);
+      assert.ok(!/\sclass="/.test(line), `${where} 에 class= 가 남았다 — className`);
+      assert.ok(!/\sfor="/.test(line), `${where} 에 for= 가 남았다 — htmlFor`);
+      assert.ok(!/\son(click|change|submit)=/.test(line), `${where} 에 소문자 이벤트 속성이 남았다`);
+    });
+  }
+});
+
+// 정책 3종은 .policy 안에 들어가야 최대폭·본문 타이포가 붙는다(index.css). 변환 때 여는 태그가
+// 통째로 날아가 글이 화면 끝까지 퍼져 있었다 — 눈으로 보기 전엔 아무도 모른다.
+test('정책 문서 3종은 .policy 래퍼 안에 있다', () => {
+  for (const name of ['Terms', 'Privacy', 'DataSources']) {
+    const code = readFileSync(`src/pages/${name}.jsx`, 'utf8');
+    assert.match(code, /<main className="policy">/, `${name}.jsx 에 .policy 래퍼가 없다`);
+    assert.match(code, /<\/main>/, `${name}.jsx 에 </main> 이 없다`);
+  }
+});

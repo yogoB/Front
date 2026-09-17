@@ -15,12 +15,12 @@ export default function Privacy() {
   return (
     <>
       <Header />
-      <PolicyNav />
-      
+      <main className="policy">
+        <PolicyNav />
         <h1>개인정보처리방침</h1>
         <p className="updated">최종 업데이트: 2026년 9월 17일</p>
         <p className="note">아래는 요고비가 어떤 정보를 왜 다루는지 쉽게 설명한 초안입니다. 실제 데이터 처리 방식과 최대한 일치하도록 작성했으며, 법률 자문을 대체하지 않습니다.</p>
-      
+
         <article>
           <h2>1. 수집하는 정보</h2>
           <ul>
@@ -57,6 +57,7 @@ export default function Privacy() {
       
           <Link className="btn btn-ghost mt-9 inline-block" to="/">← 홈으로</Link>
         </article>
+      </main>
       <div className="mx-auto max-w-page px-6"><Footer /></div>
     </>
   );
