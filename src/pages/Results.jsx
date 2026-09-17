@@ -275,7 +275,9 @@ function ReportWrong({ planId, planName }) {
     try {
       const body = { targetType: 'MOBILE_PLAN', targetId: planId, field, description: description.trim() };
       if (sourceUrl.trim()) body.sourceUrl = sourceUrl.trim();
-      await request('/api/v1/catalog/reports', { method: 'POST', body });
+      // 공개 엔드포인트지만 CSRF 면제 목록(/recommendations·/calculator·/chat/messages)에 없다.
+      // member:true 여야 request 가 토큰을 받아 붙인다 — 없으면 전부 403 이다.
+      await request('/api/v1/catalog/reports', { method: 'POST', body, member: true });
       setDone(true);
     } catch (e) {
       setStatus(e instanceof ApiError ? e.message : '제보를 보내지 못했어요. 잠시 후 다시 시도해 주세요.');

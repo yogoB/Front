@@ -176,3 +176,25 @@ test('ICS UID 는 기준일이 바뀌어도 같다 — 다시 받으면 쌓이�
   assert.deepEqual(a, b);
   assert.equal(new Set(a).size, a.length);                   // 한 파일 안에서는 서로 달라야 한다
 });
+
+// BE SecurityConfig 는 /recommendations·/calculator·/chat/messages 만 CSRF 를 면제한다.
+// 나머지 변경 요청은 member:true 로 보내야 request() 가 토큰을 붙인다 — 빠지면 403 이다.
+// 2026-09-17: 제보(/catalog/reports)를 member 없이 보내 403 으로 죽던 것을 잡고 추가했다.
+test('CSRF 면제 경로가 아닌 POST/DELETE 는 member:true 로 보낸다', () => {
+  const EXEMPT = ['/api/v1/recommendations', '/api/v1/calculator', '/api/v1/chat/messages'];
+  const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(e =>
+    e.isDirectory() ? walk(`${dir}/${e.name}`) : /\.jsx?$/.test(e.name) ? [`${dir}/${e.name}`] : []);
+  const calls = [];
+  for (const file of walk('src')) {
+    const code = readFileSync(file, 'utf8');
+    // request('<path>', { ... }) — 옵션 객체가 한 줄을 넘어가도 닫는 중괄호까지 집는다.
+    for (const m of code.matchAll(/request\(\s*[`'"]([^`'"]+)[`'"]\s*,\s*\{([^}]*)\}/g))
+      calls.push({ file, path: m[1], opts: m[2] });
+  }
+  assert.ok(calls.length > 3, `옵션을 넘기는 request 호출이 ${calls.length}개뿐이다 — 정규식이 어긋났다`);
+  for (const { file, path, opts } of calls) {
+    if (!/method:\s*['"](POST|DELETE|PUT|PATCH)/.test(opts)) continue;
+    if (EXEMPT.some(e => path.startsWith(e))) continue;
+    assert.match(opts, /member:\s*true/, `${file} 의 ${path} 가 CSRF 없이 나간다 — member: true 를 붙여야 한다`);
+  }
+});
