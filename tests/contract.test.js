@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { request, ApiError } from '../src/lib/api.js';
 import { DATA_BUCKETS, FEE_BUCKETS, CARRIERS } from '../src/lib/catalog-data.js';
-import { parseDay, icsEscape, icsText, monthGrid, relativeDay, EVENTS_FROM_EXPIRY } from '../src/lib/schedule.js';
+import { parseDay, icsEscape, icsText, monthGrid, relativeDay, EVENTS_FROM_EXPIRY, EVENTS_FROM_TODAY, googleUrl, startOfToday } from '../src/lib/schedule.js';
 import { integer, optionalInputs, recommendationRequest, calculatorRequest, comparisonCsv, splitLines } from '../src/lib/model.js';
 
 const values = { monthlyDataGb: '20', currentCarrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: 'false', fee: '55000', budget: '70000', contractEnd: '2027-01-01' };
@@ -150,4 +150,22 @@ test('month grid pads to whole weeks and keeps day numbers', () => {
   assert.ok(weeks.every(w => w.length === 7));
   assert.equal(weeks.flat().filter(Boolean).length, 30);
   assert.equal(relativeDay(new Date(2026, 10, 30), new Date(2026, 10, 30)), '오늘');
+});
+
+test('Google 캘린더 링크에 금액이 실리지 않는다', () => {
+  // 이 설명은 질의문자열로 구글 서버에 전달된다. 개인정보처리방침 4조를 코드로 묶어 둔다.
+  const result = { planLabel: 'KT 요고 38', monthlyTotal: 32390, monthlySavings: 34610 };
+  const url = googleUrl(EVENTS_FROM_TODAY[0], startOfToday(), result);
+  const details = new URL(url).searchParams.get('details');
+  assert.ok(!/\d{1,3},\d{3}원/.test(details), `금액이 URL 에 들어갔다: ${details}`);
+  assert.match(details, /KT 요고 38/);                       // 요금제 이름은 남는다
+  assert.match(icsText(EVENTS_FROM_TODAY, startOfToday(), result), /32\\,390원/);  // .ics 는 그대로(쉼표는 ICS 이스케이프)
+});
+
+test('ICS UID 는 기준일이 바뀌어도 같다 — 다시 받으면 쌓이지 않고 옮겨진다', () => {
+  const uids = text => [...text.matchAll(/^UID:(.+)$/gm)].map(m => m[1]);
+  const a = uids(icsText(EVENTS_FROM_TODAY, new Date(2026, 0, 5), null));
+  const b = uids(icsText(EVENTS_FROM_TODAY, new Date(2026, 5, 20), null));
+  assert.deepEqual(a, b);
+  assert.equal(new Set(a).size, a.length);                   // 한 파일 안에서는 서로 달라야 한다
 });

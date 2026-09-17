@@ -75,8 +75,10 @@ export default function Calendar() {
     const blob = new Blob([icsText(events, anchor, result, today)], { type: 'text/calendar;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = '요고비-전환일정.ics'; a.click();
-    URL.revokeObjectURL(url);
+    a.href = url; a.download = '요고비-전환일정.ics';
+    // 문서에 붙여야 파이어폭스가 클릭을 받고, 해제는 다음 틱으로 미뤄야 사파리가 받아쓰기 전에 끊기지 않는다.
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 
   // 전환 일정에도 현재·전환 예상 금액이 들어간다. 결과 화면만 막고 여기를 열어 두면
@@ -267,7 +269,8 @@ function ExportPanel({ events, anchor, result, onDownload }) {
       <h2 className="mb-1.5 text-[17px] font-bold">캘린더에 담기</h2>
       <p className="text-[13px] text-muted">
         일정을 누르면 Google 캘린더 추가 화면이 새 탭에서 열려요. 저장은 직접 하시면 돼요 —
-        요고비가 캘린더를 대신 수정하지 않아요.
+        요고비가 캘린더를 대신 수정하지 않아요. Google 링크에는 <strong>금액을 넣지 않아요</strong>.
+        금액까지 함께 담으려면 아래에서 .ics 파일을 받으세요(기기 안에서만 처리돼요).
       </p>
       <ul className="my-3.5 grid list-none gap-2 p-0">
         {events.map(e => {

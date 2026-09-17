@@ -54,11 +54,14 @@ const pad = n => String(n).padStart(2, '0');
 export const dayStamp = date => `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
 const nextDay = date => { const d = new Date(date); d.setDate(d.getDate() + 1); return d; };
 
-/** 일정 설명. 결과 화면이 넘긴 실제 금액만 쓰고, 없으면 그 문장을 빼 버린다(지어내지 않는다). */
-export function details(event, result) {
+/** 일정 설명. 결과 화면이 넘긴 실제 금액만 쓰고, 없으면 그 문장을 빼 버린다(지어내지 않는다).
+    money=false 면 금액 줄을 뺀다 — Google 링크는 이 설명이 **질의문자열로 구글에 전달**되므로
+    개인정보처리방침 4조("외부에 제공하지 않습니다")와 어긋나지 않게 금액을 싣지 않는다.
+    금액까지 담고 싶은 사용자는 기기 안에서 끝나는 .ics 를 받는다. */
+export function details(event, result, money = true) {
   const lines = [STEPS[event.step].desc, `추천: ${result?.planLabel ?? '추천 요금제'}`];
-  if (result?.monthlyTotal != null) lines.push(`전환 후 예상 월 요금: ${won(result.monthlyTotal)}`);
-  if (result?.monthlySavings > 0) lines.push(`정가 대비 월 ${won(result.monthlySavings)} 절감`);
+  if (money && result?.monthlyTotal != null) lines.push(`전환 후 예상 월 요금: ${won(result.monthlyTotal)}`);
+  if (money && result?.monthlySavings > 0) lines.push(`정가 대비 월 ${won(result.monthlySavings)} 절감`);
   lines.push('요고비에서 만든 전환 일정입니다. 금액은 가입 전 통신사 공식 안내에서 확인해 주세요.');
   return lines.join('\n');
 }
@@ -69,7 +72,7 @@ export function googleUrl(event, anchor, result) {
     action: 'TEMPLATE',
     text: `[요고비] ${event.label}`,
     dates: `${dayStamp(start)}/${dayStamp(nextDay(start))}`,   // 종일 일정
-    details: details(event, result),
+    details: details(event, result, false),
   });
   return `https://calendar.google.com/calendar/render?${params}`;
 }
@@ -84,7 +87,7 @@ export function icsText(events, anchor, result, today = startOfToday()) {
     const start = dateOf(anchor, event.offset);
     return [
       'BEGIN:VEVENT',
-      `UID:yogobi-${dayStamp(start)}-${index}@yogob.fly.dev`,
+      `UID:yogobi-step-${index}@yogob.fly.dev`,   // 날짜를 빼야 재가져오기가 '추가'가 아니라 '이동'이 된다
       `DTSTAMP:${stamp}`,
       `DTSTART;VALUE=DATE:${dayStamp(start)}`,
       `DTEND;VALUE=DATE:${dayStamp(nextDay(start))}`,
