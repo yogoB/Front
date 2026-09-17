@@ -11,6 +11,7 @@ import Detail from './pages/Detail.jsx';
 import Calendar from './pages/Calendar.jsx';
 import MyPage from './pages/MyPage.jsx';
 import Admin from './pages/Admin.jsx';
+import ReportFab from './components/ReportFab.jsx';
 
 /* 경로는 확장자를 뗀다(/results.html → /results). nginx 가 SPA 폴백을 한다.
    백오피스도 이 앱의 라우트다(/admin, D-39) — 데이터는 전부 /api/v1/admin/** 인증이 필요하다.
@@ -25,6 +26,7 @@ const LEGACY = {
 
 export default function App() {
   return (
+    <>
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/terms" element={<Terms />} />
@@ -43,5 +45,8 @@ export default function App() {
       ))}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    {/* 모든 화면에 뜨는 오류 제보 버튼(D-41). 라우트 밖에 두어 화면이 바뀌어도 그대로 있다. */}
+    <ReportFab />
+    </>
   );
 }

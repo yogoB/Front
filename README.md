@@ -54,7 +54,7 @@ index.html              Vite 진입점 (SPA 껍데기)
 src/main.jsx            React 진입점 · 라우터
 src/App.jsx             경로 표 (옛 .html 주소는 새 경로로 넘긴다)
 src/pages/              화면 — Landing Modes Light Detail Results Calendar Login MyPage + 정책 3종
-src/components/         공용 — Layout Flow Choice SubscriptionPicker Analyzing GuestGate PolicyNav
+src/components/         공용 — Layout Flow Choice SubscriptionPicker Analyzing GuestGate PolicyNav ReportFab(오류 제보 플로팅)
 src/lib/                프레임워크 무관 — api model config catalog-data schedule session useMember
 src/index.css           Tailwind + @theme 디자인 토큰
 assets/                 원본 HTML에서 추출한 폰트와 폰트 CSS
