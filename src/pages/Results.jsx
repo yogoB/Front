@@ -20,6 +20,7 @@ export default function Results() {
   const [input] = useState(getInput);
   const [data, setData] = useState(null);
   const [failure, setFailure] = useState('');
+  const [story, setStory] = useState(false);   // 설명(내레이션) 펼침 — 처음엔 표만 보인다
 
   useEffect(() => {
     // 비회원이면 **계산도 하지 않는다** — 금액이 한 줄도 비치지 않아야 하므로 아예 받아오지 않는다(D-36).
@@ -51,29 +52,15 @@ export default function Results() {
         <span className="inline-block rounded-full bg-brand-tint px-3 py-1.5 text-[13px] font-bold text-brand-ink">
           AI 최적화 분석 완료
         </span>
-        <h1 className="mb-2 mt-4 text-2xl font-extrabold tracking-[-.01em] md:text-[28px]">최적 요금 조합 비교 분석</h1>
+        <h1 className="mb-6 mt-4 text-2xl font-extrabold tracking-[-.01em] md:text-[28px]">최적 요금 조합 비교 분석</h1>
 
-        {best && <SaveHero best={best} current={current} />}
-        <Summary message={data.message} />
-        <p className="my-6 max-w-prose rounded-xl bg-warn-tint px-4 py-3 text-sm leading-relaxed text-warn-ink">
-          {current
-            ? <>‘현재’ 열도 추천과 <strong>같은 계산기</strong>로 냈어요 — 지금 쓰는 요금제로 같은 구독을 유지했을 때의 금액이에요.</>
-            : <>‘추천·정가’ 금액과 요금제는 계산 서버가 카탈로그로 계산한 값입니다. ‘현재’ 열은{' '}<strong>입력하신 값의 합계</strong>예요.</>}
-        </p>
-
-        {notices.length > 0 && (
-          <ul className="mb-6 grid list-none gap-2.5 rounded-xl bg-bg-soft px-5 py-4 text-sm leading-relaxed text-ink-soft">
-            {notices.map(text => (
-              <li key={text} className="max-w-[72ch]">
-                <span className="text-brand-ink">ⓘ </span>
-                {splitLines(text).map((line, i) => <span key={i} className="block first:inline">{line}</span>)}
-              </li>
-            ))}
-          </ul>
-        )}
+        {/* 계산 결과(표)가 먼저다 — 사용자 결정 2026-09-18: 화면에 처음 보이는 것은 비교표뿐이고, 설명(내레이션)은 다음에 펼친다. */}
+        {best && <CompareTable input={input} best={best} current={current} />}
+        {best && <SaveResult input={input} best={best} current={current} />}
+        {data.reasons?.length > 0 && <Reasons reasons={data.reasons} />}
 
         {input.mode === 'light' && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand-tint px-6 py-5">
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand-tint px-6 py-5">
             <div>
               <strong className="font-bold">더 정밀한 결과를 원하시나요?</strong>
               <p className="mt-1 max-w-prose text-sm leading-relaxed text-ink-soft">통신사·약정·결합 할인을 추가 반영하면 더 정확한 조합을 찾을 수 있어요.</p>
@@ -82,8 +69,29 @@ export default function Results() {
           </div>
         )}
 
-        {best && <CompareTable input={input} best={best} current={current} />}
-        {best && <SaveResult input={input} best={best} current={current} />}
+        {!story ? (
+          <button type="button" onClick={() => setStory(true)} className="btn btn-ghost btn-block mt-6">이 결과 설명 보기 ↓</button>
+        ) : (
+          <section className="mt-6" aria-label="결과 설명">
+            {best && <SaveHero best={best} current={current} />}
+            <Summary message={data.message} />
+            <p className="my-6 max-w-prose rounded-xl bg-warn-tint px-4 py-3 text-sm leading-relaxed text-warn-ink">
+              {current
+                ? <>‘현재’ 열도 추천과 <strong>같은 계산기</strong>로 냈어요 — 지금 쓰는 요금제로 같은 구독을 유지했을 때의 금액이에요.</>
+                : <>‘추천·정가’ 금액과 요금제는 계산 서버가 카탈로그로 계산한 값입니다. ‘현재’ 열은{' '}<strong>입력하신 값의 합계</strong>예요.</>}
+            </p>
+            {notices.length > 0 && (
+              <ul className="mb-6 grid list-none gap-2.5 rounded-xl bg-bg-soft px-5 py-4 text-sm leading-relaxed text-ink-soft">
+                {notices.map(text => (
+                  <li key={text} className="max-w-[72ch]">
+                    <span className="text-brand-ink">ⓘ </span>
+                    {splitLines(text).map((line, i) => <span key={i} className="block first:inline">{line}</span>)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
 
         <ul className="mt-8 flex list-none flex-wrap gap-2.5 p-0">
           {['금액마다 출처 표시', '안 쓰는 혜택은 0원으로 계산', '카드·계좌 연결 없음'].map(t => (
@@ -93,7 +101,6 @@ export default function Results() {
 
         {best && <Breakdown best={best} />}
         {best && <ReportWrong planId={best.planId} planName={best.planName} />}
-        {data.reasons?.length > 0 && <Reasons reasons={data.reasons} />}
 
         <div className="mt-10 flex flex-wrap justify-between gap-3">
           <button type="button" onClick={() => navigate('/modes')} className="btn btn-ghost">← 다시 비교하기</button>
