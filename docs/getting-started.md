@@ -64,7 +64,7 @@ npm run dev
 | 명령 | 언제 |
 | --- | --- |
 | `npm run dev` | 개발할 때. 이게 기본 |
-| `npm test` | 로직을 고친 뒤. 17개 검사가 돈다 |
+| `npm test` | 로직을 고친 뒤. 18개 검사가 돈다 |
 | `npm run build` | 배포용 파일을 `dist/`에 만든다. 커밋 전 한 번 돌려 깨지지 않는지 본다 |
 | `npm run preview` | 만들어진 `dist/`를 실제 배포처럼 띄워 확인 |
 

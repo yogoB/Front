@@ -1,6 +1,9 @@
 # 현재 백엔드 기준 프론트 연동
 
-구현 기준일: 2026-09-11. `BE_main`의 컨트롤러, 요청/응답 레코드, `RecommendationService`, `SecurityConfig`, `AuthTokens`, `AuthEmail`을 확인했다. 계약 원본이나 백엔드 소스는 변경하지 않았다.
+구현 기준일: 2026-09-11. `BE_main`의 컨트롤러, 요청/응답 레코드, `RecommendationService`, `SecurityConfig`, `AuthTokens`를 확인했다. 계약 원본이나 백엔드 소스는 변경하지 않았다.
+
+> **2026-09-17 갱신.** 인증·회원 경로와 CSRF 항목만 오늘 다시 확인해 고쳤다(아래 표와 §CSRF).
+> 추천·계산·카탈로그 요청/응답 필드는 **2026-09-11 확인분 그대로**이며 오늘 재검증하지 않았다.
 
 ## 화면과 API
 
@@ -14,13 +17,23 @@
 | 문장 추천 | `POST /api/v1/chat/messages` |
 | 로그인 상태 | `GET /api/v1/me` |
 | 변경 요청의 CSRF | `GET /api/v1/auth/csrf` |
-| 가입 이메일 확인 | `POST /api/v1/auth/email/verification` → 메일 링크 → `POST /api/v1/auth/signup` |
-| 비밀번호 재설정 | `POST /api/v1/auth/password/reset-request` → 메일 링크 → `POST /api/v1/auth/password/reset` |
-| 로그인·로그아웃·전체 종료 | `POST /api/v1/auth/login`, `/logout`, `/logout-all` |
-| Google 로그인·계정 연결 | BE `/oauth2/authorization/google` 이동, 연결 전 `/api/v1/auth/google/link` 또는 `/api/v1/auth/password` |
-| 로그인 세션 관리 | `GET /api/v1/me/sessions`, `DELETE /api/v1/me/sessions/{id}` |
+| 가입·로그인 | BE `/oauth2/authorization/google` 로 이동. Google 버튼 하나뿐이다(D-34) — 이메일 확인 가입·비밀번호 재설정 경로는 화면에서 없앴다 |
+| 로그인 복귀 | BE 가 `AUTH_RETURN_URL` + `#auth=success\|failed\|account-conflict` 로 되돌린다. 랜딩의 `AuthReturn.jsx` 가 받는다 |
+| 로그아웃 | `POST /api/v1/auth/logout` |
+| 회원 탈퇴 | `DELETE /api/v1/me` → `{ deleted: true }`. 쿠키를 지우고 Google 세션도 끊는다 |
+| 닉네임 변경 | `POST /api/v1/me/nickname` |
+| 현재 요금제 저장 | `POST /api/v1/me/current-plan` |
+| 내 구독 | `GET`/`POST /api/v1/me/subscriptions`, `DELETE /api/v1/me/subscriptions/{id}` |
+| 중복 결제 점검 | `GET /api/v1/me/detections` |
+| 전환 시점 판정 | `GET /api/v1/me/switch-timing?targetPlanId=&remainingContractMonths=` |
+| 정보 오류 제보 | `POST /api/v1/catalog/reports` — `{ targetType, targetId, field, description, sourceUrl? }` |
+| 로그인 세션 관리 | `GET /api/v1/me/sessions`, `DELETE /api/v1/me/sessions/{id}` — **화면 없음**(BE 만 있다) |
 
-공개 API는 인증 쿠키 없이 호출한다. 회원 요청은 `credentials: include`로 보내고 변경 요청마다 CSRF 토큰을 새로 받는다. 브라우저에 JWT를 읽거나 저장하는 코드가 없다. 오류 메시지·코드·필드는 공통 클라이언트에서 보존하며 경고는 정상 결과와 함께 표시한다. 요청 시간 제한은 65초로, BE의 AI 파싱·설명 요청을 기다릴 수 있게 했다. 취소한 요청과 이전 혜택 조회 결과는 화면을 덮어쓰지 않는다.
+공개 API는 인증 쿠키 없이 호출한다. 회원 요청은 `credentials: include`로 보내고 변경 요청마다 CSRF 토큰을 새로 받는다.
+
+**CSRF 면제 경로는 세 개뿐이다**(BE `SecurityConfig`): `POST /api/v1/recommendations`, `/api/v1/calculator`, `/api/v1/chat/messages`. 그 밖의 POST·DELETE 는 `permitAll` 이라도 토큰이 필요하다 — 정보 오류 제보(`/api/v1/catalog/reports`)가 여기 해당하며, 토큰 없이 보내면 `YGB-AUTH-403` 이다. 프론트에서는 `request(path, { member: true })` 로 보내야 토큰이 붙는다. `tests/contract.test.js` 가 이 규칙을 검사한다(면제 목록이 BE 에서 바뀌면 테스트의 `EXEMPT` 도 같이 고친다).
+
+브라우저에 JWT를 읽거나 저장하는 코드가 없다. 오류 메시지·코드·필드는 공통 클라이언트에서 보존하며 경고는 정상 결과와 함께 표시한다. 요청 시간 제한은 65초로, BE의 AI 파싱·설명 요청을 기다릴 수 있게 했다. 취소한 요청과 이전 혜택 조회 결과는 화면을 덮어쓰지 않는다.
 
 ## 입력 해석
 
@@ -58,16 +71,19 @@
 
 번들 HTML의 Base64 리소스 복원, Blob 스크립트, `new Function`, DC 템플릿 런타임을 일반 HTML과 DOM 이벤트로 교체했다.
 원래의 폰트·색·입력 단계·좌측 내비게이션·우측 지출 요약·카드 상세 구조를 보존했다.
-API 문자열은 `textContent`와 `Option`으로 렌더링하고, 외부 링크는 HTTP(S)만 허용한다.
+API 문자열은 JSX 중괄호로 렌더링해 React 가 escape 하고(`dangerouslySetInnerHTML` 을 쓰지 않는다), 외부 링크는 HTTP(S)만 허용한다.
 입력 label, native radio/checkbox, 단계 `aria-current`, 결과 `aria-pressed`, 오류 알림, 화면 전환 포커스, 모바일 레이아웃과 동작 줄이기를 제공한다.
+본문 보조색은 흰 배경 대비 4.91:1 이다(2026-09-17 수정, 이전 3.35:1 로 WCAG AA 미달).
 
 ## 검증 기록
 
-- `npm test`: 8개 계약·통신·입력 검증 통과.
+- `npm test`: 18개 계약·통신·입력·일정·규칙 검증 통과(2026-09-17).
 - 최신 BE `bootJar` 빌드, 별도 일회용 PostgreSQL 및 개발 시드로 연동 검증.
 - 실제 BE 브라우저 왕복: 추천 순서·개수·서버 금액, missingInputs, 혜택, 등급 재계산, 카탈로그 직접 계산, CSV, AI 비활성 폴백 통과.
-- 실제 인증: 테스트 DB에 본인 확인 토큰을 주입한 가입·재설정, HttpOnly 쿠키, 로그인·로그아웃·전체 종료·현재 세션 폐기, CSRF 재발급 통과. 메일 발송은 하지 않았다.
+- 실제 인증(2026-09-11): HttpOnly 쿠키, 로그인·로그아웃·전체 종료·현재 세션 폐기, CSRF 재발급 통과.
+- **2026-09-17 운영 배포본 실사용 검증**(Google 로그인 상태): `/results` 3열 비교표·근거·계산 과정·제보 토글, `/calendar` 월간 격자와 Google 링크 5개(금액 미포함 확인)·`.ics`, `/mypage` 닉네임·현재 요금제 검색 저장·구독 등록·탈퇴 UI, 세 화면 푸터, 본문 보조색 대비 4.91:1 확인. 제보는 실제 접수 행을 남기지 않으려고 `description` 만 비워 보내 `400 field=description` 까지 도달하는 것으로 계약을 확인했다.
+- **미검증:** 실제 제보 접수 1건, 회원 탈퇴 실행(되돌릴 수 없어 실행하지 않았다), 운영 HTTPS·쿠키 정책 전반.
 - 오류 응답 대체 검증: 단계 검증 우회 차단, 422 후 입력 유지, 요청 취소 후 늦은 응답 무시, API 문자열 HTML 실행 차단, 오프라인 후 재시도 통과.
 - Chromium 1440px·390px 화면 검증: 가로 넘침·미처리 JavaScript 오류 없음. 원본 테마와 단계 구조를 유지한 것을 캡처로 확인.
 - 기계적 디자인 검사는 HTML 파서 모듈 미설치로 정규식 검사만 가능했다. 전체 접근성 자동 검사 결과로 간주하지 않았다.
-- 실제 SMTP 배달·Google 공급자 로그인·운영 HTTPS와 쿠키 정책은 외부 설정 환경에서 추가 확인해야 한다.
+- Google 공급자 로그인은 2026-09-17 운영 배포본에서 실제로 통과했다. 운영 HTTPS·쿠키 정책 전반은 추가 확인이 필요하다.

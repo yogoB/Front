@@ -1,39 +1,65 @@
 # 요고비 프론트 현재 상태
 
-기준일: 2026-09-11 (스택 항목만 2026-09-17 갱신).
-
-> ⚠️ 아래 "구현 완료" 목록은 2026-09-11 기준이라 **화면 구성과 인증 부분이 낡았다.** 그 뒤 React 전환(Vite+React+Tailwind), Google 단일 로그인(D-34), 비회원 결과 차단(D-36), 백오피스 화면이 들어왔다. 현재 파일 구조는 [시작하기](getting-started.md)의 파일 지도를 본다.
- 이 문서는 작업 트리의 현재 구현 상태를 요약한다. API 계약과 화면별 동작은 [연동 명세](integration.md), 실행 방법은 [실행 안내](../README.md), 재편성 전 프로토타입 분석은 [이전 분석](README.md)을 본다.
+기준일: **2026-09-17**. 이 문서는 작업 트리의 현재 구현 상태를 요약한다. API 계약과 화면별 동작은 [연동 명세](integration.md), 실행 방법은 [실행 안내](../README.md), 화면·흐름 정책은 [UX 흐름](ux-flow.md), 재편성 전 프로토타입 분석은 [이전 분석](README.md)을 본다.
 
 ## 한 줄 요약
 
-번들 HTML 프로토타입을 재편성하고, 브라우저 고정 계산을 제거해 `BE_main` API의 금액·순서·출처를 그대로 표시하도록 연결했다. 2026-09 전면 **Vite 8 + React 19 + React Router 7 + Tailwind CSS 4** 로 전환했다. `npm test`는 17개 계약·검증을 통과한다.
+번들 HTML 프로토타입을 재편성하고 브라우저 고정 계산을 제거해 `BE_main` API의 금액·순서·출처를 그대로 표시한다. 2026-09 전면 **Vite 8 + React 19 + React Router 7 + Tailwind CSS 4** 로 전환했다. `npm test` 18개 통과, 배포본은 https://yogob.fly.dev/ 이다.
+
+## 화면
+
+| 주소 | 파일 | 로그인 | 상태 |
+| --- | --- | --- | --- |
+| `/` | `Landing.jsx` | — | 히어로 단일 구성. 통계 카드는 **더미값**(`data-dummy`), 실제 집계 대기 |
+| `/modes` | `Modes.jsx` | — | 간편/상세 선택 |
+| `/light` `/detail` | `Light.jsx` `Detail.jsx` | — | 입력 단계. 제출 전 요약은 입력값 합계(메모) |
+| `/results` | `Results.jsx` | **필요** | 3열 비교표, 근거, 계산 과정·출처, 정보 오류 제보 |
+| `/calendar` | `Calendar.jsx` | **필요** | 월간·주간·리스트, Google 링크·.ics 내보내기 |
+| `/login` | `Login.jsx` | — | Google 버튼 하나(D-34) |
+| `/mypage` | `MyPage.jsx` | 부분 | 닉네임·현재 요금제·구독·중복 결제 점검·회원 탈퇴 |
+| `/terms` `/privacy` `/data-sources` | 정책 3종 | — | |
+| `/admin` | `Admin.jsx` | 관리자 | 백오피스(D-32) |
 
 ## 구현 완료
 
-- 앱 구성: `index.html`(SPA 껍데기), `src/main.jsx`·`src/App.jsx`(라우터), `src/pages/*.jsx`(주소별 화면), `src/components/*.jsx`(공용 조각), `src/lib/*.js`(화면과 무관한 순수 로직 — 테스트 대상), `src/index.css`(Tailwind 토큰·컴포넌트 클래스), `assets/`.
-- 공개 API 연결: 카탈로그 서비스·요금제·혜택 조회, 조건 추천, 특정 등급 계산, 문장 추천.
-- 회원 API 연결: 상태 조회, 로그인·로그아웃·전체 종료, 이메일 확인 가입·비밀번호 재설정, Google 연결, 세션 관리. 변경 요청마다 CSRF 재발급, 쿠키 인증, JWT 미저장.
-- 서버 결과 표시: 순서·개수 유지, `monthlyTotal`/`baseline`/`monthlySavings`/`annualSavings` 원본 출력, `breakdown`에 출처(Provenance)·설명 병기, `missingInputs`·`warnings` 노출.
-- 공통 클라이언트(`src/api.js`): 오류 코드·필드 보존, 65초 제한, 취소(AbortError) 처리, 지연 응답·이전 혜택 조회 덮어쓰기 방지.
+- 앱 구성: `index.html`(SPA 껍데기), `src/main.jsx`·`src/App.jsx`(라우터), `src/pages/*.jsx`, `src/components/*.jsx`, `src/lib/*.js`(화면과 무관한 순수 로직 — 테스트 대상), `src/index.css`(Tailwind 토큰·컴포넌트 클래스).
+- 공개 API: 카탈로그 서비스·요금제·혜택 조회, 조건 추천, 특정 등급 계산, 문장 추천, 정보 오류 제보.
+- 회원 API: 상태 조회, 로그아웃, 닉네임 변경, 현재 요금제 저장, 구독 등록·삭제, 중복 결제 탐지 조회, 전환 시점 판정, **회원 탈퇴**. 변경 요청마다 CSRF 재발급, 쿠키 인증, JWT 미저장.
+- 인증: Google 단일 로그인(D-34). BE 가 `AUTH_RETURN_URL`+`#auth=...` 로 되돌려 보내면 `AuthReturn.jsx` 가 랜딩에서 받아 출발한 화면으로 복귀시킨다. 쿠키가 안 붙으면 로그인된 척하지 않고 그대로 안내한다.
+- 비회원 차단(D-36): `/results`·`/calendar` 는 로그인해야 열린다. 비회원은 **추천 API 자체를 호출하지 않는다** — 금액이 한 줄도 비치지 않게.
+- 서버 결과 표시: 순서·개수 유지, `monthlyTotal`/`baseline`/`monthlySavings`/`annualSavings` 원본 출력, `breakdown`에 출처·설명 병기, `missingInputs`·`warnings` 노출.
+- 전환 일정: 약정 만료일 기준 배치, 서버 판정(`/me/switch-timing`) 우선, Google 캘린더 링크·`.ics` 내보내기.
+- 공통 클라이언트(`src/lib/api.js`): 오류 코드·필드 보존, 65초 제한, 취소(AbortError) 처리.
 - 결과 CSV 내보내기: 서버 금액·출처 보존, 수식형 문자열 중화.
-- 접근성·반응형: label 연결, native radio/checkbox, 단계 `aria-current`, 결과 `aria-pressed`, 오류 알림, 화면 전환 포커스, 모바일 레이아웃.
+- 접근성: label 연결, 단계 `aria-current`, 오류 알림, 모바일 레이아웃. 본문 보조색 대비 4.91:1(2026-09-17 수정, 이전 3.35:1로 AA 미달이었다).
 
-## 의도적으로 미지원 (BE API 없음)
+## 자동 검증
 
-- 고지서 이미지 업로드·OCR: 수신 API 없음 → 업로드 버튼 비활성.
-- 추천 조합 서버 저장: 저장 API 없음 → 저장 버튼 "준비 중".
-- 회원 구독 저장·결제 업로드·중복 결제 탐지: HTTP API 미구현 → 호출하지 않음.
-- 약정 종료·위약금·전환 시점 최적화: 실제 계산 기능 없음 → 반영한다고 안내하지 않음.
-- 입력 영구 저장·24시간 삭제: 탭 메모리로만 유지, 새로고침·계정 이동 시 초기화.
+`npm test` 18개. 계약·공개/회원 호출·입력 검증·CSRF·오류·취소·CSV·일정 계산에 더해 **규칙을 코드로 묶은 것** 4개:
 
-## 검증 상태
+| 테스트 | 막는 것 |
+| --- | --- |
+| `front never does arithmetic on server amounts` | 프론트의 금액 계산·합계·연 환산(절대 원칙 2) |
+| `Google 캘린더 링크에 금액이 실리지 않는다` | 금액이 질의문자열로 구글에 전달되는 것(방침 4조) |
+| `ICS UID 는 기준일이 바뀌어도 같다` | 만료일 수정 후 재가져오기 때 일정이 중복되는 것 |
+| `CSRF 면제 경로가 아닌 POST/DELETE 는 member:true` | 변경 요청이 토큰 없이 나가 403 나는 것 |
 
-- `npm test`: 8/8 통과(계약·공개/회원 호출·입력 검증·CSRF·오류·취소·CSV).
-- 실제 BE 왕복·인증·오류 대체·Chromium 화면 검증 기록은 [연동 명세 §검증 기록](integration.md)에 있다.
-- 미검증: 실제 SMTP 배달, Google 공급자 로그인, 운영 HTTPS·쿠키 정책(외부 설정 환경 필요).
+## 남은 것
+
+- **랜딩 통계 카드가 더미값이다.** 실제 집계가 나오면 이름만 바꿔 채운다.
+- **중복 결제 점검의 월 합계가 없다.** 프론트가 더하면 출처 없는 숫자가 되므로(절대 원칙 2) BE 가 합계를 내려주면 붙인다. 지금은 건수만 보여준다.
+- **BE 콜드 스타트.** `yogob-api` 가 잠들어 있으면 첫 요청이 10초 넘게 걸리고 그동안 화면은 "불러오는 중…" 만 띄운다(2026-09-17 실측: 잠든 뒤 첫 진입 5초+, 깬 뒤 `/me` 68ms). BE 의 `min_machines_running` 문제이고, 프론트는 그동안 무엇을 기다리는지 알리지 않는다.
+- **중복 결제 탐지가 실제로 안 잡힌다(BE).** `DuplicateDetector.benefitOverlaps` 가 `benefitType == FREE` 만 보는데 실제 카탈로그는 `BUNDLE_INCLUDED` 로 들어 있다. 2026-09-17 운영에서 확인: 요금제 159(`KT 초이스 더블 유튜브 프리미엄+넷플릭스`, 넷플릭스 `BUNDLE_INCLUDED`) + 넷플릭스 구독인데 `/me/detections` 가 빈 배열이다. 프론트는 받은 대로 "중복으로 새는 금액이 없어요" 를 표시한다.
+
+## 의도적으로 미지원
+
+- 고지서 이미지 업로드·OCR: 수신 API 없음.
+- 추천 조합 서버 저장: 저장 API 없음.
+- 요고비가 사용자 캘린더를 대신 쓰는 것: 링크·파일 방식만 쓴다. OAuth 캘린더 권한도 토큰 보관도 없다.
+- 메일 발송 전반: 가입·재설정 모두 없앴다(D-20·D-34).
+- 비회원 입력 영구 저장: `sessionStorage` 로만 유지, 탭을 닫으면 사라진다.
 
 ## 다음 확인 지점
 
-- 운영 배포 시 `/api`·`/oauth2`·`/login/oauth2` 프록시 또는 같은 사이트 BE 오리진 구성. Spring 보안이 새 JS/CSS 경로를 허용하도록 설정 필요.
-- BE 계약 변경 시 `src/model.js`의 요청 변환과 `docs/integration.md`를 같은 날 맞춘다.
+- BE 계약이 바뀌면 `src/lib/model.js` 의 요청 변환과 `docs/integration.md` 를 같은 날 맞춘다.
+- CSRF 면제 경로가 BE 에서 바뀌면 `tests/contract.test.js` 의 `EXEMPT` 목록도 같이 고친다.
