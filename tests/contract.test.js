@@ -21,6 +21,9 @@ test('filter/calculator use server IDs, exact enums and only supported fields', 
   assert.deepEqual(optionalInputs({ hasFamilyBundle: 'true', familyLineCount: '', familyBundleDiscountKrw: '0' }),
     { hasFamilyBundle: true, familyBundleDiscountKrw: 0 });
   assert.deepEqual(optionalInputs({ hasFamilyBundle: 'false', familyLineCount: '3', familyBundleDiscountKrw: '-5' }), { hasFamilyBundle: false });
+  // 회선 수는 2~10 만. 1회선·11회선은 버리고 할인액만 나간다.
+  assert.deepEqual(optionalInputs({ hasFamilyBundle: 'true', familyLineCount: '1', familyBundleDiscountKrw: '5000' }), { hasFamilyBundle: true, familyBundleDiscountKrw: 5000 });
+  assert.deepEqual(optionalInputs({ hasFamilyBundle: 'true', familyLineCount: '11' }), { hasFamilyBundle: true });
   assert.throws(() => recommendationRequest(values, [{ ...subs[0], wanted: false }]));
   assert.throws(() => calculatorRequest(5, {}, []));
   assert.throws(() => recommendationRequest(values, [{ ...subs[0], unavailable: true }]), /다시 선택/);

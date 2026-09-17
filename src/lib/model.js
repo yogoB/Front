@@ -47,7 +47,7 @@ export function optionalInputs(values) {
   // 할인액은 BE 가 사용자 입력(USER_PROVIDED)으로 그대로 빼고, 회선 수는 근거 문구에만 쓴다.
   if (optional.hasFamilyBundle) {
     const lines = whole(values.familyLineCount), discount = whole(values.familyBundleDiscountKrw);
-    if (lines !== null && lines > 0) optional.familyLineCount = lines;
+    if (lines !== null && lines >= 2 && lines <= 10) optional.familyLineCount = lines;   // 2~10회선만(사용자 결정)
     if (discount !== null) optional.familyBundleDiscountKrw = discount;
   }
   return optional;

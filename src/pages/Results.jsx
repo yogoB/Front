@@ -143,7 +143,7 @@ function buildRequest(source) {
   // 결합 중일 때만 회선 수·월 할인액(G-28). 빈 값은 보내지 않는다 — 할인액이 없으면 BE 가 missingInputs 로 알려준다.
   if (source.hasFamilyBundle === true) {
     const lines = Number(source.familyLineCount), discount = Number(source.familyBundleDiscountKrw);
-    if (source.familyLineCount !== '' && Number.isInteger(lines) && lines > 0) optional.familyLineCount = lines;
+    if (source.familyLineCount !== '' && Number.isInteger(lines) && lines >= 2 && lines <= 10) optional.familyLineCount = lines;
     if (source.familyBundleDiscountKrw !== '' && Number.isInteger(discount) && discount >= 0) optional.familyBundleDiscountKrw = discount;
   }
   return {

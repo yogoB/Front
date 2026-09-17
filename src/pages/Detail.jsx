@@ -10,7 +10,8 @@ import { setInput } from '../lib/session.js';
 
 const STEPS = ['기본', '요금제', '구독'];
 const DEFAULT_WISH = [1, 2, 6];
-const FEE_MAX = 999_999;   // 월 통신비·할인액 직접입력 상한(원)
+const FEE_MAX = 1_000_000;  // 월 통신비·할인액 직접입력 상한(원). 10만 넘는 요금제가 있어 100만까지(사용자 결정 2026-09-17)
+const LINES_MIN = 2, LINES_MAX = 10;   // 결합 회선 수. 1회선 결합은 없다
 
 /** 숫자만 남기고 상한에서 자른다. type=number 의 max 는 타이핑을 막지 못하므로 onChange 에서 처리한다. */
 const clampDigits = (text, max) => {
@@ -39,7 +40,7 @@ export default function Detail() {
   const [hasFamilyBundle, setHasFamilyBundle] = useState(null);
   const [familyLineCount, setFamilyLineCount] = useState('');          // 근거 문구용. 금액 계산에 쓰지 않는다
   const [familyDiscount, setFamilyDiscount] = useState('');            // 월 결합 할인액(원). BE 가 그대로 뺀다(G-28)
-  const [feeText, setFeeText] = useState('');                          // 직접입력 통신비. 상한 999,999원
+  const [feeText, setFeeText] = useState('');                          // 직접입력 통신비. 상한 FEE_MAX
   const [wish, setWish] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -77,7 +78,7 @@ export default function Detail() {
       // BE optional 로 그대로 넘어간다. null 은 보내지 않아 missingInputs 안내가 유지된다.
       networkType, contractType, hasFamilyBundle,
       // 결합 중일 때만 의미가 있다. 빈 값은 Results.buildRequest 가 뺀다.
-      familyLineCount: hasFamilyBundle ? familyLineCount : '',
+      familyLineCount: hasFamilyBundle && Number(familyLineCount) >= LINES_MIN ? familyLineCount : '',   // 2 미만은 안 보낸다
       familyBundleDiscountKrw: hasFamilyBundle ? familyDiscount : '',
       subs: wish.map(w => {
         const t = w.service.tiers.find(t => t.id === w.tierId);
@@ -176,10 +177,10 @@ export default function Detail() {
                   <div className="mt-4 grid gap-4 rounded-card border border-line bg-white p-5 sm:grid-cols-2">
                     <div>
                       <label htmlFor="family-lines" className="mb-2 block text-sm font-semibold">결합 회선 수</label>
-                      <input id="family-lines" type="number" inputMode="numeric" min={1} max={99} placeholder="예: 3"
-                             value={familyLineCount} onChange={e => setFamilyLineCount(clampDigits(e.target.value, 99))}
+                      <input id="family-lines" type="number" inputMode="numeric" min={LINES_MIN} max={LINES_MAX} placeholder="예: 3"
+                             value={familyLineCount} onChange={e => setFamilyLineCount(clampDigits(e.target.value, LINES_MAX))}
                              className="field" />
-                      <p className="mt-1.5 text-xs leading-relaxed text-muted">근거 문구에만 써요. 회선 수로 할인액을 추정하지 않아요.</p>
+                      <p className="mt-1.5 text-xs leading-relaxed text-muted">{LINES_MIN}~{LINES_MAX}회선. 근거 문구에만 써요 — 회선 수로 할인액을 추정하지 않아요.</p>
                     </div>
                     <div>
                       <label htmlFor="family-discount" className="mb-2 block text-sm font-semibold">월 결합 할인액(원)</label>
