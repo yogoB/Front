@@ -48,12 +48,14 @@ export default function Calendar() {
     if (futureExpiry) setView(new Date(futureExpiry.getFullYear(), futureExpiry.getMonth(), 1));
   }, [expiryText]);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* 회원 + 현재 요금제 저장 시 서버가 전환 시점을 판정한다. 실패해도 입력 기반 기준일을 그대로 둔다(fail-soft). */
+  /* 현재 요금제를 알면 서버가 전환 시점을 판정한다 — 디테일에서 고른 것(input) 이 프로필 저장값보다 우선이고
+     프로필은 건드리지 않는다(#5, BE 가 currentPlanId 파라미터를 받는다). 실패해도 입력 기반 기준일을 그대로 둔다(fail-soft). */
+  const currentPlanId = input?.currentPlanId ?? member?.currentPlanId ?? null;
   useEffect(() => {
-    if (!member?.currentPlanId || !result?.planId) return;
+    if (!currentPlanId || !result?.planId) return;
     // 약정 잔여 개월은 사용자가 넣은 만료일에서 센다. 서버는 이 날짜를 모른다.
     const months = futureExpiry ? Math.max(0, Math.round((futureExpiry - today) / (1000 * 60 * 60 * 24 * 30.4375))) : 0;
-    const query = new URLSearchParams({ targetPlanId: String(result.planId), remainingContractMonths: String(months) });
+    const query = new URLSearchParams({ targetPlanId: String(result.planId), currentPlanId: String(currentPlanId), remainingContractMonths: String(months) });
     request(`/api/v1/me/switch-timing?${query}`, { member: true })
       .then(({ data }) => {
         if (data.status === 'SWITCH_NOW') {
@@ -68,7 +70,7 @@ export default function Calendar() {
         }
       })
       .catch(() => { /* 현재 요금제 미저장·서버 오류 — 입력 기반 기준일을 유지한다 */ });
-  }, [member, result?.planId, futureExpiry, today]);
+  }, [currentPlanId, result?.planId, futureExpiry, today]);
 
   function rememberExpiry(text) {
     setExpiryText(text);
