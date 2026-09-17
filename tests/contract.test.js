@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { request, ApiError } from '../src/lib/api.js';
 import { DATA_BUCKETS, FEE_BUCKETS, loadCarriers } from '../src/lib/catalog-data.js';
 import { parseDay, icsEscape, icsText, monthGrid, relativeDay, EVENTS_FROM_EXPIRY, EVENTS_FROM_TODAY, googleUrl, startOfToday } from '../src/lib/schedule.js';
-import { integer, optionalInputs, recommendationRequest, calculatorRequest, comparisonCsv, splitLines, matches } from '../src/lib/model.js';
+import { integer, optionalInputs, recommendationRequest, calculatorRequest, comparisonCsv, splitLines, matches, clampDigits } from '../src/lib/model.js';
 
 const values = { monthlyDataGb: '20', currentCarrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: 'false', fee: '55000', budget: '70000', contractEnd: '2027-01-01' };
 const subs = [{ id: 1, tierId: 2, wanted: true }, { id: 3, tierId: 8, wanted: false }];
@@ -28,6 +28,12 @@ test('filter/calculator use server IDs, exact enums and only supported fields', 
   assert.throws(() => calculatorRequest(5, {}, []));
   assert.throws(() => recommendationRequest(values, [{ ...subs[0], unavailable: true }]), /다시 선택/);
   assert.throws(() => calculatorRequest(5, {}, [{ ...subs[0], unavailable: true }]), /다시 선택/);
+});
+test('clampDigits keeps digits only and caps at the given maximum', () => {
+  assert.equal(clampDigits('55,000원', 200_000), '55000');
+  assert.equal(clampDigits('250000', 200_000), '200000');
+  assert.equal(clampDigits('', 200_000), '');
+  assert.equal(clampDigits('abc', 200_000), '');
 });
 test('integer inputs do not silently rewrite invalid amounts or fractional GB', () => {
   for (const bad of ['', '-55000', '12.5', '1e3', '1,000', 'NaN', '9007199254740992']) assert.throws(() => integer(bad, '금액'));

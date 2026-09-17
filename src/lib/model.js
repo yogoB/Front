@@ -53,6 +53,13 @@ export function optionalInputs(values) {
   return optional;
 }
 
+/** 숫자만 남기고 상한에서 자른다. type=number 의 max 는 타이핑을 막지 못하므로 onChange 에서 처리한다.
+    상한은 화면마다 다르다(라이트 20만·디테일 100만, 사용자 결정) — 인자로 받는다. */
+export const clampDigits = (text, max) => {
+  const digits = String(text).replace(/\D/g, '');
+  return digits && Number(digits) > max ? String(max) : digits;
+};
+
 /** 0 이상 정수 문자열이면 숫자로, 아니면 null. 입력창 값은 문자열이라 여기서 한 번만 거른다. */
 const whole = value => (/^\d+$/.test(String(value ?? '').trim()) ? Number(value) : null);
 

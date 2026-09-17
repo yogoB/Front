@@ -6,10 +6,12 @@ import { Choice } from '../components/Choice.jsx';
 import SubscriptionPicker from '../components/SubscriptionPicker.jsx';
 import Analyzing from '../components/Analyzing.jsx';
 import { loadCatalog, DATA_BUCKETS, FEE_BUCKETS } from '../lib/catalog-data.js';
-import { won, tierKrwGuess, isForeign } from '../lib/model.js';
+import { won, tierKrwGuess, isForeign, clampDigits } from '../lib/model.js';
 import { setInput } from '../lib/session.js';
 
 const STEPS = ['기본', '요금제', '구독'];
+// 라이트 직접입력 상한(원). 사용자 지시 2026-09-17: 20만. 디테일(100만)과 다르며 통일 여부는 사용자 확인 중.
+const LIGHT_FEE_MAX = 200_000;
 
 export default function Light() {
   const navigate = useNavigate();
@@ -21,6 +23,7 @@ export default function Light() {
   const [dataSkipped, setDataSkipped] = useState(false);
   const [fee, setFee] = useState(null);               // { label, amount } 또는 null
   const [customFee, setCustomFee] = useState(false);
+  const [feeText, setFeeText] = useState('');          // 직접입력 통신비. 상한 LIGHT_FEE_MAX
   const [subs, setSubs] = useState([]);               // 카탈로그를 받은 뒤 채운다 (BE 가 원본)
   const [query, setQuery] = useState('');
 
@@ -96,10 +99,12 @@ export default function Light() {
               <div className="mt-5">
                 <label htmlFor="fee-input" className="mb-2 block text-sm font-semibold">직접 입력</label>
                 <div className="flex min-h-13 items-center rounded-xl border border-line bg-white px-4 shadow-card focus-within:border-brand focus-within:ring-[3px] focus-within:ring-brand-tint">
-                  <input id="fee-input" inputMode="numeric" placeholder="55000" autoFocus
+                  <input id="fee-input" inputMode="numeric" placeholder="55000" autoFocus value={feeText}
                          onChange={e => {
-                           const v = e.target.value.trim();
-                           setFee(/^\d+$/.test(v) ? { label: '직접입력', amount: Number(v) } : null);
+                           // 상한을 넘긴 값은 화면에도 상태에도 남지 않게 여기서 자른다.
+                           const v = clampDigits(e.target.value, LIGHT_FEE_MAX);
+                           setFeeText(v);
+                           setFee(v ? { label: '직접입력', amount: Number(v) } : null);
                          }}
                          className="w-full border-0 bg-transparent py-2.5 outline-none" />
                   <span className="text-muted">원</span>
