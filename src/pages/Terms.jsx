@@ -2,7 +2,13 @@ import { Link } from 'react-router-dom';
 import { Header, Footer } from '../components/Layout.jsx';
 import PolicyNav from '../components/PolicyNav.jsx';
 
-/* 이용약관. 문구는 기존 terms.html 에서 그대로 옮겼다 — 법적 문서라 내용을 고치지 않는다. */
+/* 이용약관. 문구는 기존 terms.html 에서 그대로 옮겼고 내용을 고치지 않는 것이 원칙이다.
+   2026-09-17 사용자 지시로 **사실과 어긋난 서술만** 고쳤다(법적 주장 신설은 하지 않았다).
+   - 제3조 가입·비밀번호: D-34 로 회원 로그인이 Google 하나가 되어 가입 절차도 비밀번호도 없다.
+     개인정보처리방침 §1·§7 은 같은 이유로 이미 고쳐져 있었고 약관만 남아 있었다.
+   - 제3조 "로그인 없이도": D-36 으로 결과 리포트·전환 일정은 로그인해야 열린다. 로그인 화면의
+     문구와 같은 표현으로 범위를 좁혔다 — 추천·계산은 여전히 로그인 없이 된다.
+   내용이 바뀌었으므로 최종 업데이트일과 부칙 시행일을 9월 17일로 올렸다. */
 export default function Terms() {
   return (
     <>
@@ -10,7 +16,7 @@ export default function Terms() {
       <main className="policy">
         <PolicyNav />
         <h1>이용약관</h1>
-        <p className="updated">최종 업데이트: 2026년 9월 16일</p>
+        <p className="updated">최종 업데이트: 2026년 9월 17일</p>
         <p className="note">요고비는 학생·팀 프로젝트로 운영되는 <strong>정보 제공 서비스</strong>입니다. 아래 약관은 서비스 이용 조건을 쉽게 설명하기 위한 초안이며, 법률 자문을 대체하지 않습니다.</p>
 
         <article>
@@ -25,8 +31,9 @@ export default function Terms() {
       
           <h2>제3조 (계정)</h2>
           <ul>
-            <li>회원가입은 이메일 또는 소셜 로그인으로 할 수 있습니다. 로그인 없이도 추천·계산 기능을 이용할 수 있습니다.</li>
-            <li>계정과 비밀번호 관리 책임은 이용자에게 있으며, 부정 사용이 의심되면 즉시 알려 주시기 바랍니다.</li>
+            <li>회원 로그인은 <strong>Google 계정으로만</strong> 제공합니다. 별도의 가입 절차가 없으며, 같은 버튼으로 처음 이용하는 분은 가입이, 이미 이용 중인 분은 로그인이 됩니다.</li>
+            <li>서비스는 <strong>비밀번호를 받거나 보관하지 않습니다.</strong> 연결한 Google 계정의 관리 책임은 이용자에게 있으며, 부정 사용이 의심되면 즉시 알려 주시기 바랍니다.</li>
+            <li>추천과 계산은 로그인 없이도 이용할 수 있습니다. <strong>결과 리포트와 전환 일정은 로그인한 뒤에 볼 수 있습니다.</strong></li>
           </ul>
       
           <h2>제4조 (이용자의 의무)</h2>
@@ -47,7 +54,7 @@ export default function Terms() {
           <h2>제8조 (문의)</h2>
           <p>약관과 서비스에 대한 문의는 서비스 내 안내된 연락처로 전달해 주세요.</p>
       
-          <p className="mt-6 text-muted">부칙 · 이 약관은 2026년 9월 16일부터 적용됩니다.</p>
+          <p className="mt-6 text-muted">부칙 · 이 약관은 2026년 9월 17일부터 적용됩니다.</p>
       
           <Link className="btn btn-ghost mt-9 inline-block" to="/">← 홈으로</Link>
         </article>
