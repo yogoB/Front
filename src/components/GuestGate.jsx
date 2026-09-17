@@ -8,22 +8,21 @@ export default function GuestGate({ onGoogle, onBack }) {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-[460px] px-6 pb-24 pt-[72px] text-center">
-        <p className="mb-4.5 text-[52px]" aria-hidden="true">🔒</p>
+      <main className="mx-auto max-w-[460px] px-6 pb-24 pt-20 text-center">
+        <p className="mb-5 text-[52px] leading-none" aria-hidden="true">🔒</p>
         <h1 className="text-[26px] font-extrabold tracking-[-.01em]">분석이 끝났어요!</h1>
-        <p className="my-3.5 mb-7 text-[15px] leading-[1.7] text-ink-soft">
+        <p className="mb-8 mt-4 text-[15px] leading-relaxed text-ink-soft">
           결과 리포트는 로그인한 뒤에 볼 수 있어요.<br />
           지금까지 답하신 내용은 그대로 남아 있어요.
         </p>
         <button type="button" onClick={onGoogle}
-                className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl
-                           border-0 bg-ink px-4 py-[17px] text-base font-bold text-white hover:bg-black">
+                className="flex min-h-14 w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl
+                           border-0 bg-ink px-4 py-4 text-base font-bold text-white transition-colors duration-150 hover:bg-black">
           <GoogleMark />
           Google 로 계속하기
         </button>
         {/* 막다른 길을 만들지 않는다 — 로그인하지 않기로 한 사람도 나갈 곳이 있어야 한다. */}
-        <button type="button" onClick={onBack}
-                className="mt-4 cursor-pointer border-0 bg-transparent text-sm text-muted underline underline-offset-[3px] hover:text-ink-soft">
+        <button type="button" onClick={onBack} className="btn-text mt-4 underline underline-offset-[3px]">
           조건 다시 고르기
         </button>
       </main>

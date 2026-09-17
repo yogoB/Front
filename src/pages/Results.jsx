@@ -43,21 +43,21 @@ export default function Results() {
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-[980px] px-6 py-6">
+      <main className="mx-auto max-w-[980px] px-6 py-8">
         <span className="inline-block rounded-full bg-brand-tint px-3 py-1.5 text-[13px] font-bold text-brand-ink">
           AI 최적화 분석 완료
         </span>
-        <h1 className="my-3 mb-1.5 text-[28px] font-extrabold tracking-[-.01em]">최적 요금 조합 비교 분석</h1>
+        <h1 className="mb-2 mt-4 text-2xl font-extrabold tracking-[-.01em] md:text-[28px]">최적 요금 조합 비교 분석</h1>
 
         {best && <SaveHero best={best} />}
         <Summary message={data.message} />
-        <p className="my-4 rounded-xl bg-warn-tint px-4 py-3 text-sm text-warn-ink">
+        <p className="my-6 max-w-prose rounded-xl bg-warn-tint px-4 py-3 text-sm leading-relaxed text-warn-ink">
           ‘추천·정가’ 금액과 요금제는 계산 서버가 카탈로그로 계산한 값입니다. ‘현재’ 열은{' '}
           <strong>입력하신 값의 합계</strong>예요.
         </p>
 
         {notices.length > 0 && (
-          <ul className="mb-4 grid list-none gap-2 rounded-xl bg-bg-soft px-4 py-3 text-[13.5px] leading-relaxed text-ink-soft">
+          <ul className="mb-6 grid list-none gap-2.5 rounded-xl bg-bg-soft px-5 py-4 text-sm leading-relaxed text-ink-soft">
             {notices.map(text => (
               <li key={text} className="max-w-[72ch]">
                 <span className="text-brand-ink">ⓘ </span>
@@ -68,10 +68,10 @@ export default function Results() {
         )}
 
         {input.mode === 'light' && (
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand-tint px-5 py-4">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand-tint px-6 py-5">
             <div>
               <strong className="font-bold">더 정밀한 결과를 원하시나요?</strong>
-              <p className="mt-1 text-sm text-ink-soft">통신사·약정·결합 할인을 추가 반영하면 더 정확한 조합을 찾을 수 있어요.</p>
+              <p className="mt-1 max-w-prose text-sm leading-relaxed text-ink-soft">통신사·약정·결합 할인을 추가 반영하면 더 정확한 조합을 찾을 수 있어요.</p>
             </div>
             <button type="button" onClick={() => navigate('/detail')} className="btn btn-brand">더 정확한 절감받기</button>
           </div>
@@ -80,7 +80,7 @@ export default function Results() {
         {best && <CompareTable input={input} best={best} />}
         {best && <SaveResult input={input} best={best} />}
 
-        <ul className="mt-6 flex list-none flex-wrap gap-2 p-0">
+        <ul className="mt-8 flex list-none flex-wrap gap-2.5 p-0">
           {['금액마다 출처 표시', '안 쓰는 혜택은 0원으로 계산', '카드·계좌 연결 없음'].map(t => (
             <li key={t} className="chip"><span className="size-1.5 rounded-full bg-brand" aria-hidden="true" />{t}</li>
           ))}
@@ -90,7 +90,7 @@ export default function Results() {
         {best && <ReportWrong planId={best.planId} planName={best.planName} />}
         {data.reasons?.length > 0 && <Reasons reasons={data.reasons} />}
 
-        <div className="mt-7 flex flex-wrap justify-between gap-3">
+        <div className="mt-10 flex flex-wrap justify-between gap-3">
           <button type="button" onClick={() => navigate('/modes')} className="btn btn-ghost">← 다시 비교하기</button>
           <button type="button" onClick={() => navigate('/calendar')} className="btn btn-brand">이렇게 진행해보세요! →</button>
         </div>
@@ -106,10 +106,10 @@ export default function Results() {
 function SaveHero({ best }) {
   const saving = best.monthlySavings > 0;
   return (
-    <section className="my-3.5 mb-4 flex flex-wrap items-center justify-between gap-6 rounded-card bg-brand-tint px-6 py-5">
+    <section className="mb-6 mt-4 flex flex-wrap items-center justify-between gap-6 rounded-card bg-brand-tint px-6 py-6 md:px-8">
       <div>
         <span className="block text-sm font-semibold text-brand-ink">{saving ? '정가 대비 매달' : '추천 조합은 매달'}</span>
-        <strong className="block text-[40px] font-extrabold leading-tight tracking-[-.02em] text-brand-strong tnum">
+        <strong className="my-1 block text-[40px] font-extrabold leading-tight tracking-[-.02em] text-brand-strong tnum">
           {won(saving ? best.monthlySavings : best.monthlyTotal)}
         </strong>
         <span className="block text-sm font-semibold text-ink-soft">
@@ -238,9 +238,9 @@ function Cell({ value, best }) {
 /* 근거는 접되 버리지 않는다(원칙 5-④): 기본은 금액만, 펼치면 계산 과정과 출처. */
 function Breakdown({ best }) {
   return (
-    <details className="my-4 rounded-xl border border-line px-4 py-3">
+    <details className="my-6 rounded-xl border border-line px-5 py-4">
       <summary className="cursor-pointer text-sm font-semibold">계산 과정과 출처 보기</summary>
-      <ul className="mt-2.5 grid list-none gap-2 p-0">
+      <ul className="mt-4 grid list-none gap-2.5 p-0">
         {best.breakdown.map((line, i) => (
           <li key={i} className="grid grid-cols-[1fr_auto_auto] items-baseline gap-2.5 text-sm">
             <span>{line.label}</span>
@@ -283,7 +283,7 @@ function ReportWrong({ planId, planName }) {
   }
 
   return (
-    <details className="mt-3 rounded-card border border-line p-4">
+    <details className="mt-4 rounded-card border border-line p-5">
       <summary className="cursor-pointer text-sm font-semibold">정보가 잘못되었나요?</summary>
       {done
         ? <p className="mt-3 text-sm text-ink-soft">접수했어요. 확인한 뒤 카탈로그에 반영할게요. 고맙습니다.</p>
@@ -319,13 +319,13 @@ function ReportWrong({ planId, planName }) {
 function Summary({ message }) {
   if (!message) {
     return (
-      <p className="mb-6 text-muted">
+      <p className="mb-6 max-w-prose leading-relaxed text-muted">
         절감액은 계산 서버가 준 <strong className="text-ink">정가 대비</strong> 값이에요. 월 기준으로 비교했어요.
       </p>
     );
   }
   return (
-    <p className="mb-6 max-w-[72ch] text-muted">
+    <p className="mb-6 max-w-prose leading-relaxed text-muted">
       {splitLines(message).map((line, i) => (
         <span key={i} className="block [&+span]:mt-1">{line}</span>
       ))}
@@ -336,11 +336,11 @@ function Summary({ message }) {
 /* 추천 사유는 BE(/recommendations 의 reasons)가 만든다. AI 장애 시 빈 배열이고 그때는 섹션을 숨긴다. */
 function Reasons({ reasons }) {
   return (
-    <section className="mt-6 rounded-card border border-line bg-bg-soft px-6 py-[22px]">
-      <h2 className="mb-3 text-[17px] font-extrabold">💡 왜 나에게 이 상품이 추천됐나요?</h2>
-      <ul className="m-0 grid list-none gap-2.5 p-0">
+    <section className="mt-8 rounded-card border border-line bg-bg-soft p-6">
+      <h2 className="mb-4 text-lg font-extrabold">💡 왜 나에게 이 상품이 추천됐나요?</h2>
+      <ul className="m-0 grid list-none gap-3 p-0">
         {reasons.map((text, i) => (
-          <li key={i} className="max-w-[62ch] text-sm leading-[1.65] text-ink-soft">
+          <li key={i} className="max-w-prose text-sm leading-relaxed text-ink-soft">
             {splitLines(text).map((line, j) => <span key={j} className="block [&+span]:mt-[3px]">{line}</span>)}
           </li>
         ))}

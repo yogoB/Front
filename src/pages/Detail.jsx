@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Layout.jsx';
-import { FlowHead, Question, ErrorLine, Actions } from '../components/Flow.jsx';
+import { FlowHead, Question, ErrorLine, Actions, RangeCard } from '../components/Flow.jsx';
 import { Choice, ChoiceGroup } from '../components/Choice.jsx';
 import Analyzing from '../components/Analyzing.jsx';
 import { loadCatalog, CARRIERS, DATA_BUCKETS, FEE_BUCKETS } from '../lib/catalog-data.js';
@@ -73,40 +73,40 @@ export default function Detail() {
   }
 
   if (analyzing) {
-    return (<><Header /><main className="mx-auto max-w-[860px] px-6">
+    return (<div className="min-h-screen bg-bg-page"><Header /><main className="mx-auto max-w-[860px] px-6">
       <Analyzing onDone={() => navigate('/results')} />
-    </main></>);
+    </main></div>);
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-bg-page">
       <Header />
-      <main className="mx-auto max-w-[860px] px-6 py-6">
+      <main className="mx-auto max-w-[860px] px-6 py-8">
         <FlowHead steps={STEPS} current={step} onGo={go} onBack={back} />
         <ErrorLine>{error}</ErrorLine>
 
-        <div className="grid items-start gap-7 md:grid-cols-[260px_1fr]">
+        <div className="grid items-start gap-8 md:grid-cols-[260px_1fr]">
           <Statement carrier={carrier} contractHas={contractHas} fee={fee} />
 
           <div className="min-w-0">
             {step === 1 && (
               <>
-                <Question kicker="디테일 모드 · 현재 납부액">어떤 통신사를 쓰고 계세요?</Question>
+                <Question kicker="현재 통신사">어떤 통신사를 쓰고 계세요?</Question>
                 <CarrierSearch
                   query={carrierQuery} onQuery={q => { setCarrierQuery(q); setShowSuggest(true); }}
                   open={showSuggest} selected={carrier}
                   onPick={c => { setCarrier({ name: c.name, mvno: c.mvno }); setCarrierQuery(c.name); setShowSuggest(false); }} />
                 {carrier && (
-                  <div className="mt-5">
+                  <div>
                     <ChoiceGroup label="약정이 걸려 있나요?" stack
                       options={[[true, '네, 약정 중이에요'], [false, '아니요, 무약정이에요']]}
                       value={contractHas} onChange={setContractHas} />
                     {contractHas && (
-                      <div className="mt-4">
+                      <div className="mt-5">
                         <label htmlFor="contract-end" className="mb-2 block text-sm font-semibold">약정 종료일</label>
                         <input id="contract-end" type="date" value={contractEnd}
                                onChange={e => setContractEnd(e.target.value)}
-                               className="max-w-[220px] rounded-field border border-line px-3.5 py-3" />
+                               className="field max-w-[220px]" />
                       </div>
                     )}
                   </div>
@@ -117,21 +117,15 @@ export default function Detail() {
 
             {step === 2 && (
               <>
-                <Question kicker="디테일 모드 · 희망 조건"
+                <Question kicker="희망 조건" tip="통신사 앱 → 사용량 조회에서 확인할 수 있어요"
                           sub="원하는 데이터 사용량과 지금 내는 통신비를 알려주시면 절감액까지 계산해요.">
                   지금 얼마나 쓰고 계세요?
                 </Question>
-                <div className="rounded-card border border-line px-6 py-7">
-                  <output className="mb-4 block text-[28px] font-extrabold">{DATA_BUCKETS[dataIdx].label}</output>
-                  <input type="range" min={0} max={DATA_BUCKETS.length - 1} step={1} value={dataIdx}
-                         aria-label="희망 데이터 사용량 구간"
-                         onChange={e => setDataIdx(Number(e.target.value))}
-                         className="h-1.5 w-full accent-brand" />
-                  <p className="mt-2 text-sm text-muted">데이터 사용량 구간을 조절해 주세요.</p>
-                </div>
+                <RangeCard label="데이터 사용량 범위를 조절하세요" ariaLabel="희망 데이터 사용량 구간"
+                           value={DATA_BUCKETS[dataIdx].label} idx={dataIdx} max={DATA_BUCKETS.length - 1} onChange={setDataIdx} />
 
-                <h2 className="mt-8 text-xl font-extrabold">지금 내는 월 통신비는요?</h2>
-                <div className="mt-2.5 flex flex-wrap gap-2.5" role="group" aria-label="현재 월 통신비">
+                <h2 className="mt-10 text-xl font-extrabold">지금 내는 월 통신비는요?</h2>
+                <div className="mt-3 flex flex-wrap gap-2.5" role="group" aria-label="현재 월 통신비">
                   {FEE_BUCKETS.map(b => (
                     <Choice key={b.label} label={b.label} active={!customFee && fee?.label === b.label}
                             onClick={() => { setCustomFee(false); setFee({ label: b.label, amount: b.rep }); }} />
@@ -149,8 +143,8 @@ export default function Detail() {
                          className="field mt-3 max-w-[220px]" />
                 )}
 
-                <h2 className="mt-8 text-xl font-extrabold">아래를 알려주시면 더 정확해져요</h2>
-                <p className="mt-1 text-sm text-muted">모르면 건너뛰어도 결과는 나와요. 아는 만큼만 골라주세요.</p>
+                <h2 className="mt-12 text-xl font-extrabold">아래를 알려주시면 더 정확해져요</h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted">모르면 건너뛰어도 결과는 나와요. 아는 만큼만 골라주세요.</p>
                 <ChoiceGroup label="선택약정 25% 할인" stack value={contractType} onChange={setContractType}
                   options={[['SELECTIVE_25', '받고 있어요'], ['NONE', '받고 있지 않아요'], [null, '잘 모르겠어요']]} />
                 <ChoiceGroup label="사용 중인 통신망" value={networkType} onChange={setNetworkType}
@@ -163,25 +157,25 @@ export default function Detail() {
 
             {step === 3 && (
               <>
-                <Question kicker="디테일 모드 · 구독" sub="유지할 서비스와 해지할 서비스를 정해주세요.">
+                <Question kicker="구독 정보" sub="유지할 서비스와 해지할 서비스를 정해주세요.">
                   희망하는 구독서비스를 말해주세요!
                 </Question>
-                <div className="mb-3.5 flex flex-col gap-2.5">
+                <div className="mb-4 flex flex-col gap-2.5">
                   {wish.map(w => (
-                    <div key={w.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-xl border border-line px-4 py-3">
+                    <div key={w.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-xl border border-line bg-white py-2 pl-4 pr-1">
                       <span className="font-semibold">{w.service.icon}  {w.service.name}</span>
                       <select value={w.disposition} aria-label={`${w.service.name} 유지 여부`}
                               onChange={e => setWish(list => list.map(x => x.id === w.id ? { ...x, disposition: e.target.value } : x))}
-                              className="rounded-lg border border-line bg-white px-2.5 py-1.5">
+                              className="min-h-10 rounded-lg border border-line bg-white px-2.5 py-1.5">
                         <option value="유지">유지</option>
                         <option value="해지">해지</option>
                       </select>
                       <button type="button" aria-label={`${w.service.name} 제거`}
                               onClick={() => setWish(list => list.filter(x => x.id !== w.id))}
-                              className="cursor-pointer border-0 bg-transparent text-[15px] text-muted">✕</button>
+                              className="grid size-10 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-[15px] text-muted hover:bg-bg-soft hover:text-ink-soft">✕</button>
                     </div>
                   ))}
-                  {!wish.length && <p className="text-sm text-muted">아직 고른 서비스가 없어요. 아래에서 추가해 주세요.</p>}
+                  {!wish.length && <p className="text-sm leading-relaxed text-muted">아직 고른 서비스가 없어요. 아래에서 추가해 주세요.</p>}
                 </div>
                 <button type="button" onClick={() => setModalOpen(true)}
                         className="btn border-brand bg-white text-brand-ink hover:bg-brand-tint">+ 추가하기</button>
@@ -203,7 +197,7 @@ export default function Detail() {
                     }} />
         )}
       </main>
-    </>
+    </div>
   );
 }
 
@@ -217,7 +211,7 @@ function CarrierSearch({ query, onQuery, open, selected, onPick }) {
       <input value={query} onChange={e => onQuery(e.target.value)} onFocus={() => onQuery(query)}
              placeholder="통신사 이름을 입력하세요" aria-label="통신사 검색" className="field" />
       {open && query.trim() && (
-        <div className="mt-2 overflow-hidden rounded-card border border-line">
+        <div className="mt-2 overflow-hidden rounded-card border border-line bg-white">
           {found.length ? found.map(c => (
             <button key={c.name} type="button" onClick={() => onPick(c)}
                     className={`flex w-full cursor-pointer items-center gap-2.5 border-b border-line px-4 py-3.5
@@ -243,9 +237,9 @@ function Highlight({ name, query }) {
 /** 지금까지 고른 것을 옆에 계속 보여준다 — 뒤로 가지 않아도 무엇을 답했는지 알 수 있다. */
 function Statement({ carrier, contractHas, fee }) {
   return (
-    <aside className="rounded-card border border-line bg-bg-soft p-[22px]" aria-label="입력 요약">
-      <h2 className="border-b-2 border-black/10 pb-3 text-[15px] font-bold">지금까지 고른 것</h2>
-      <dl className="m-0 mt-3 grid gap-2 text-sm">
+    <aside className="rounded-card border border-line bg-white p-6" aria-label="입력 요약">
+      <h2 className="border-b-2 border-black/10 pb-3 text-base font-bold">지금까지 고른 것</h2>
+      <dl className="m-0 mt-4 grid gap-2.5 text-sm">
         <Row label="통신사" value={carrier?.name || '—'} />
         <Row label="약정" value={contractHas === null ? '—' : contractHas ? 'Y' : 'N'} />
         <Row label="통신비" value={fee ? won(fee.amount) : '—'} />
@@ -268,14 +262,14 @@ function AddModal({ catalog, chosen, onClose, onAdd }) {
   const shown = catalog.filter(s => !chosen.includes(s.id) && matches(s.name, query));
   return (
     <dialog ref={ref} onClose={onClose}
-            className="w-[min(460px,92vw)] rounded-[18px] p-[22px] shadow-card backdrop:bg-ink/40">
-      <div className="mb-3.5 flex items-center justify-between">
+            className="w-[min(460px,92vw)] rounded-[18px] p-6 shadow-card backdrop:bg-ink/40">
+      <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-extrabold">구독 서비스 추가</h2>
         <button type="button" onClick={onClose} aria-label="닫기"
-                className="cursor-pointer border-0 bg-transparent text-base text-muted">✕</button>
+                className="-mr-2 grid size-10 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-base text-muted hover:bg-bg-soft">✕</button>
       </div>
       <input value={query} onChange={e => setQuery(e.target.value)} autoFocus
-             placeholder="서비스 검색" aria-label="서비스 검색" className="field mb-3.5" />
+             placeholder="서비스 검색" aria-label="서비스 검색" className="field mb-4" />
       <div className="mb-4 flex max-h-[320px] flex-col overflow-y-auto rounded-card border border-line">
         {shown.map(s => (
           <label key={s.id} className="grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line px-4 py-3 last:border-b-0">

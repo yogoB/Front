@@ -5,18 +5,19 @@ export default function SubscriptionPicker({ subs, query, onQuery, onToggle, onT
   const shown = subs.filter(s => matches(s.service.name, query));
   return (
     <>
-      <div className="mb-3.5">
+      <div className="mb-4">
         <input value={query} onChange={e => onQuery(e.target.value)}
                placeholder="서비스 검색" aria-label="서비스 검색"
                className="field" />
       </div>
-      <div className="flex max-h-[420px] flex-col overflow-y-auto rounded-card border border-line">
+      <div className="flex max-h-[420px] flex-col overflow-y-auto rounded-card border border-line bg-white">
         {shown.map(sub => {
           const tier = sub.service.tiers.find(t => t.id === sub.tierId);
           return (
             <label key={sub.id}
-                   className={`grid cursor-pointer grid-cols-[auto_1fr_auto_auto] items-center gap-3
-                     border-b border-line px-4 py-3 last:border-b-0 ${sub.checked ? 'bg-brand-tint' : ''}`}>
+                   className={`grid min-h-14 cursor-pointer grid-cols-[auto_1fr_auto_auto] items-center gap-3
+                     border-b border-line px-4 py-2.5 last:border-b-0 transition-colors duration-150
+                     ${sub.checked ? 'bg-brand-tint' : 'hover:bg-bg-soft'}`}>
               <input type="checkbox" checked={sub.checked} onChange={() => onToggle(sub.id)}
                      className="size-[18px] accent-brand" />
               <span className="font-semibold">{sub.service.icon}  {sub.service.name}</span>
@@ -25,7 +26,7 @@ export default function SubscriptionPicker({ subs, query, onQuery, onToggle, onT
                       disabled={sub.service.tiers.length < 2}
                       onClick={e => e.preventDefault()}
                       onChange={e => onTier(sub.id, Number(e.target.value))}
-                      className="rounded-lg border border-line bg-white px-2 py-1.5 text-ink-soft">
+                      className="min-h-10 rounded-lg border border-line bg-white px-2 py-1.5 text-ink-soft">
                 {sub.service.tiers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </label>

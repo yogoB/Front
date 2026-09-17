@@ -14,7 +14,8 @@ import {
 
 /* 전환 액션 캘린더. 금액·요금제명은 결과 화면이 BE 응답에서 넘긴 값을 그대로 쓴다(같은 숫자는 같은 출처).
    담기는 **링크 방식**이다 — Google 일정 추가 화면을 열거나 .ics 를 내려준다.
-   사용자의 캘린더를 서버가 대신 쓰지 않으므로 OAuth 권한도 토큰 보관도 없다. */
+   사용자의 캘린더를 서버가 대신 쓰지 않으므로 OAuth 권한도 토큰 보관도 없다.
+   시안: 흰 머리판(제목·전환 금액 띠) 아래 회색 바탕에 카드 둘(가이드 범례 / 캘린더). 주간 보기는 시안대로 뺐다. */
 export default function Calendar() {
   const navigate = useNavigate();
   const member = useMember();
@@ -25,7 +26,7 @@ export default function Calendar() {
   const [expiryText, setExpiryText] = useState(input?.contract?.endDate ?? '');
   const [note, setNote] = useState('');
   const [view, setView] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
-  const [mode, setMode] = useState('month');       // month | week | list
+  const [mode, setMode] = useState('month');       // month | list
   const [showExport, setShowExport] = useState(false);
 
   // 일정의 기준일. 기본은 오늘이며, 약정 만료일이 앞으로 남아 있으면 그 날로 옮긴다.
@@ -89,107 +90,120 @@ export default function Calendar() {
                       onBack={() => navigate('/modes')} />;
   }
 
+  const stepName = i => (i < 3 ? `${i + 1}단계 · ` : '') + STEPS[i].when;
+
   return (
-    <>
+    <div className="min-h-screen bg-bg-page">
       <Header />
-      <main className="mx-auto max-w-[1080px] px-6 py-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <button type="button" onClick={() => navigate('/results')}
-                    className="cursor-pointer border-0 bg-transparent text-sm text-muted">← 추천 결과로 돌아가기</button>
-            <span className="ml-2 inline-block rounded-full bg-brand-tint px-3 py-1 text-xs font-bold text-brand-ink">A안 선택됨</span>
+      <main className="mx-auto max-w-[1200px] pb-10">
+        {/* 흰 머리판 — 제목·담기 버튼·전환 금액 띠 */}
+        <div className="rounded-b-card border border-line bg-white px-6 pb-6 pt-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => navigate('/results')} className="btn-text -ml-2 text-[13px]">← 추천 결과로 돌아가기</button>
+                <span className="inline-block rounded bg-detail-tint px-2 py-0.5 text-[11px] font-bold text-detail">A안 선택됨</span>
+              </div>
+              <h1 className="mb-1 mt-1.5 text-2xl font-extrabold">통신사 전환 액션 캘린더</h1>
+              <p className="max-w-prose text-sm leading-relaxed text-muted">Google 캘린더에 일정을 담고, 계획된 전환 일정을 관리하세요.</p>
+            </div>
+            <button type="button" onClick={() => setShowExport(v => !v)} className="btn btn-dark">Google 캘린더에 담기</button>
           </div>
-          <button type="button" onClick={() => setShowExport(v => !v)} className="btn btn-brand">캘린더에 담기</button>
-        </div>
-
-        <h1 className="my-1.5 text-[26px] font-extrabold">통신사 전환 액션 캘린더</h1>
-        <p className="text-muted">계획된 전환 일정을 한눈에 확인하고, 준비 항목을 단계별로 챙기세요.</p>
-        {note && <p className="my-2.5 rounded-xl bg-brand-tint px-3.5 py-2.5 text-sm font-semibold text-brand-ink">{note}</p>}
-
-        <div className="my-3 flex flex-wrap items-center gap-3">
-          <label htmlFor="expiry" className="text-sm font-semibold">약정 만료일을 알려주시면 그 날에 맞춰 일정을 잡아드려요</label>
-          <input id="expiry" type="date" value={expiryText} onChange={e => rememberExpiry(e.target.value)}
-                 className="rounded-field border border-line px-3.5 py-2.5" />
-          <button type="button" onClick={() => rememberExpiry('')} className="btn btn-ghost">지우기</button>
-        </div>
-
-        {showExport && member && (
-          <ExportPanel events={events} anchor={anchor} result={result} onDownload={downloadIcs} />
-        )}
-
-        <div className="mt-4 grid items-start gap-6 lg:grid-cols-[320px_1fr]">
-          <aside>
-            <div className="flex items-center gap-3 rounded-2xl bg-bg-soft p-4">
-              <div className="flex flex-col">
-                <span className="text-xs text-muted">현재 월 납부요금</span>
-                <strong className="text-lg tnum">{result?.currentTotal == null ? '—' : won(result.currentTotal)}</strong>
-              </div>
-              <span className="font-extrabold text-brand" aria-hidden="true">→</span>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted">전환 예상요금</span>
-                <strong className="text-lg text-brand-strong tnum">{result ? won(result.monthlyTotal) : '—'}</strong>
-              </div>
+          {/* 절감이 결론이므로 전환 후 금액만 강조색 */}
+          <div className="mt-5 flex items-center gap-8 rounded-xl bg-bg-page px-6 py-4">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-muted">현재 월 납부요금</span>
+              <strong className="text-[22px] tracking-[-.01em] tnum">{result?.currentTotal == null ? '—' : won(result.currentTotal)}</strong>
             </div>
+            <span className="text-xl font-extrabold text-brand" aria-hidden="true">→</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-muted">{result?.planLabel ? `${result.planLabel} 전환 예상요금` : '전환 예상요금'}</span>
+              <strong className="text-[22px] tracking-[-.01em] text-brand-strong tnum">{result ? won(result.monthlyTotal) : '—'}</strong>
+            </div>
+          </div>
+        </div>
 
-            <h2 className="mb-3 mt-[22px] text-[15px] font-extrabold">단계별 가이드</h2>
-            <ol className="m-0 grid list-none gap-3.5 p-0">
-              {STEPS.map((s, i) => (
-                <li key={s.title} className="grid grid-cols-[auto_1fr] gap-3">
-                  <span className="mt-[5px] size-3 rounded-full" style={{ background: STEP_COLORS[i] }} />
-                  <div>
-                    <strong className="text-[13px] text-muted">{i + 1}단계 · {s.when}</strong>
-                    <span className="my-0.5 block font-bold">{s.title}</span>
-                    <p className="m-0 text-[13px] text-muted">{s.desc}</p>
+        <div className="px-6">
+          {note && <p className="mt-4 rounded-xl bg-brand-tint px-4 py-3 text-sm font-semibold leading-relaxed text-brand-ink">{note}</p>}
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <label htmlFor="expiry" className="text-sm font-semibold">약정 만료일을 알려주시면 그 날에 맞춰 일정을 잡아드려요</label>
+            <input id="expiry" type="date" value={expiryText} onChange={e => rememberExpiry(e.target.value)}
+                   className="field w-auto" />
+            <button type="button" onClick={() => rememberExpiry('')} className="btn btn-ghost">지우기</button>
+          </div>
+
+          {showExport && member && (
+            <ExportPanel events={events} anchor={anchor} result={result} onDownload={downloadIcs} />
+          )}
+
+          <div className="mt-6 grid items-start gap-6 lg:grid-cols-[300px_1fr]">
+            <aside className="grid gap-6">
+              <div className="card p-5">
+                <h2 className="mb-3.5 text-[15px] font-extrabold">단계별 가이드 범례</h2>
+                <ol className="m-0 grid list-none gap-2.5 p-0">
+                  {STEPS.map((s, i) => (
+                    <li key={s.title} className="rounded-[10px] px-3.5 py-3" style={{ background: STEP_COLORS[i] + '14' }}>
+                      <strong className="text-xs font-bold" style={{ color: STEP_COLORS[i] }}>
+                        <span className="mr-1.5 inline-block size-2 rounded-full align-middle" style={{ background: STEP_COLORS[i] }} />
+                        {stepName(i)}
+                      </strong>
+                      <span className="mb-0.5 mt-1 block text-sm font-bold text-ink">{s.title}</span>
+                      <p className="m-0 text-xs leading-relaxed text-muted">{s.desc}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+              <div className="card p-5">
+                <h2 className="mb-2 text-[15px] font-extrabold">안내사항</h2>
+                <p className="text-xs leading-relaxed text-muted">
+                  본 체크리스트와 일정은 정보 제공 목적이에요. 통신사·OTT 정책에 따라 요금·조건이 다를 수 있으니
+                  가입 전 공식 홈페이지에서 최종 확인해 주세요.
+                </p>
+              </div>
+            </aside>
+
+            <section className="card p-6">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                {mode !== 'list' ? (
+                  <div className="flex items-center gap-1.5">
+                    <strong className="mr-2 text-xl font-extrabold">{view.getFullYear()}년 {view.getMonth() + 1}월</strong>
+                    <NavBtn onClick={() => setView(v => new Date(v.getFullYear(), v.getMonth() - 1, 1))} label="이전 달">‹</NavBtn>
+                    <NavBtn onClick={() => setView(v => new Date(v.getFullYear(), v.getMonth() + 1, 1))} label="다음 달">›</NavBtn>
+                    <button type="button" onClick={() => setView(new Date(today.getFullYear(), today.getMonth(), 1))}
+                            className="ml-2 min-h-10 cursor-pointer rounded-lg bg-brand-tint px-3.5 text-xs font-bold text-brand-ink hover:bg-brand/30">
+                      오늘로 이동
+                    </button>
                   </div>
-                </li>
-              ))}
-            </ol>
-            <p className="mt-4 text-[13px] text-muted">
-              본 체크리스트와 일정은 정보 제공 목적이에요. 통신사·OTT 정책에 따라 요금·조건이 다를 수 있으니
-              가입 전 공식 홈페이지에서 최종 확인해 주세요.
-            </p>
-          </aside>
-
-          <section className="rounded-card border border-line p-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              {mode !== 'list' && (
-                <div className="flex items-center gap-2">
-                  <NavBtn onClick={() => setView(v => new Date(v.getFullYear(), v.getMonth() - 1, 1))} label="이전 달">‹</NavBtn>
-                  <strong className="min-w-[110px] text-center text-base">{view.getFullYear()}년 {view.getMonth() + 1}월</strong>
-                  <NavBtn onClick={() => setView(v => new Date(v.getFullYear(), v.getMonth() + 1, 1))} label="다음 달">›</NavBtn>
-                  <button type="button" onClick={() => setView(new Date(today.getFullYear(), today.getMonth(), 1))}
-                          className="cursor-pointer rounded-lg border border-line bg-white px-3 py-1 text-[13px] font-semibold text-ink-soft">
-                    오늘로 이동
-                  </button>
+                ) : <span />}
+                <div className="inline-flex gap-0.5 rounded-lg border border-line bg-white p-[3px]">
+                  {[['month', '캘린더'], ['list', '리스트']].map(([key, label]) => (
+                    <button key={key} type="button" onClick={() => setMode(key)} aria-pressed={mode === key}
+                            className={`min-h-9 cursor-pointer rounded-md border-0 px-3.5 text-[13px] font-semibold transition-colors duration-150
+                              ${mode === key ? 'bg-ink text-white' : 'bg-transparent text-muted hover:text-ink-soft'}`}>
+                      {label}
+                    </button>
+                  ))}
                 </div>
-              )}
-              <div className="inline-flex gap-1 rounded-full bg-bg-soft p-1">
-                {[['month', '월간'], ['week', '주간'], ['list', '리스트']].map(([key, label]) => (
-                  <button key={key} type="button" onClick={() => setMode(key)}
-                          className={`cursor-pointer rounded-full border-0 px-4 py-1.5 text-sm font-semibold
-                            ${mode === key ? 'bg-white text-ink shadow-card' : 'bg-transparent text-muted'}`}>
-                    {label}
-                  </button>
-                ))}
               </div>
-            </div>
-            {mode === 'list'
-              ? <EventList events={events} anchor={anchor} today={today} />
-              : <Grid view={view} mode={mode} anchor={anchor} events={events} today={today} />}
-          </section>
+              {mode === 'list'
+                ? <EventList events={events} anchor={anchor} today={today} stepName={stepName} />
+                : <Grid view={view} anchor={anchor} events={events} today={today} />}
+            </section>
+          </div>
         </div>
       </main>
-      <div className="mx-auto w-full max-w-[1080px] px-6"><Footer /></div>
-    </>
+      <div className="mx-auto w-full max-w-[1200px] px-6"><Footer /></div>
+    </div>
   );
 }
 
 const NavBtn = ({ onClick, label, children }) => (
   <button type="button" onClick={onClick} aria-label={label}
-          className="size-8 cursor-pointer rounded-lg border border-line bg-white text-base text-ink-soft">{children}</button>
+          className="size-10 cursor-pointer rounded-lg border border-line bg-white text-lg text-ink-soft hover:bg-bg-soft">{children}</button>
 );
 
-function Grid({ view, mode, anchor, events, today }) {
+function Grid({ view, anchor, events, today }) {
   const y = view.getFullYear(), m = view.getMonth();
   const sameMonthAsToday = today.getFullYear() === y && today.getMonth() === m;
   const byDay = new Map();
@@ -200,11 +214,7 @@ function Grid({ view, mode, anchor, events, today }) {
       list.push(e); byDay.set(d.getDate(), list);
     }
   }
-  let weeks = monthGrid(y, m);
-  if (mode === 'week') {
-    const i = sameMonthAsToday ? weeks.findIndex(w => w.includes(today.getDate())) : 0;
-    weeks = [weeks[i < 0 ? 0 : i]];
-  }
+  const weeks = monthGrid(y, m);
   return (
     <div className="grid gap-1.5">
       <div className="grid grid-cols-7 gap-1.5">
@@ -235,27 +245,37 @@ function Grid({ view, mode, anchor, events, today }) {
   );
 }
 
-/** 리스트 보기 — 일정이 여러 달에 걸치면 달을 오가야 흐름이 보인다. 목록은 한 번에 보여준다. */
-function EventList({ events, anchor, today }) {
+/** 리스트 보기(시안) — 날짜별로 묶어 한 줄씩. 달을 오가지 않고 전체 흐름을 본다.
+    지난 일정은 체크 표시 — 실제 완료 여부는 모르므로 날짜가 지났다는 뜻일 뿐이다. */
+function EventList({ events, anchor, today, stepName }) {
+  const days = new Map();
+  for (const e of events) {
+    const date = dateOf(anchor, e.offset);
+    (days.get(+date) || days.set(+date, { date, events: [] }).get(+date)).events.push(e);
+  }
   return (
-    <ol className="m-0 grid list-none gap-2 p-0">
-      {events.map(e => {
-        const date = dateOf(anchor, e.offset);
-        const past = date < today;
+    <ol className="m-0 list-none p-0">
+      {[...days.values()].map(({ date, events: items }) => {
+        const past = date < today, isToday = +date === +today;
         return (
-          <li key={e.label}
-              className={`grid grid-cols-[52px_auto_1fr_auto] items-center gap-3.5 rounded-xl border border-line px-4 py-3
-                ${past ? 'opacity-55' : ''}`}>
-            <div className="flex flex-col items-center leading-tight">
-              <strong className="text-[15px] font-extrabold tnum">{date.getMonth() + 1}/{date.getDate()}</strong>
-              <span className="text-[11px] font-semibold text-muted">{WEEKDAYS[date.getDay()]}</span>
+          <li key={+date} className={`grid gap-4 border-b border-line py-4 last:border-b-0 md:grid-cols-[150px_1fr] ${past ? 'opacity-60' : ''}`}>
+            <div className="flex items-center gap-2 text-sm font-extrabold">
+              <span>{date.getDate()}일 {WEEKDAYS[date.getDay()]}요일</span>
+              {isToday
+                ? <span className="rounded bg-brand-tint px-1.5 py-0.5 text-[10px] font-extrabold text-brand-ink">TODAY</span>
+                : <span className="text-xs font-semibold text-muted">{relativeDay(date, today)}</span>}
             </div>
-            <span className="size-2.5 rounded-full" style={{ background: STEP_COLORS[e.step] }} />
-            <div>
-              <span className="block text-sm font-bold">{e.label}</span>
-              <small className="text-xs text-muted">{e.step + 1}단계 · {STEPS[e.step].when}</small>
-            </div>
-            <span className="whitespace-nowrap text-xs font-semibold text-muted">{relativeDay(date, today)}</span>
+            <ul className="m-0 grid list-none gap-2.5 p-0">
+              {items.map(e => (
+                <li key={e.label} className="grid grid-cols-[auto_1fr_auto] items-center gap-2.5 text-sm">
+                  <span className={`grid size-[18px] place-items-center rounded-full border-[1.5px] text-[11px] font-extrabold
+                    ${past ? 'border-brand bg-brand text-white' : 'border-[#cfd3da]'}`}>{past ? '✓' : ''}</span>
+                  <span className="font-semibold">{e.label}</span>
+                  <span className="whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-bold"
+                        style={{ background: STEP_COLORS[e.step] + '1f', color: STEP_COLORS[e.step] }}>{stepName(e.step)}</span>
+                </li>
+              ))}
+            </ul>
           </li>
         );
       })}
@@ -266,9 +286,9 @@ function EventList({ events, anchor, today }) {
 /** 담기는 링크 방식이다 — 서버가 사용자의 캘린더를 대신 쓰지 않는다. */
 function ExportPanel({ events, anchor, result, onDownload }) {
   return (
-    <section className="my-4 rounded-card border border-line p-5">
-      <h2 className="mb-1.5 text-[17px] font-bold">캘린더에 담기</h2>
-      <p className="text-[13px] text-muted">
+    <section className="card mt-6 p-6">
+      <h2 className="mb-2 text-lg font-bold">캘린더에 담기</h2>
+      <p className="max-w-prose text-[13px] leading-relaxed text-muted">
         일정을 누르면 Google 캘린더 추가 화면이 새 탭에서 열려요. 저장은 직접 하시면 돼요 —
         요고비가 캘린더를 대신 수정하지 않아요. Google 링크에는 <strong>금액을 넣지 않아요</strong>.
         금액까지 함께 담으려면 아래에서 .ics 파일을 받으세요(기기 안에서만 처리돼요).

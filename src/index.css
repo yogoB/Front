@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
-/* 기존 redesign.css 의 토큰을 값 그대로 옮긴다. 색을 새로 고르지 않는다 —
-   화면이 바뀌는 게 아니라 스택만 바뀌는 작업이다. */
+/* 시안(2026-09-17) 민트 토큰. 초록 → 민트로 토큰만 바꿔 전 화면에 적용한다. */
 @theme {
-  --color-brand: #22c55e;
-  --color-brand-strong: #16a34a;
-  --color-brand-tint: #e9f9f0;
-  --color-brand-ink: #1a9d5f;
+  --color-brand: #3ed4af;
+  --color-brand-strong: #22b892;
+  --color-brand-tint: #e4f8f2;
+  --color-brand-ink: #149a76;
+  --color-bg-page: #f3f4f6;
   --color-detail: #4f6bed;
   --color-detail-tint: #eaeffe;
   --color-ink: #17182a;
@@ -40,21 +40,49 @@
   :focus-visible { @apply outline-2 outline-brand-strong outline-offset-2 rounded-md; }
   /* 숫자는 자릿수가 바뀌어도 흔들리지 않게 */
   .tnum { font-variant-numeric: tabular-nums; }
+  /* 제목은 줄 길이를 고르게, 본문은 고아 단어가 남지 않게(ui-ux-pro-max heading-line-balance) */
+  h1, h2, h3 { text-wrap: balance; }
+  p, li { text-wrap: pretty; }
+  /* 움직임을 줄여 달라는 설정을 따른다 — 스피너·전환을 멈춘다 */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
 }
 
 @layer components {
   /* v4 의 @apply 는 유틸리티만 받는다 — 컴포넌트 클래스를 다시 @apply 할 수 없다.
      그래서 .btn 을 상속하지 않고, 마크업에서 "btn btn-brand" 처럼 두 개를 함께 쓴다. */
-  .btn { @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-field
-         border border-transparent px-[18px] py-[11px] text-[15px] font-semibold; }
+  /* 눌리는 것은 전부 44px 이상(touch-target-size). 여백은 4px 단위 스케일만 쓴다. */
+  .btn { @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-field
+         border border-transparent px-5 py-2.5 text-[15px] font-semibold transition-colors duration-150; }
   .btn-brand { @apply border-brand bg-brand text-white hover:bg-brand-strong; }
-  .btn-ghost { @apply border-line bg-white text-ink-soft hover:border-[#d9d9e2]; }
+  .btn-ghost { @apply border-line bg-white text-ink-soft hover:border-[#d9d9e2] hover:bg-bg-soft; }
   .btn-dark  { @apply border-ink bg-ink text-white hover:border-black hover:bg-black; }
-  .btn-lg    { @apply rounded-xl px-[26px] py-[15px] text-base; }
+  .btn-lg    { @apply min-h-13 rounded-xl px-7 py-3.5 text-base; }
   .btn-block { @apply w-full; }
+  /* 글자처럼 보이는 버튼(건너뛰기·뒤로). 시각은 작아도 누르는 면적은 44px 을 지킨다. */
+  .btn-text { @apply inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent px-2 text-sm
+              text-muted transition-colors duration-150 hover:text-ink-soft; }
 
-  .field { @apply w-full rounded-field border border-line bg-white px-3.5 py-3 outline-none
+  .field { @apply min-h-11 w-full rounded-field border border-line bg-white px-3.5 py-2.5 outline-none
            focus:border-brand focus:ring-[3px] focus:ring-brand-tint; }
+
+  /* 슬라이더(시안) — 채워진 구간은 --pct 로 넘긴다. 흰 원 손잡이에 민트 테두리. */
+  .range { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px; outline: none;
+    background: linear-gradient(var(--color-brand) 0 0) 0 / var(--pct, 40%) 100% no-repeat #dfe2e7; }
+  .range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 999px; background: #fff;
+    border: 2px solid var(--color-brand); box-shadow: 0 1px 4px rgb(0 0 0 / 15%); cursor: pointer; }
+  .range::-moz-range-thumb { width: 16px; height: 16px; border-radius: 999px; background: #fff; border: 2px solid var(--color-brand); cursor: pointer; }
+
+  /* ⓘ 도움말 — 올리거나 포커스하면 아래에 검은 말풍선(시안). 내용은 data-tip. */
+  .info { @apply relative grid size-6 shrink-0 cursor-help place-items-center rounded-full border-[1.5px] border-[#6b7280]
+          bg-transparent text-[13px] font-bold text-[#6b7280]; }
+  .info::after { content: attr(data-tip); position: absolute; top: calc(100% + 10px); right: -8px; white-space: nowrap;
+    background: #2b2d3a; color: #fff; font-size: 12px; font-weight: 500; padding: 9px 12px; border-radius: 6px;
+    opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 3; }
+  .info::before { content: ""; position: absolute; top: calc(100% + 4px); right: 4px; border: 6px solid transparent;
+    border-bottom-color: #2b2d3a; opacity: 0; transition: opacity .12s; }
+  .info:hover::after, .info:focus-visible::after, .info:hover::before, .info:focus-visible::before { opacity: 1; }
   .card  { @apply rounded-card border border-line bg-white shadow-card; }
   .chip  { @apply inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5
            text-[13px] font-semibold text-ink-soft; }

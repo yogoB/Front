@@ -12,12 +12,12 @@ export default function Landing() {
       {/* Google 은 랜딩으로 복귀한다 — 게이트에서 출발했으면 그 화면으로 돌려보낸다. */}
       <AuthReturn />
       <main className="mx-auto flex w-full max-w-page flex-1 flex-col px-6">
-        <section className="grid flex-1 items-center gap-6 py-10 md:grid-cols-[1.35fr_.65fr]">
+        <section className="grid flex-1 items-center gap-8 py-12 md:grid-cols-[1.35fr_.65fr] md:py-16">
           <div>
             {/* ⚠️ DUMMY: 아래 data-dummy 두 곳은 시안 값이다. 집계가 아직 없다.
                 서비스 후 대상이 추려지면 실제 사용자 기반 값으로 바꾼다(이름·금액·인원).
                 바꿀 때 `grep -rn data-dummy` 로 한 번에 찾는다. */}
-            <p className="mb-[22px] flex flex-wrap items-center gap-3">
+            <p className="mb-6 flex flex-wrap items-center gap-3">
               <span className="rounded-full bg-brand-tint px-3 py-1.5 text-[13px] font-bold text-brand-ink">
                 통신비 · 구독료 최적화 진단
               </span>
@@ -33,7 +33,7 @@ export default function Landing() {
               <span className="text-brand">얼마 전 월 38,000원</span> 아끼셨네요!
             </h1>
 
-            <p className="my-[22px] max-w-[34em] text-base leading-[1.7] text-ink-soft">
+            <p className="mb-8 mt-6 max-w-prose text-base leading-relaxed text-ink-soft md:text-lg">
               몇 가지 질문에 답하다 보면 복잡한 내 통신비와 요금제가 정리되고,
               내 상황에 딱 맞는 선택지가 만들어집니다.
             </p>
@@ -42,7 +42,7 @@ export default function Landing() {
               내 요금제 진단받기
             </button>
 
-            <ul className="mt-7 flex list-none flex-wrap gap-2 p-0">
+            <ul className="mt-8 flex list-none flex-wrap gap-2.5 p-0">
               {TRUST.map(text => (
                 <li key={text} className="chip">
                   <span className="size-1.5 rounded-full bg-brand" aria-hidden="true" />
