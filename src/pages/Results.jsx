@@ -133,9 +133,9 @@ const Delta = ({ label, value }) => (
 
 function buildRequest(source) {
   const optional = {};
-  // 알뜰폰은 브랜드명 대신 '알뜰폰'으로 묶어 보낸다. BE 는 currentCarrier 를 계산에 쓰지 않고
-  // missingInputs 안내 여부만 본다 — 값이 무엇이든 금액은 같다.
-  if (source.carrier) optional.currentCarrier = source.mvno ? '알뜰폰' : source.carrier;
+  // 통신사 이름을 그대로 보낸다. BE 는 금액에 쓰지 않고, 카탈로그에 없는 이름이면 결손(catalog_candidate)으로
+  // 기록해 수집 우선순위를 만든다 — 그래서 '알뜰폰'으로 뭉뚱그리지 않는다(QA 2026-09-17).
+  if (source.carrier) optional.currentCarrier = source.carrier;
   // 모른다고 한 값은 빼서 missingInputs 안내가 그대로 남는다(원칙 5-①).
   if (source.networkType) optional.networkType = source.networkType;
   if (source.contractType) optional.contractType = source.contractType;
@@ -285,7 +285,7 @@ function ReportWrong({ planId, planName }) {
     try {
       const body = { targetType: 'MOBILE_PLAN', targetId: planId, field, description: description.trim() };
       if (sourceUrl.trim()) body.sourceUrl = sourceUrl.trim();
-      // 공개 엔드포인트지만 CSRF 면제 목록(/recommendations·/calculator·/chat/messages)에 없다.
+      // 공개 엔드포인트지만 CSRF 면제 목록(/recommendations·/calculator)에 없다.
       // member:true 여야 request 가 토큰을 받아 붙인다 — 없으면 전부 403 이다.
       await request('/api/v1/catalog/reports', { method: 'POST', body, member: true });
       setDone(true);

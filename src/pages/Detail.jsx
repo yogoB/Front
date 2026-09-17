@@ -106,7 +106,8 @@ export default function Detail() {
                   carriers={carriers}
                   query={carrierQuery} onQuery={q => { setCarrierQuery(q); setShowSuggest(true); }}
                   open={showSuggest} selected={carrier}
-                  onPick={c => { setCarrier({ name: c.name, mvno: c.mvno }); setCarrierQuery(c.name); setShowSuggest(false); }} />
+                  onPick={c => { setCarrier({ name: c.name, mvno: c.mvno }); setCarrierQuery(c.name); setShowSuggest(false); }}
+                  onClear={() => { setCarrier(null); setCarrierQuery(''); setContractHas(null); setContractEnd(''); }} />
                 {carrier && (
                   <div>
                     <ChoiceGroup label="약정이 걸려 있나요?" stack
@@ -247,26 +248,44 @@ export default function Detail() {
   );
 }
 
-/* 통신사 — 검색 자동완성. 전체 목록을 나열하지 않고 입력하면 일치하는 것만 제안한다. */
-function CarrierSearch({ query, onQuery, open, selected, onPick, carriers }) {
+/* 통신사 — 검색 자동완성. 전체 목록을 나열하지 않고 입력하면 일치하는 것만 제안한다.
+   목록에 없으면 입력한 이름을 그대로 고를 수 있다(QA 2026-09-17) — BE 가 모르는 이름을 결손으로 기록해 수집 대상이 된다.
+   직접 입력한 통신사는 3사가 아니므로 mvno 로 둔다. 고른 뒤에는 ✕ 로 되돌린다. */
+function CarrierSearch({ query, onQuery, open, selected, onPick, onClear, carriers }) {
   const found = useMemo(
     () => (query.trim() ? carriers.filter(c => matches(c.name, query) || (c.mvno && matches('알뜰폰', query))) : []),
     [query, carriers]);
+  const typed = query.trim();
+  const exact = found.some(c => matches(c.name, typed) && matches(typed, c.name));
+  if (selected) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-field border border-brand bg-brand-tint px-4 py-2.5 font-semibold text-brand-ink">
+        <span>{selected.name}{selected.mvno && <small className="ml-2 text-xs font-medium text-muted">알뜰폰</small>}</span>
+        <button type="button" onClick={onClear} aria-label="통신사 선택 해제"
+                className="grid size-9 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-base text-brand-ink hover:bg-white/60">✕</button>
+      </div>
+    );
+  }
   return (
     <div>
       <input value={query} onChange={e => onQuery(e.target.value)} onFocus={() => onQuery(query)}
              placeholder="통신사 이름을 입력하세요" aria-label="통신사 검색" className="field" />
-      {open && query.trim() && (
+      {open && typed && (
         <div className="mt-2 overflow-hidden rounded-card border border-line bg-white">
-          {found.length ? found.map(c => (
+          {found.map(c => (
             <button key={c.name} type="button" onClick={() => onPick(c)}
-                    className={`flex w-full cursor-pointer items-center gap-2.5 border-b border-line px-4 py-3.5
-                      text-left font-semibold last:border-b-0
-                      ${selected?.name === c.name ? 'bg-brand-tint text-brand-ink' : 'bg-white hover:bg-bg-soft'}`}>
+                    className="flex w-full cursor-pointer items-center gap-2.5 border-b border-line bg-white px-4 py-3.5 text-left font-semibold last:border-b-0 hover:bg-bg-soft">
               <Highlight name={c.name} query={query} />
               {c.mvno && <small className="text-xs font-medium text-muted">알뜰폰</small>}
             </button>
-          )) : <p className="px-4 py-3.5 text-sm text-muted">일치하는 통신사가 없어요. 다른 이름으로 검색해 보세요.</p>}
+          ))}
+          {!exact && (
+            <button type="button" onClick={() => onPick({ name: typed, mvno: true })}
+                    className="flex w-full cursor-pointer items-center gap-2.5 border-b border-line bg-white px-4 py-3.5 text-left font-semibold last:border-b-0 hover:bg-bg-soft">
+              <span>"{typed}" 직접 입력</span>
+              <small className="text-xs font-medium text-muted">{found.length ? '목록에 없어요' : '일치하는 통신사가 없어요'}</small>
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -308,7 +327,7 @@ function AddModal({ catalog, chosen, onClose, onAdd }) {
   const shown = catalog.filter(s => !chosen.includes(s.id) && matches(s.name, query));
   return (
     <dialog ref={ref} onClose={onClose}
-            className="w-[min(460px,92vw)] rounded-[18px] p-6 shadow-card backdrop:bg-ink/40">
+            className="m-auto w-[min(460px,92vw)] rounded-[18px] p-6 shadow-card backdrop:bg-ink/40">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-extrabold">구독 서비스 추가</h2>
         <button type="button" onClick={onClose} aria-label="닫기"

@@ -101,15 +101,16 @@ function DeleteAccount() {
       </p>
       {!open
         ? <button type="button" onClick={() => setOpen(true)}
-                  className="mt-3 cursor-pointer border-0 bg-transparent p-0 text-sm text-muted underline hover:text-danger">
+                  className="mt-3 cursor-pointer border-0 bg-transparent p-0 text-xs text-danger/70 underline underline-offset-2 hover:text-danger">
             탈퇴하기
           </button>
         : (
           <form onSubmit={submit} className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
             <input value={typed} onChange={e => setTyped(e.target.value)} aria-label="확인 문구"
                    placeholder="탈퇴 라고 입력" className="field" />
+            {/* 되돌릴 수 없는 행동은 브랜드색으로 부추기지 않는다 — 작은 빨간 외곽선 버튼. */}
             <button type="submit" disabled={typed.trim() !== '탈퇴' || busy}
-                    className="btn btn-brand disabled:cursor-not-allowed disabled:opacity-45">
+                    className="btn border-[#f0a9a2] bg-white px-3.5 py-1.5 text-[13px] text-danger hover:bg-danger-tint disabled:cursor-not-allowed disabled:opacity-45">
               {busy ? '처리 중…' : '탈퇴'}
             </button>
             <button type="button" onClick={() => { setOpen(false); setTyped(''); setStatus(''); }}

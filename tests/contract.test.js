@@ -85,7 +85,7 @@ test('CSRF failure stops mutation and cancellation preserves AbortError', async 
   await assert.rejects(request('/api/v1/me/nickname', { member: true, method: 'POST', body: {} }), /CSRF unavailable/);
   assert.deepEqual(calls, ['/api/v1/auth/csrf']);
   fetch.mock.mockImplementation(async (url, options) => { options.signal.throwIfAborted(); return new Promise((resolve, reject) => options.signal.addEventListener('abort', () => reject(options.signal.reason))); });
-  const controller = new AbortController(); const promise = request('/api/v1/chat/messages', { signal: controller.signal }); controller.abort();
+  const controller = new AbortController(); const promise = request('/api/v1/recommendations', { signal: controller.signal }); controller.abort();
   await assert.rejects(promise, e => e.name === 'AbortError');
 });
 
@@ -209,11 +209,11 @@ test('ICS UID 는 기준일이 바뀌어도 같다 — 다시 받으면 쌓이�
   assert.equal(new Set(a).size, a.length);                   // 한 파일 안에서는 서로 달라야 한다
 });
 
-// BE SecurityConfig 는 /recommendations·/calculator·/chat/messages 만 CSRF 를 면제한다.
+// BE SecurityConfig 는 /recommendations·/calculator 만 CSRF 를 면제한다(챗봇 경로는 D-44 로 사라졌다).
 // 나머지 변경 요청은 member:true 로 보내야 request() 가 토큰을 붙인다 — 빠지면 403 이다.
 // 2026-09-17: 제보(/catalog/reports)를 member 없이 보내 403 으로 죽던 것을 잡고 추가했다.
 test('CSRF 면제 경로가 아닌 POST/DELETE 는 member:true 로 보낸다', () => {
-  const EXEMPT = ['/api/v1/recommendations', '/api/v1/calculator', '/api/v1/chat/messages'];
+  const EXEMPT = ['/api/v1/recommendations', '/api/v1/calculator'];
   const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(e =>
     e.isDirectory() ? walk(`${dir}/${e.name}`) : /\.jsx?$/.test(e.name) ? [`${dir}/${e.name}`] : []);
   const calls = [];
