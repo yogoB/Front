@@ -100,14 +100,21 @@ test('range buckets carry a positive integer representative for BE (monthlyDataG
 });
 
 // 절대 원칙 2: 금액 계산은 BE_main 의 pricing 모듈만. 프론트는 서버 금액으로 산술하지 않는다.
-// 기간 환산·절감액 뺄셈이 되살아나면 여기서 잡는다.
+// 기간 환산·절감액 뺄셈·합계가 되살아나면 여기서 잡는다.
+// 2026-09-17: src 최상위 .js 만 보던 탓에 React 전환 뒤 훑는 파일이 0개였다 — 재귀 + .jsx 로 고쳤다.
 test('front never does arithmetic on server amounts', () => {
-  const MONEY = 'monthlyTotal|baseline|monthlySavings|annualSavings';
-  const arithmetic = new RegExp(`(${MONEY})\\s*[*/+-]\\s|[*/+-]\\s*[a-zA-Z_.]*(${MONEY})\\b`);
-  for (const file of readdirSync('src').filter(f => f.endsWith('.js'))) {
-    readFileSync(`src/${file}`, 'utf8').split('\n').forEach((line, i) => {
+  const MONEY = 'monthlyTotal|baseline|monthlySavings|annualSavings|currentTotal|wastedAmount|monthlyPrice';
+  // (?<![\\w-]) 는 테일윈드 클래스(items-baseline, gap-3)를 코드로 오해하지 않게 한다.
+  const word = `(?<![\\w-])(${MONEY})`;
+  const arithmetic = new RegExp(`${word}\\s*[*/+-]\\s|[*/+-]\\s*[a-zA-Z_.]*${word}\\b`);
+  const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(e =>
+    e.isDirectory() ? walk(`${dir}/${e.name}`) : /\.jsx?$/.test(e.name) ? [`${dir}/${e.name}`] : []);
+  const files = walk('src');
+  assert.ok(files.length > 10, `훑은 파일이 ${files.length}개뿐이다 — 경로가 또 어긋났다`);
+  for (const file of files) {
+    readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
       const code = line.replace(/\/\/.*$/, '');                 // 주석에 적힌 설명은 검사하지 않는다
-      assert.ok(!arithmetic.test(code), `src/${file}:${i + 1} 가 서버 금액으로 계산한다 — ${line.trim()}`);
+      assert.ok(!arithmetic.test(code), `${file}:${i + 1} 가 서버 금액으로 계산한다 — ${line.trim()}`);
     });
   }
 });

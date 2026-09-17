@@ -4,7 +4,7 @@ import { Header } from '../components/Layout.jsx';
 import { request, ApiError } from '../lib/api.js';
 import { loadCatalog } from '../lib/catalog-data.js';
 import { won, matches, tierPrice, tierKrwGuess, integer } from '../lib/model.js';
-import { useMember } from '../lib/useMember.js';
+import { useMember, forgetMember } from '../lib/useMember.js';
 
 /** BE 카탈로그의 통신망 코드 → 화면 표기. 모르는 값은 그대로 보여준다. */
 const NETWORKS = { FIVE_G: '5G', LTE: 'LTE', THREE_G: '3G' };
@@ -67,8 +67,55 @@ export default function MyPage() {
         <CurrentPlan member={member} plans={plans} onSaved={id => { setMember(m => ({ ...m, currentPlanId: id })); reloadDetections(); }} />
         <Subscriptions services={services} rows={subscriptions} onChanged={() => { reloadSubs(); reloadDetections(); }} />
         <Detections findings={findings} services={services} hasPlan={Boolean(member?.currentPlanId)} />
+        <DeleteAccount />
       </main>
     </>
+  );
+}
+
+/** 회원 탈퇴. 개인정보처리방침 3·6조가 약속하는 권리인데 화면에 길이 없었다(BE 는 이미 DELETE /me 를 연다).
+    되돌릴 수 없으므로 '탈퇴'를 직접 적게 한다 — confirm() 대화상자는 쓰지 않는다. */
+function DeleteAccount() {
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState('');
+  const [status, setStatus] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e) {
+    e.preventDefault();
+    setBusy(true); setStatus('');
+    try {
+      await request('/api/v1/me', { method: 'DELETE', member: true });
+      forgetMember();                       // 캐시된 /me 를 버려야 헤더가 곧장 비회원으로 돌아간다
+      sessionStorage.clear();               // 같은 탭에 남은 입력·결과(금액)도 함께 지운다
+      location.replace('/');
+    } catch (e) { setStatus(message(e)); setBusy(false); }
+  }
+
+  return (
+    <Card title="회원 탈퇴">
+      <p className="text-sm text-ink-soft">
+        계정과 저장한 현재 요금제·구독 정보를 파기합니다. 되돌릴 수 없어요.
+      </p>
+      {!open
+        ? <button type="button" onClick={() => setOpen(true)}
+                  className="mt-3 cursor-pointer border-0 bg-transparent p-0 text-sm text-muted underline hover:text-danger">
+            탈퇴하기
+          </button>
+        : (
+          <form onSubmit={submit} className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+            <input value={typed} onChange={e => setTyped(e.target.value)} aria-label="확인 문구"
+                   placeholder="탈퇴 라고 입력" className="field" />
+            <button type="submit" disabled={typed.trim() !== '탈퇴' || busy}
+                    className="btn btn-brand disabled:cursor-not-allowed disabled:opacity-45">
+              {busy ? '처리 중…' : '탈퇴'}
+            </button>
+            <button type="button" onClick={() => { setOpen(false); setTyped(''); setStatus(''); }}
+                    className="btn btn-ghost">취소</button>
+          </form>
+        )}
+      <Status>{status}</Status>
+    </Card>
   );
 }
 
@@ -240,9 +287,10 @@ function Subscriptions({ services, rows, onChanged }) {
     } catch (e) { setStatus(message(e)); }
   }
 
-  const total = rows.reduce((sum, r) => sum + r.monthlyPrice, 0);
+  // 합계는 붙이지 않는다 — 프론트가 금액을 만들면 출처(원칙 4)가 없는 숫자가 된다(절대 원칙 2).
+  // 해외 결제 등급은 원화 추정치라 단순 합산이 출처가 다른 숫자를 한 줄로 섞기도 한다.
   return (
-    <Card title="내 구독" right={rows.length ? <span className="text-sm text-muted">{rows.length}개 · 월 {won(total)}</span> : null}>
+    <Card title="내 구독" right={rows.length ? <span className="text-sm text-muted">{rows.length}개</span> : null}>
       <ul className="m-0 grid list-none gap-2 p-0">
         {rows.length ? rows.map(row => (
           <li key={row.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-xl border border-line px-4 py-3">
@@ -272,8 +320,6 @@ function Subscriptions({ services, rows, onChanged }) {
 }
 
 function Detections({ findings, services, hasPlan }) {
-  const total = findings.reduce((sum, f) => sum + f.wastedAmount, 0);
-
   /** BE 가 주는 참조는 `service:{id}` / `bundle:{id}` 다. 서비스는 카탈로그 이름으로 바꾸고 나머지는 그대로 둔다. */
   const targetName = ref => {
     const [kind, id] = String(ref).split(':');
@@ -285,9 +331,9 @@ function Detections({ findings, services, hasPlan }) {
   };
 
   return (
+    // 결론을 먼저 낸다(원칙 5-③)지만 합계·연 환산은 BE 가 줄 때까지 붙이지 않는다(절대 원칙 2).
     <Card title="중복 결제 점검"
-          right={/* 결론을 먼저 낸다(원칙 5-③): 월·연 낭비 금액 한 줄. */
-            total ? <span className="font-bold text-danger tnum">월 {won(total)} · 1년 {won(total * 12)}</span> : null}>
+          right={findings.length ? <span className="font-bold text-danger">{findings.length}건</span> : null}>
       <ul className="m-0 grid list-none gap-2 p-0">
         {findings.map((f, i) => {
           const [title, how] = RULES[f.rule] ?? [f.rule, ''];
