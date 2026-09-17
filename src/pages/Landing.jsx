@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Header, Footer } from '../components/Layout.jsx';
+import AuthReturn from '../components/AuthReturn.jsx';
 
 const TRUST = ['카드·계좌 연결 없음', '금액마다 출처 표시', '안 쓰는 혜택은 0원으로 계산'];
 
@@ -8,6 +9,8 @@ export default function Landing() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
+      {/* Google 은 랜딩으로 복귀한다 — 게이트에서 출발했으면 그 화면으로 돌려보낸다. */}
+      <AuthReturn />
       <main className="mx-auto flex w-full max-w-page flex-1 flex-col px-6">
         <section className="grid flex-1 items-center gap-6 py-10 md:grid-cols-[1.35fr_.65fr]">
           <div>
