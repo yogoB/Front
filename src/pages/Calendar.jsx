@@ -20,8 +20,9 @@ export default function Calendar() {
   const navigate = useNavigate();
   const member = useMember();
   const today = useMemo(startOfToday, []);
-  const result = getResult();
-  const input = getInput();
+  // 세션 값은 마운트 때 한 번만 읽는다 — 렌더마다 읽으면 새 객체라 효과 deps 가 흔들린다(Results 의 무한 요청 사고).
+  const [result] = useState(getResult);
+  const [input] = useState(getInput);
   const exportRef = useRef(null);
 
   const [expiryText, setExpiryText] = useState(input?.contract?.endDate ?? '');
@@ -31,7 +32,8 @@ export default function Calendar() {
   const [showExport, setShowExport] = useState(false);
 
   // 일정의 기준일. 기본은 오늘이며, 약정 만료일이 앞으로 남아 있으면 그 날로 옮긴다.
-  const expiry = parseDay(expiryText);
+  // 같은 문자열이면 같은 Date 여야 한다 — 렌더마다 새 Date 면 아래 switch-timing 효과가 응답마다 다시 돌아 무한 요청이 된다.
+  const expiry = useMemo(() => parseDay(expiryText), [expiryText]);
   const futureExpiry = expiry && expiry > today ? expiry : null;
   const [server, setServer] = useState(null);   // 서버 판정 { status, date?, events? } — 이기면 기준일이 바뀐다
   const anchor = server?.date ?? futureExpiry ?? today;

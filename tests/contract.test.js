@@ -273,3 +273,12 @@ test('정책 문서 3종은 .policy 래퍼 안에 있다', () => {
     assert.match(code, /<\/main>/, `${name}.jsx 에 </main> 이 없다`);
   }
 });
+
+test('화면은 세션 입력(getInput/getResult)을 렌더 본문에서 읽지 않는다 — 무한 요청 회귀 가드', () => {
+  // 렌더마다 JSON.parse 로 새 객체가 나오면 useEffect deps 가 매번 바뀌어 추천을 끝없이 다시 부른다(2026-09-18 운영 사고).
+  // 마운트 때 한 번만 읽어야 한다: useState(getInput) / useMemo(getInput, []).
+  for (const file of readdirSync('src/pages').filter(f => f.endsWith('.jsx'))) {
+    const src = readFileSync(`src/pages/${file}`, 'utf8');
+    assert.ok(!/^\s*const \w+ = get(Input|Result)\(\);/m.test(src), `${file}: 세션 값을 렌더마다 읽고 있다`);
+  }
+});

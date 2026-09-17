@@ -15,7 +15,9 @@ const keptSubs = source => (source.subs || []).filter(s => !s.disposition || s.d
 export default function Results() {
   const navigate = useNavigate();
   const member = useMember();
-  const input = getInput();
+  // 마운트 때 한 번만 읽는다. 렌더마다 getInput() 을 부르면 JSON.parse 가 매번 새 객체를 만들어 아래 효과의
+  // deps 가 바뀌고, setData → 리렌더 → 새 input → 재요청 … 추천을 무한 반복 호출했다(운영 실측 10초에 156회).
+  const [input] = useState(getInput);
   const [data, setData] = useState(null);
   const [failure, setFailure] = useState('');
 
