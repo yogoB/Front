@@ -5,12 +5,11 @@ import { FlowHead, Question, ErrorLine, Actions, RangeCard } from '../components
 import { Choice, ChoiceGroup } from '../components/Choice.jsx';
 import Analyzing from '../components/Analyzing.jsx';
 import { loadCatalog, loadCarriers, DATA_BUCKETS, FEE_BUCKETS } from '../lib/catalog-data.js';
-import { won, tierPrice, tierKrwGuess, isForeign, matches, clampDigits } from '../lib/model.js';
+import { won, tierPrice, tierKrwGuess, isForeign, matches, clampDigits, FEE_MAX } from '../lib/model.js';
 import { setInput } from '../lib/session.js';
 
 const STEPS = ['기본', '요금제', '구독'];
 const DEFAULT_WISH = [1, 2, 6];
-const FEE_MAX = 1_000_000;  // 월 통신비·할인액 직접입력 상한(원). 10만 넘는 요금제가 있어 100만까지(사용자 결정 2026-09-17)
 const LINES_MIN = 2, LINES_MAX = 10;   // 결합 회선 수. 1회선 결합은 없다
 
 export default function Detail() {

@@ -54,7 +54,10 @@ export function optionalInputs(values) {
 }
 
 /** 숫자만 남기고 상한에서 자른다. type=number 의 max 는 타이핑을 막지 못하므로 onChange 에서 처리한다.
-    상한은 화면마다 다르다(라이트 20만·디테일 100만, 사용자 결정) — 인자로 받는다. */
+    통신비는 FEE_MAX, 회선 수처럼 다른 상한은 인자로 받는다. */
+/** 월 통신비·할인액 직접입력 상한(원). 라이트·디테일 공통 — 10만 넘는 요금제가 있어 100만(사용자 결정 2026-09-17). */
+export const FEE_MAX = 1_000_000;
+
 export const clampDigits = (text, max) => {
   const digits = String(text).replace(/\D/g, '');
   return digits && Number(digits) > max ? String(max) : digits;

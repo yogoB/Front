@@ -6,12 +6,10 @@ import { Choice } from '../components/Choice.jsx';
 import SubscriptionPicker from '../components/SubscriptionPicker.jsx';
 import Analyzing from '../components/Analyzing.jsx';
 import { loadCatalog, DATA_BUCKETS, FEE_BUCKETS } from '../lib/catalog-data.js';
-import { won, tierKrwGuess, isForeign, clampDigits } from '../lib/model.js';
+import { won, tierKrwGuess, isForeign, clampDigits, FEE_MAX } from '../lib/model.js';
 import { setInput } from '../lib/session.js';
 
 const STEPS = ['기본', '요금제', '구독'];
-// 라이트 직접입력 상한(원). 사용자 지시 2026-09-17: 20만. 디테일(100만)과 다르며 통일 여부는 사용자 확인 중.
-const LIGHT_FEE_MAX = 200_000;
 
 export default function Light() {
   const navigate = useNavigate();
@@ -23,7 +21,7 @@ export default function Light() {
   const [dataSkipped, setDataSkipped] = useState(false);
   const [fee, setFee] = useState(null);               // { label, amount } 또는 null
   const [customFee, setCustomFee] = useState(false);
-  const [feeText, setFeeText] = useState('');          // 직접입력 통신비. 상한 LIGHT_FEE_MAX
+  const [feeText, setFeeText] = useState('');          // 직접입력 통신비. 상한 FEE_MAX(디테일과 같다)
   const [subs, setSubs] = useState([]);               // 카탈로그를 받은 뒤 채운다 (BE 가 원본)
   const [query, setQuery] = useState('');
 
@@ -102,7 +100,7 @@ export default function Light() {
                   <input id="fee-input" inputMode="numeric" placeholder="55000" autoFocus value={feeText}
                          onChange={e => {
                            // 상한을 넘긴 값은 화면에도 상태에도 남지 않게 여기서 자른다.
-                           const v = clampDigits(e.target.value, LIGHT_FEE_MAX);
+                           const v = clampDigits(e.target.value, FEE_MAX);
                            setFeeText(v);
                            setFee(v ? { label: '직접입력', amount: Number(v) } : null);
                          }}
