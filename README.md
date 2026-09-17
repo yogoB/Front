@@ -1,8 +1,10 @@
 # 요고비 프론트
 
-기존 HTML의 테마와 단계별 화면을 유지하면서, 현재 `BE_main` API에 연결한 정적 웹 앱입니다.
+기존 HTML의 테마와 단계별 화면을 유지하면서, 현재 `BE_main` API에 연결한 웹 앱입니다.
 브라우저의 고정 가격·추천 계산을 제거하고 백엔드 응답의 금액·순서·출처를 표시합니다.
-런타임·빌드 의존성 없이 HTML, CSS, JavaScript 모듈로 실행합니다.
+
+**기술 스택:** Vite 8 · React 19 · React Router 7 · Tailwind CSS 4 · 테스트는 Node 내장 `node:test`.
+빌드 산출물은 nginx 컨테이너로 감싸 Fly.io에 올립니다. 자세한 설명은 [시작하기](docs/getting-started.md).
 
 ## 실행
 
@@ -33,13 +35,13 @@ Vite 개발 서버가 `/api`·`/oauth2`·`/login/oauth2` 를 `127.0.0.1:8080`(BE
 YOGOBI_CORS_ALLOWED_ORIGINS=http://127.0.0.1:5173
 AUTH_SECURE_COOKIES=false
 AUTH_SESSION_COOKIE_NAME=YGB_SESSION
-AUTH_RETURN_URL=http://127.0.0.1:5173/account.html
-AUTH_EMAIL_LINK_URL=http://127.0.0.1:5173/account.html
+AUTH_RETURN_URL=http://127.0.0.1:5173/
 ```
 
 회원 기능에는 BE의 `JWT_SECRET` 설정도 필요합니다. 프론트에 비밀 키를 넣지 않습니다.
-가입은 메일 없이 바로 됩니다(D-20) — 이름·이메일·비밀번호·닉네임만 받고, 중복은 이메일/닉네임을 구분해 알려줍니다.
-**메일 발송 기능은 쓰지 않습니다.** 비밀번호 재설정 화면도 없으며, 잊었을 때는 Google 로그인을 쓰거나 운영자가 처리합니다.
+가입·로그인은 **Google 버튼 하나**입니다(D-34). 별도 가입 화면·비밀번호·메일 발송이 없습니다.
+BE 는 로그인 뒤 `AUTH_RETURN_URL` + `#auth=success|failed|account-conflict` 로 돌려보내고,
+`src/components/AuthReturn.jsx` 가 랜딩에서 이를 받아 원래 있던 화면으로 되돌립니다.
 Google 로그인은 BE의 Google OAuth 설정이 필요합니다.
 운영은 HTTPS 및 Secure 쿠키를 사용하고, 정확한 프론트 오리진을 허용해야 합니다. 서로 다른 사이트 간 쿠키 인증은 현재 BE의 SameSite=Lax 설정으로 지원하지 않습니다.
 

@@ -1,14 +1,17 @@
 # 요고비 프론트 현재 상태
 
-기준일: 2026-09-11. 이 문서는 작업 트리의 현재 구현 상태를 요약한다. API 계약과 화면별 동작은 [연동 명세](integration.md), 실행 방법은 [실행 안내](../README.md), 재편성 전 프로토타입 분석은 [이전 분석](README.md)을 본다.
+기준일: 2026-09-11 (스택 항목만 2026-09-17 갱신).
+
+> ⚠️ 아래 "구현 완료" 목록은 2026-09-11 기준이라 **화면 구성과 인증 부분이 낡았다.** 그 뒤 React 전환(Vite+React+Tailwind), Google 단일 로그인(D-34), 비회원 결과 차단(D-36), 백오피스 화면이 들어왔다. 현재 파일 구조는 [시작하기](getting-started.md)의 파일 지도를 본다.
+ 이 문서는 작업 트리의 현재 구현 상태를 요약한다. API 계약과 화면별 동작은 [연동 명세](integration.md), 실행 방법은 [실행 안내](../README.md), 재편성 전 프로토타입 분석은 [이전 분석](README.md)을 본다.
 
 ## 한 줄 요약
 
-번들 HTML 프로토타입을 런타임·빌드 의존성 없는 정적 웹 앱으로 재편성하고, 브라우저 고정 계산을 제거해 `BE_main` API의 금액·순서·출처를 그대로 표시하도록 연결했다. `npm test`는 8개 계약·검증을 통과한다.
+번들 HTML 프로토타입을 재편성하고, 브라우저 고정 계산을 제거해 `BE_main` API의 금액·순서·출처를 그대로 표시하도록 연결했다. 2026-09 전면 **Vite 8 + React 19 + React Router 7 + Tailwind CSS 4** 로 전환했다. `npm test`는 17개 계약·검증을 통과한다.
 
 ## 구현 완료
 
-- 정적 앱 구성: `index.html`(통신→구독→우선순위→결과·문장 추천), `account.html`(회원·세션), `src/*.js`, `src/styles.css`, `assets/`.
+- 앱 구성: `index.html`(SPA 껍데기), `src/main.jsx`·`src/App.jsx`(라우터), `src/pages/*.jsx`(주소별 화면), `src/components/*.jsx`(공용 조각), `src/lib/*.js`(화면과 무관한 순수 로직 — 테스트 대상), `src/index.css`(Tailwind 토큰·컴포넌트 클래스), `assets/`.
 - 공개 API 연결: 카탈로그 서비스·요금제·혜택 조회, 조건 추천, 특정 등급 계산, 문장 추천.
 - 회원 API 연결: 상태 조회, 로그인·로그아웃·전체 종료, 이메일 확인 가입·비밀번호 재설정, Google 연결, 세션 관리. 변경 요청마다 CSRF 재발급, 쿠키 인증, JWT 미저장.
 - 서버 결과 표시: 순서·개수 유지, `monthlyTotal`/`baseline`/`monthlySavings`/`annualSavings` 원본 출력, `breakdown`에 출처(Provenance)·설명 병기, `missingInputs`·`warnings` 노출.

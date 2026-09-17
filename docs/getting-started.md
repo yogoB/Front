@@ -18,88 +18,133 @@
 사용자가 입력 → [프론트] 조건을 JSON으로 BE에 요청 → [BE 서버] 계산 → [프론트] 결과를 화면에 표시
 ```
 
-## 먼저 알아둘 것: 이 프로젝트는 좀 특이하다
+## 기술 스택
 
-인터넷 강의에서 보는 React·Vue·빌드 도구(webpack, vite)·`npm install`로 받는 수백 개 라이브러리가 **여기엔 없다.** 순수한 HTML + CSS + JavaScript 파일이 전부다.
+| 무엇 | 쓰는 것 | 왜 |
+| --- | --- | --- |
+| 빌드 도구 | **Vite 8** | 개발 중엔 저장하면 즉시 반영(HMR), 배포용은 `npm run build` 한 번 |
+| UI 라이브러리 | **React 19** | 화면을 "함수가 돌려주는 JSX"로 쓴다. 상태가 바뀌면 React가 알아서 다시 그린다 |
+| 화면 이동 | **React Router 7** | 주소(`/results`, `/calendar`)마다 다른 화면. 페이지 새로고침 없이 바뀐다 |
+| 스타일 | **Tailwind CSS 4** | `className="flex gap-3"` 처럼 클래스로 스타일을 준다. 공용 토큰·컴포넌트 클래스는 `src/index.css` |
+| 테스트 | **Node 내장 `node:test`** | 별도 프레임워크 없음. `npm test` |
+| 배포 | Docker(빌드 → nginx) → Fly.io | `Dockerfile`, `nginx.conf` |
 
-| 보통 배우는 것 | 이 프로젝트 |
-| --- | --- |
-| React/Vue 같은 프레임워크 | 없음. 브라우저 기본 기능(DOM)만 사용 |
-| `npm install`로 라이브러리 설치 | 설치할 라이브러리 없음 (`package.json`에 의존성 0개) |
-| 빌드(build)/컴파일 단계 | 없음. 파일을 저장하면 새로고침으로 바로 반영 |
-| `.jsx`, TypeScript | 그냥 `.js`, `.html`, `.css` |
+> 2026-09 이전에는 빌드 없는 순수 HTML + ES 모듈 구조(`index.html` + `src/app.js`)였다.
+> 지금은 **전면 React 전환이 끝났고**, 옛 `*.html`/`*.js` 화면 파일은 남아 있지 않다.
+> 오래된 문서(`docs/README.md`, `docs/worklog.md`)는 그 시절 분석 기록이라 스택 설명이 다르다.
 
-**좋은 소식:** 배울 게 적고, 저장하고 새로고침하면 끝이다.
-**주의:** 그래서 "브라우저가 원래 뭘 할 수 있는지"(DOM, fetch)를 직접 다뤄야 한다. 이 문서와 가이드가 그 부분을 설명한다.
+### Tailwind 4에서 자주 걸리는 것
+
+`@apply`는 **유틸리티 클래스만** 받는다. `src/index.css`에서 만든 컴포넌트 클래스(`btn`, `field` 등)를 `@apply btn` 하면 빌드가 깨진다. 마크업에서 `className="btn btn-brand"` 처럼 두 클래스를 나란히 쓴다.
 
 ## 개발 환경 준비
 
-설치할 건 3개뿐이다.
-
 1. **웹 브라우저** — Chrome 권장 (개발자 도구가 편하다).
 2. **코드 에디터** — [VS Code](https://code.visualstudio.com/) 권장. 무료.
-3. **Python 3 또는 Node.js** — 로컬 서버를 띄우는 용도. 맥에는 보통 Python3가 이미 있다.
-   - 확인: 터미널에서 `python3 --version` 실행 → 버전이 나오면 OK.
-   - 테스트(`npm test`)까지 돌리려면 Node.js도 필요하다. [nodejs.org](https://nodejs.org/)에서 LTS 설치.
-
-> `npm install`은 **하지 않아도 된다.** 이 프로젝트는 설치할 패키지가 없다.
+3. **Node.js** — [nodejs.org](https://nodejs.org/)에서 LTS 설치. 이제 **필수다**(빌드·개발 서버·테스트 전부 Node로 돈다).
 
 ## 실행하기
 
-프로젝트 폴더(`front/`)에서 터미널을 열고:
+프로젝트 폴더(`front/`)에서 터미널을 열고, **처음 한 번만**:
 
 ```sh
-python3 -m http.server 5173 --bind 127.0.0.1
+npm install
 ```
 
-브라우저에서 **http://127.0.0.1:5173** 을 연다. 끝이다.
+그다음부터는:
 
-> **⚠️ 파일을 더블클릭해서 `file://...`로 열면 안 된다.** ES 모듈과 서버 통신이 동작하지 않는다. 반드시 위 명령으로 띄운 `http://127.0.0.1:5173`로 접속한다.
+```sh
+npm run dev
+```
 
-코드를 고친 뒤에는 **브라우저 새로고침(⌘R)** 만 하면 반영된다. 서버를 껐다 켤 필요 없다.
+브라우저에서 **http://127.0.0.1:5173** 을 연다.
+
+코드를 고치고 **저장하면 브라우저가 알아서 바뀐다**(HMR). 새로고침도 대부분 필요 없다.
+
+| 명령 | 언제 |
+| --- | --- |
+| `npm run dev` | 개발할 때. 이게 기본 |
+| `npm test` | 로직을 고친 뒤. 17개 검사가 돈다 |
+| `npm run build` | 배포용 파일을 `dist/`에 만든다. 커밋 전 한 번 돌려 깨지지 않는지 본다 |
+| `npm run preview` | 만들어진 `dist/`를 실제 배포처럼 띄워 확인 |
 
 ### 백엔드까지 볼 것인가
 
-- **화면·레이아웃·문구만 볼 거라면** 위 명령으로 충분하다. 서비스 목록·추천 같은 API 데이터는 "불러오지 못했어요" 상태로 보이지만, 화면 구조를 만지는 데는 지장 없다.
+- **화면·레이아웃·문구만 볼 거라면** `npm run dev`로 충분하다. API 데이터는 "불러오지 못했어요" 상태로 보이지만 화면 구조를 만지는 데는 지장 없다.
 - **실제 추천 데이터까지 보려면** 백엔드(BE) 서버가 같이 떠 있어야 한다. 준비 방법은 [실행 안내](../README.md)의 "백엔드 준비"를 본다.
-- 배포된 화면 https://yogob.fly.dev/ 은 **프론트만** 올라가 있어 `/api` 호출은 실패한다(화면 확인용).
+  개발 서버가 `/api`·`/oauth2`·`/login/oauth2` 요청을 BE로 넘겨준다(`vite.config.js`의 프록시). 기본 대상은 `http://127.0.0.1:8080`이고, 배포된 BE를 보려면:
+  ```sh
+  API_TARGET=https://yogob-api.fly.dev npm run dev
+  ```
 
 ## 파일 지도 — 어디를 고쳐야 하나
 
 ```text
-index.html          메인 화면. 통신→구독→조건→결과 4단계. 화면 뼈대(HTML)는 여기
-account.html        로그인·회원 화면
-src/app.js          index.html의 모든 동작(버튼·입력·API 호출·결과 표시)
-src/account.js      account.html의 동작(로그인·가입·세션)
-src/api.js          서버에 요청 보내는 공통 함수. 보통 건드릴 일 없음
-src/model.js        입력 검증·요청 데이터 변환·금액 표시·CSV
-src/config.js       API 서버 주소
-src/styles.css      색·글꼴·레이아웃 등 모든 스타일
-assets/             글꼴 파일
-tests/              자동 검증. contract.test.js가 핵심
-docs/               지금 읽는 문서들
+index.html            껍데기 한 장. 여기엔 화면이 없다(React가 채운다). 보통 안 건드린다
+src/main.jsx          시작점. App을 브라우저에 붙인다
+src/App.jsx           주소 ↔ 화면 연결표(라우트). 새 화면을 만들면 여기에 한 줄 추가
+src/index.css         색·글꼴·공용 컴포넌트 클래스(btn, field, card…) + Tailwind 설정
+
+src/pages/            주소 하나 = 파일 하나
+  Landing.jsx           /           첫 화면
+  Modes.jsx             /modes      간편/상세 고르기
+  Light.jsx             /light      간편 입력
+  Detail.jsx            /detail     상세 입력
+  Results.jsx           /results    추천 결과 (로그인 필요)
+  Calendar.jsx          /calendar   전환 일정 (로그인 필요)
+  Login.jsx             /login      Google 로그인
+  MyPage.jsx            /mypage     내 계정·구독·중복 결제 점검·탈퇴
+  Terms / Privacy / DataSources     약관·개인정보·출처
+  Admin.jsx             /admin      백오피스
+
+src/components/       여러 화면이 같이 쓰는 조각
+  Layout.jsx            Header / Footer / Page
+  Flow.jsx              입력 단계 공통(진행바·질문·오류줄·버튼)
+  GuestGate.jsx         비회원 차단 화면
+  AuthReturn.jsx        Google 로그인 복귀 처리(#auth=...)
+  Choice / SubscriptionPicker / Analyzing / PolicyNav
+
+src/lib/              화면과 무관한 순수 로직 — 테스트가 붙는 곳
+  api.js                서버 요청 공통 함수. 보통 건드릴 일 없음
+  model.js              입력 검증·요청 변환·금액 표시·CSV
+  schedule.js           전환 일정 날짜 계산, Google 링크·.ics 만들기
+  session.js            sessionStorage(입력·결과·돌아갈 곳)
+  useMember.js          로그인 여부 조회(useMember 훅)
+  catalog-data.js       구독 서비스 목록
+  config.js             API 서버 주소
+
+tests/contract.test.js  자동 검증. 로직을 고쳤으면 여기도 본다
+assets/                 글꼴 파일
+docs/                   지금 읽는 문서들
+Dockerfile / nginx.conf 배포
 ```
 
-**대부분의 작업은 `index.html`(화면 모양) + `src/app.js`(동작) + `src/styles.css`(스타일)** 세 파일 안에서 끝난다.
+**대부분의 작업은 `src/pages/`의 화면 파일 하나 안에서 끝난다.**
 
 ## 화면이 뜨기까지 — 한 번의 흐름
 
-"서비스 목록 불러오기"를 예로, 코드가 실제로 어떻게 이어지는지 보자. (지금 다 이해할 필요 없다. 나중에 참고.)
+"구독 서비스 목록 불러오기"를 예로 보자. (지금 다 이해할 필요 없다. 나중에 참고.)
 
-1. `index.html`이 열리면 `<script type="module" src="./src/app.js">`가 `app.js`를 실행한다.
-2. `app.js` 맨 아래에서 `loadCatalog()`를 호출한다.
-3. `loadCatalog()`는 `request('/api/v1/catalog/services')`로 서버에 목록을 요청한다. (`request`는 `api.js`에 있는 공통 함수)
-4. 서버가 준 목록을 `state.catalog`에 저장하고, `renderSubscriptions()`가 그 목록으로 화면에 버튼들을 만든다.
-5. 사용자가 버튼을 누르면 → `addSubscription()` → `state`가 바뀜 → 화면 다시 그림.
+1. 주소가 `/light`면 `App.jsx`의 라우트표가 `Light.jsx` 함수를 부른다.
+2. 그 함수가 돌려주는 **JSX**(HTML처럼 생긴 것)가 화면이 된다.
+3. 화면이 뜬 직후 `useEffect(...)` 안에서 `loadCatalog()`가 서버에 목록을 요청한다.
+4. 목록이 오면 `setServices(목록)`으로 **상태를 바꾼다**.
+5. 상태가 바뀌면 **React가 그 함수를 다시 실행해 화면을 새로 그린다.** 직접 다시 그리라고 시키지 않아도 된다.
 
-즉 **"이벤트 → state(상태) 변경 → 화면 다시 그리기"** 의 반복이다. 이게 이 프로젝트의 심장이다.
+즉 **"이벤트 → 상태(state) 변경 → React가 알아서 다시 그림"** 의 반복이다. 이게 이 프로젝트의 심장이다.
 
 ## 용어집 (모르는 단어가 나오면 여기)
 
 | 단어 | 뜻 |
 | --- | --- |
-| **DOM** | 브라우저가 화면의 HTML을 다루는 방식. `document.getElementById('fee')`로 요소를 집어 값을 바꾼다 |
-| **ES 모듈** | 파일 위에 `import`/`export`가 있는 최신 JS 파일. `<script type="module">`로 불러온다 |
+| **JSX** | JS 안에 HTML처럼 쓰는 문법. `return <p>안녕</p>` 처럼. `class` 대신 `className`을 쓴다 |
+| **컴포넌트** | 화면 조각을 돌려주는 함수. 이름이 **대문자로 시작**해야 React가 알아본다 |
+| **상태(state)** | 화면이 기억하는 값. `const [n, setN] = useState(0)`. `setN`으로 바꿔야 화면이 다시 그려진다 |
+| **useEffect** | 화면이 뜬 뒤(또는 값이 바뀐 뒤) 할 일. 서버 요청이 주로 여기 들어간다 |
+| **훅(hook)** | `use`로 시작하는 함수. 컴포넌트 맨 위에서만 부른다(`if` 안에서 부르면 안 됨) |
+| **라우트(route)** | 주소 ↔ 화면 연결. `App.jsx`에 목록이 있다 |
+| **Tailwind 클래스** | `className="flex gap-3 text-sm"` 처럼 스타일을 클래스로 준다. 공용 묶음은 `index.css` |
+| **HMR** | 저장하면 새로고침 없이 화면이 바뀌는 기능. `npm run dev`가 해준다 |
 | **fetch** | 브라우저가 서버에 요청을 보내는 기본 기능. 이 프로젝트는 `api.js`의 `request()`로 감싸 쓴다 |
 | **엔드포인트(endpoint)** | 서버의 특정 주소. 예: `/api/v1/catalog/services` |
 | **JSON** | 데이터를 주고받는 글자 형식. `{ "name": "넷플릭스" }` 처럼 생김 |
@@ -108,22 +153,18 @@ docs/               지금 읽는 문서들
 | **등급(tier)** | 한 서비스의 요금 단계. 예: 넷플릭스 광고형/스탠다드/프리미엄 |
 | **출처(provenance)** | 각 금액이 어디서 나온 값인지 표시. 공식 가격/계산값/사용자 입력/추정값 |
 | **CSRF** | 회원 요청을 위조로부터 보호하는 보안 토큰. `api.js`가 자동 처리하니 신경 안 써도 됨 |
-| **상태(state)** | 지금 화면이 기억하는 값들의 묶음. `app.js`의 `const state = { ... }` |
 
-## 첫 수정 해보기 (5분)
+## 첫 수정 해보기 (3분)
 
-빌드가 없다는 걸 체감해 보자.
-
-1. `index.html`을 에디터로 연다.
-2. 30번째 줄쯤 `<h1 id="step1-title">지금 쓰는 통신 요금, 알려주세요</h1>` 의 글자를 아무거나 바꾼다. 예: `지금 쓰는 통신 요금을 알려주세요 👋`
-3. 저장한다.
-4. 브라우저에서 **새로고침(⌘R)**. → 바뀐 문구가 바로 보인다.
-
-이게 전부다. 컴파일도, 재시작도 없다. 이제 [프론트 개발 가이드](frontend-guide.md)로 넘어가 실제 기능을 만져보자.
+1. `npm run dev`로 띄운다.
+2. `src/pages/Landing.jsx`를 에디터로 연다.
+3. 가장 큰 제목(`<h1 ...>`)의 글자를 아무거나 바꾼다.
+4. 저장한다. → **브라우저를 안 건드려도** 바뀐 문구가 보인다.
 
 ## 막혔을 때
 
-- **화면이 하얗다 / 아무것도 안 된다** → 브라우저에서 **F12**(개발자 도구) → **Console** 탭을 본다. 빨간 오류 메시지가 원인이다.
+- **화면이 하얗다 / 아무것도 안 된다** → 브라우저 **F12**(개발자 도구) → **Console** 탭. 빨간 오류가 원인이다. 터미널(`npm run dev`)도 같이 본다.
 - **"서비스 목록을 불러오지 못했어요"** → 정상이다. 백엔드가 안 떠 있어서다. 화면 작업엔 문제없다.
-- **`file://`로 열었더니 안 됨** → 위 "실행하기"대로 `http://127.0.0.1:5173`로 접속해야 한다.
-- **API가 계속 실패** → **F12 → Network** 탭에서 어떤 요청이 실패(빨강)했는지 본다. 주소는 `src/config.js`에서 정한다.
+- **`Cannot apply unknown utility class 'btn'`** → Tailwind 4에서 `@apply`에 컴포넌트 클래스를 쓴 것이다. 위 "Tailwind 4에서 자주 걸리는 것" 참고.
+- **훅 관련 오류(`Rendered fewer hooks than expected` 등)** → `useState`/`useEffect`를 `if` 문이나 반복문 안에서 부른 것이다. 컴포넌트 맨 위로 올린다.
+- **API가 계속 실패** → **F12 → Network** 탭에서 어떤 요청이 실패(빨강)했는지 본다. 개발 중 프록시 대상은 `vite.config.js`, 배포 주소는 `src/lib/config.js`에서 정한다.
