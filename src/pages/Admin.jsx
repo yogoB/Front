@@ -41,6 +41,8 @@ const TAG = {
   DELETE: 'bg-danger-tint border-[#f0a9a2] text-[#8c2b22]',
   UNVERIFIED: 'bg-warn-tint border-[#f0cf95] text-warn-ink', UPDATE: 'bg-warn-tint border-[#f0cf95] text-warn-ink',
   SKIPPED: 'bg-[#f0f1f5] border-line text-ink-soft', CREATE: 'bg-detail-tint border-[#c3d0f7] text-detail',
+  PENDING: 'bg-warn-tint border-[#f0cf95] text-warn-ink', RESOLVED: 'bg-brand-tint border-[#a7e3c2] text-brand-ink',
+  REJECTED: 'bg-[#f0f1f5] border-line text-ink-soft', SYSTEM: 'bg-detail-tint border-[#c3d0f7] text-detail',
 };
 const Tag = ({ value }) => (
   <span className={`inline-block whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-bold ${TAG[value] ?? TAG.SKIPPED}`}>
@@ -231,6 +233,8 @@ export default function Admin() {
             <button type="button" onClick={harvest} className="btn btn-brand mt-3">② 지금 수집 실행</button>
           </Section>
 
+          <ReportsBoard onChanged={() => loadDashboard().catch(fail)} say={say} />
+
           <Section title="정기 작업 수동 실행">
             <p>배포 서버는 유휴 시 정지하므로 예약 시각에 잠들어 있으면 정기 실행이 건너뛰어져요. 여기서 직접 돌립니다.</p>
             <Table head={['작업', '예정', '']}>
@@ -392,5 +396,99 @@ function AuditRow({ entry }) {
       </Td>
       <Td><Tag value={entry.outcome} />{entry.detail && <div>{entry.detail}</div>}</Td>
     </tr>
+  );
+}
+
+/* 제보 게시판(D-41·D-42 후속). 상품 제보(CATALOG)와 화면·기타 제보(SERVICE)를 합쳐 최신순으로 본다.
+   응답에 제보자 신원은 없다 — 일부러 내보내지 않으므로 "누가" 칸을 만들지 않는다.
+   상태 변경은 운영자가 봤다는 표시일 뿐이다. 카탈로그는 안 바뀐다 — 가격 수정은 검수(D-28) 경로다. */
+const REPORT_STATUS = [['PENDING', '처리 대기'], ['RESOLVED', '처리완료'], ['REJECTED', '반려'], ['', '전체']];
+const REPORT_DETAIL = { PRICE: '요금·가격', DATA: '데이터·통화', BENEFIT: '포함 혜택', AVAILABILITY: '가입 가능 여부',
+  OTHER: '기타', SYSTEM: '화면·기능 오류' };
+const TARGET_TYPE = { MOBILE_PLAN: '요금제', SUBSCRIPTION_SERVICE: '구독 서비스', SUBSCRIPTION_TIER: '구독 등급', BUNDLE_PRODUCT: '묶음 상품' };
+
+function ReportsBoard({ onChanged, say }) {
+  const [status, setStatus] = useState('PENDING');
+  const [limit, setLimit] = useState('50');
+  const [rows, setRows] = useState(null);   // null = 아직 안 읽음
+  const [error, setError] = useState('');
+
+  const load = useCallback(() => {
+    const query = new URLSearchParams({ limit });
+    if (status) query.set('status', status);
+    return call(`/api/v1/admin/reports?${query}`).then(list => { setRows(list); setError(''); })
+      .catch(e => setError(e.message));
+  }, [status, limit]);
+  useEffect(() => { load(); }, [load]);
+
+  async function mark(row, next) {
+    try {
+      await call(`/api/v1/admin/reports/${row.kind}/${row.id}`, { method: 'PATCH', body: { status: next } });
+      say(`제보를 ${REPORT_STATUS.find(([v]) => v === next)[1]}로 표시했어요. 카탈로그는 바뀌지 않아요.`);
+      await Promise.all([load(), onChanged()]);
+    } catch (e) { say(e.message); }
+  }
+
+  const when = iso => {
+    const at = new Date(iso);
+    return Number.isNaN(at.getTime()) ? String(iso ?? '') : at.toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' });
+  };
+
+  return (
+    <Section title="제보 게시판">
+      <p>사용자가 "오류 제보" 버튼으로 보낸 내용이에요. <b>처리완료는 운영자가 봤다는 표시일 뿐</b>이고 카탈로그는 바뀌지 않아요 —
+        가격을 고치려면 위 검수 경로로 변경 제안을 올리세요. 제보자가 누구인지는 서버가 내보내지 않아요.</p>
+      <div className="flex flex-wrap gap-4">
+        <div>
+          <label className="mt-3.5 block text-sm font-bold" htmlFor="report-status">상태</label>
+          <select id="report-status" value={status} onChange={e => setStatus(e.target.value)} className={select}>
+            {REPORT_STATUS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="mt-3.5 block text-sm font-bold" htmlFor="report-limit">표시 개수</label>
+          <select id="report-limit" value={limit} onChange={e => setLimit(e.target.value)} className={select}>
+            <option value="50">최근 50건</option><option value="200">최근 200건</option>
+          </select>
+        </div>
+      </div>
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+      <Table head={['시각', '종류', '대상 · 화면', '내용', '상태', '']}>
+        {rows === null ? <Empty cols={6} text="불러오는 중…" />
+          : rows.length ? rows.map(row => (
+            <tr key={`${row.kind}-${row.id}`}>
+              <Td className="whitespace-nowrap text-[13px] text-muted tnum">{when(row.createdAt)}</Td>
+              <Td className="whitespace-nowrap">
+                <Tag value={row.detail} /><div className="mt-1 text-xs text-muted">{REPORT_DETAIL[row.detail] ?? row.detail}</div>
+              </Td>
+              <Td>
+                {row.kind === 'CATALOG'
+                  ? <>{row.target ?? <span className="text-muted">(삭제된 상품)</span>}
+                      <div className="text-xs text-muted">{TARGET_TYPE[row.targetType] ?? row.targetType}</div></>
+                  : <>{row.pageUrl ?? '—'}<div className="text-xs text-muted">화면 경로</div></>}
+              </Td>
+              <Td>
+                {/* 사용자 입력 그대로다. React 가 텍스트로만 그리므로 HTML 이 실행되지 않는다. */}
+                <div className="max-w-[48ch] whitespace-pre-wrap break-words">{row.description}</div>
+                {row.sourceUrl && (
+                  <a href={row.sourceUrl} target="_blank" rel="noopener noreferrer"
+                     className="mt-1 inline-block max-w-[48ch] truncate text-xs text-brand-ink underline">{row.sourceUrl}</a>
+                )}
+              </Td>
+              <Td className="whitespace-nowrap"><Tag value={row.status} /></Td>
+              <Td className="whitespace-nowrap">
+                {row.status !== 'RESOLVED' && (
+                  <button type="button" onClick={() => mark(row, 'RESOLVED')}
+                          className="btn btn-brand mr-1.5 px-3.5 py-1.5 text-[13px]">처리완료로 표시</button>
+                )}
+                {row.status !== 'REJECTED' && (
+                  <button type="button" onClick={() => mark(row, 'REJECTED')}
+                          className="btn border-[#f0a9a2] bg-white px-3.5 py-1.5 text-[13px] text-danger hover:bg-danger-tint">반려</button>
+                )}
+              </Td>
+            </tr>
+          )) : <Empty cols={6} text="해당하는 제보가 없어요." />}
+      </Table>
+    </Section>
   );
 }
