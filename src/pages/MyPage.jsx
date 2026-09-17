@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Header } from '../components/Layout.jsx';
+import { Header, Footer } from '../components/Layout.jsx';
 import { request, ApiError } from '../lib/api.js';
 import { loadCatalog } from '../lib/catalog-data.js';
 import { won, matches, tierPrice, tierKrwGuess, integer } from '../lib/model.js';
@@ -69,6 +69,7 @@ export default function MyPage() {
         <Detections findings={findings} services={services} hasPlan={Boolean(member?.currentPlanId)} />
         <DeleteAccount />
       </main>
+      <div className="mx-auto w-full max-w-[760px] px-6"><Footer /></div>
     </>
   );
 }

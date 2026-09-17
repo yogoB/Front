@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Header } from '../components/Layout.jsx';
+import { Header, Footer } from '../components/Layout.jsx';
 import { request, ApiError, backendUrl } from '../lib/api.js';
 import { won, provenance, splitLines } from '../lib/model.js';
 import { getInput, setResult, setNext } from '../lib/session.js';
@@ -89,6 +89,7 @@ export default function Results() {
         </ul>
 
         {best && <Breakdown best={best} />}
+        {best && <ReportWrong planId={best.planId} planName={best.planName} />}
         {data.reasons?.length > 0 && <Reasons reasons={data.reasons} />}
 
         <div className="mt-7 flex flex-wrap justify-between gap-3">
@@ -96,6 +97,7 @@ export default function Results() {
           <button type="button" onClick={() => navigate('/calendar')} className="btn btn-brand">이렇게 진행해보세요! →</button>
         </div>
       </main>
+      <div className="mx-auto w-full max-w-[980px] px-6"><Footer /></div>
     </>
   );
 }
@@ -250,6 +252,63 @@ function Breakdown({ best }) {
           </li>
         ))}
       </ul>
+    </details>
+  );
+}
+
+const REPORT_FIELDS = [['PRICE', '금액이 달라요'], ['DATA', '데이터·통화가 달라요'],
+  ['BENEFIT', '포함 혜택이 달라요'], ['AVAILABILITY', '지금 가입할 수 없어요'], ['OTHER', '그 밖의 오류']];
+
+/** 정보 오류 제보(POST /api/v1/catalog/reports). 접수만 하고 회원 정보는 보내지 않는다.
+    React 전환 때 통째로 빠져 있던 화면을 되살린 것이다. */
+function ReportWrong({ planId, planName }) {
+  const [field, setField] = useState('PRICE');
+  const [description, setDescription] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [status, setStatus] = useState('');
+  const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e) {
+    e.preventDefault();
+    setBusy(true); setStatus('');
+    try {
+      const body = { targetType: 'MOBILE_PLAN', targetId: planId, field, description: description.trim() };
+      if (sourceUrl.trim()) body.sourceUrl = sourceUrl.trim();
+      await request('/api/v1/catalog/reports', { method: 'POST', body });
+      setDone(true);
+    } catch (e) {
+      setStatus(e instanceof ApiError ? e.message : '제보를 보내지 못했어요. 잠시 후 다시 시도해 주세요.');
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <details className="mt-3 rounded-card border border-line p-4">
+      <summary className="cursor-pointer text-sm font-semibold">정보가 잘못되었나요?</summary>
+      {done
+        ? <p className="mt-3 text-sm text-ink-soft">접수했어요. 확인한 뒤 카탈로그에 반영할게요. 고맙습니다.</p>
+        : (
+          <form onSubmit={submit} className="mt-3 grid gap-2">
+            <p className="text-[13px] text-muted">
+              <strong className="text-ink-soft">{planName}</strong> 의 정보가 실제와 다르면 알려주세요.
+              개인정보(이름·전화번호·계약번호)는 적지 말아 주세요.
+            </p>
+            <select value={field} onChange={e => setField(e.target.value)} aria-label="잘못된 항목" className="field">
+              {REPORT_FIELDS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+            </select>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} maxLength={2000}
+                      aria-label="무엇이 다른지" placeholder="예: 월 39,000원이 아니라 41,000원이에요." className="field" />
+            <input value={sourceUrl} onChange={e => setSourceUrl(e.target.value)} inputMode="url"
+                   aria-label="출처 링크(선택)" placeholder="출처 링크(선택) — 통신사 공식 페이지 https://…" className="field" />
+            <div className="flex items-center gap-3">
+              <button type="submit" disabled={!description.trim() || busy}
+                      className="btn btn-brand disabled:cursor-not-allowed disabled:opacity-45">
+                {busy ? '보내는 중…' : '제보 보내기'}
+              </button>
+              {status && <span className="text-[13px] text-danger">{status}</span>}
+            </div>
+          </form>
+        )}
     </details>
   );
 }

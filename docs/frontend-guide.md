@@ -8,7 +8,8 @@
 
 이 5가지는 팀 원칙이자 보안·정확성의 선이다.
 
-1. **프론트는 금액을 계산하지 않는다.** 더하기·할인·절감액·연 환산을 JS로 만들지 않는다. 합계도 마찬가지다 — 프론트가 만든 숫자엔 출처(원칙 4)가 없다. 모든 금액은 서버 응답값을 **그대로** 표시한다. `tests/contract.test.js`의 `front never does arithmetic on server amounts`가 `src/` 전체를 훑어 막는다.
+1. **프론트는 서버가 준 금액으로 산술하지 않는다.** 더하기·할인·절감액·연 환산(`* 12`)을 JS로 만들지 않는다. 합계도 마찬가지다 — 프론트가 만든 숫자엔 출처(원칙 4)가 없다. `monthlyTotal`·`baseline`·`monthlySavings`·`annualSavings`·`currentTotal`·`wastedAmount` 는 **그대로** 표시한다. `tests/contract.test.js`의 `front never does arithmetic on server amounts`가 `src/` 전체를 훑어 막는다.
+   - **예외 하나:** 제출 **전** 입력 요약(`Light`/`Detail`의 "현재 예상 지출")은 사용자가 고른 금액과 카탈로그 정가를 더한 **메모**다. 서버는 아직 아무것도 계산하지 않았고, 화면도 이게 입력값의 합계라고 적는다. 서버 응답이 온 뒤에는 이 예외가 사라진다.
 2. **서버·사용자 문자열은 JSX 중괄호로 넣는다.** `{값}` 은 React가 자동으로 escape 한다. `dangerouslySetInnerHTML` 은 **금지**.
 3. **공개 요청과 회원 요청을 구분한다.** 추천·계산·카탈로그는 로그인 없이(`request(path)`), 내 계정·세션은 회원으로(`request(path, { member: true })`) 호출한다.
 4. **프론트에 비밀 값을 두지 않는다.** JWT·비밀번호·API 키를 코드나 저장소(localStorage 등)에 저장하지 않는다. 인증은 서버가 쿠키로 처리한다.

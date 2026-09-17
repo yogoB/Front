@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Header } from '../components/Layout.jsx';
 import { backendUrl } from '../lib/api.js';
 import { useMember } from '../lib/useMember.js';
@@ -35,8 +35,8 @@ export default function Login() {
           Google 로 계속하기
         </button>
         <p className="mx-auto mt-8 max-w-[340px] text-xs leading-relaxed text-muted">
-          계속하면 <a href="/terms" className="underline underline-offset-2">이용약관</a>과{' '}
-          <a href="/privacy" className="underline underline-offset-2">개인정보처리방침</a>에 동의하는 것으로 봅니다.
+          계속하면 <Link to="/terms" className="underline underline-offset-2">이용약관</Link>과{' '}
+          <Link to="/privacy" className="underline underline-offset-2">개인정보처리방침</Link>에 동의하는 것으로 봅니다.
         </p>
       </main>
     </>

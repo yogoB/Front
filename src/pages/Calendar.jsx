@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Header } from '../components/Layout.jsx';
+import { Header, Footer } from '../components/Layout.jsx';
 import { request } from '../lib/api.js';
 import { won } from '../lib/model.js';
 import { getInput, getResult, setInput, setNext } from '../lib/session.js';
@@ -179,6 +179,7 @@ export default function Calendar() {
           </section>
         </div>
       </main>
+      <div className="mx-auto w-full max-w-[1080px] px-6"><Footer /></div>
     </>
   );
 }

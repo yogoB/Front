@@ -11,7 +11,7 @@
   --color-detail-tint: #eaeffe;
   --color-ink: #17182a;
   --color-ink-soft: #414257;
-  --color-muted: #8a8b9e;
+  --color-muted: #6e6f85;   /* 흰 배경 대비 4.91:1 — #8a8b9e 는 3.35:1 로 WCAG AA 미달이었다 */
   --color-line: #ececf1;
   --color-bg-soft: #f6f8f7;
   --color-warn-tint: #fff6e9;
