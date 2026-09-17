@@ -121,7 +121,8 @@ function SaveHero({ best, current }) {
     const saving = best.monthlySavings > 0;
     head = saving ? '정가 대비 매달' : '추천 조합은 매달';
     amount = won(saving ? best.monthlySavings : best.monthlyTotal);
-    foot = saving ? `1년이면 ${won(best.annualSavings)}` : '정가보다 싼 조합을 찾지 못했어요';
+    // 절감 0 은 "못 찾음"이 아니라 기준이 정가라는 뜻이다. 입력 구간 대표값과 빼지 않는다 — 화면이 금액을 만들지 않는다.
+    foot = saving ? `1년이면 ${won(best.annualSavings)}` : '정가 기준 금액이에요 — 지금 쓰는 요금제를 알려주시면 얼마나 아끼는지 계산해요';
   }
   return (
     <section className="mb-6 mt-4 flex flex-wrap items-center justify-between gap-6 rounded-card bg-brand-tint px-6 py-6 md:px-8">
