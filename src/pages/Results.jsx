@@ -50,9 +50,7 @@ export default function Results() {
         <h1 className="my-3 mb-1.5 text-[28px] font-extrabold tracking-[-.01em]">최적 요금 조합 비교 분석</h1>
 
         {best && <SaveHero best={best} />}
-        <p className="mb-6 text-muted">
-          절감액은 계산 서버가 준 <strong className="text-ink">정가 대비</strong> 값이에요. 월 기준으로 비교했어요.
-        </p>
+        <Summary message={data.message} />
         <p className="my-4 rounded-xl bg-warn-tint px-4 py-3 text-sm text-warn-ink">
           ‘추천·정가’ 금액과 요금제는 계산 서버가 카탈로그로 계산한 값입니다. ‘현재’ 열은{' '}
           <strong>입력하신 값의 합계</strong>예요.
@@ -312,6 +310,26 @@ function ReportWrong({ planId, planName }) {
           </form>
         )}
     </details>
+  );
+}
+
+/* 상황 정리 문장은 BE(/recommendations 의 message)가 준다 — AI 서버의 결정론적 템플릿이라
+   모델 키가 없어도 나온다(D-38). AI 에 아예 닿지 못하면 null 이고, 그때는 화면이 최소 설명을 적는다.
+   화면이 금액을 문장으로 다시 쓰지 않는다 — 숫자를 만드는 곳은 계산 서버 하나다(절대 원칙 2). */
+function Summary({ message }) {
+  if (!message) {
+    return (
+      <p className="mb-6 text-muted">
+        절감액은 계산 서버가 준 <strong className="text-ink">정가 대비</strong> 값이에요. 월 기준으로 비교했어요.
+      </p>
+    );
+  }
+  return (
+    <p className="mb-6 max-w-[72ch] text-muted">
+      {splitLines(message).map((line, i) => (
+        <span key={i} className="block [&+span]:mt-1">{line}</span>
+      ))}
+    </p>
   );
 }
 
