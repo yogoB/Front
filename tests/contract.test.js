@@ -189,7 +189,10 @@ test('ICS escapes its own delimiters and keeps CRLF line endings', () => {
 test('month grid pads to whole weeks and keeps day numbers', () => {
   const weeks = monthGrid(2026, 10);              // 2026-11: 1일이 일요일
   assert.ok(weeks.every(w => w.length === 7));
-  assert.equal(weeks.flat().filter(Boolean).length, 30);
+  assert.equal(weeks.flat().filter(d => d.getMonth() === 10).length, 30);
+  // 2026-09: 1일이 화요일 → 앞 두 칸은 8월 30·31일, 마지막 줄 뒤는 10월 1~3일
+  const sep = monthGrid(2026, 8);
+  assert.deepEqual([sep[0][0].getDate(), sep[0][1].getDate(), sep.at(-1).at(-1).getDate()], [30, 31, 3]);
   assert.equal(relativeDay(new Date(2026, 10, 30), new Date(2026, 10, 30)), '오늘');
 });
 

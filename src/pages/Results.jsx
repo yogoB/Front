@@ -398,7 +398,7 @@ function SaveResult({ input, best, current }) {
     setResult({
       planId: best.planId,
       currentTotal: current ? current.cost.monthlyTotal : currentTotal(input),
-      planLabel: `${best.carrier} ${best.planName}`,
+      carrier: best.carrier, planLabel: `${best.carrier} ${best.planName}`,
       monthlyTotal: best.monthlyTotal, monthlySavings: best.monthlySavings, annualSavings: best.annualSavings,
     });
   }, [input, best, current]);
