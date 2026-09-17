@@ -15,6 +15,12 @@ test('filter/calculator use server IDs, exact enums and only supported fields', 
   });
   assert.deepEqual(calculatorRequest(5, optionalInputs(values), subs), { planId: 5, tierIds: [2], optional: optionalInputs(values) });
   assert.deepEqual(optionalInputs({ currentCarrier: '', networkType: '', contractType: '', hasFamilyBundle: '' }), {});
+  // 가족결합 회선 수·할인액(G-28)은 결합 true 일 때만, 정수일 때만 나간다. 결합이 아니면 적어도 버린다.
+  assert.deepEqual(optionalInputs({ hasFamilyBundle: 'true', familyLineCount: '3', familyBundleDiscountKrw: '11000' }),
+    { hasFamilyBundle: true, familyLineCount: 3, familyBundleDiscountKrw: 11000 });
+  assert.deepEqual(optionalInputs({ hasFamilyBundle: 'true', familyLineCount: '', familyBundleDiscountKrw: '0' }),
+    { hasFamilyBundle: true, familyBundleDiscountKrw: 0 });
+  assert.deepEqual(optionalInputs({ hasFamilyBundle: 'false', familyLineCount: '3', familyBundleDiscountKrw: '-5' }), { hasFamilyBundle: false });
   assert.throws(() => recommendationRequest(values, [{ ...subs[0], wanted: false }]));
   assert.throws(() => calculatorRequest(5, {}, []));
   assert.throws(() => recommendationRequest(values, [{ ...subs[0], unavailable: true }]), /다시 선택/);

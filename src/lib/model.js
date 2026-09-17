@@ -43,8 +43,18 @@ export function optionalInputs(values) {
   if (values.networkType) optional.networkType = values.networkType;
   if (values.contractType) optional.contractType = values.contractType;
   if (['true', 'false'].includes(values.hasFamilyBundle)) optional.hasFamilyBundle = values.hasFamilyBundle === 'true';
+  // 결합 중일 때만 회선 수·월 할인액을 보낸다(G-28). 빈 값·0 회선은 보내지 않는다 — missingInputs 안내가 그 자리를 채운다.
+  // 할인액은 BE 가 사용자 입력(USER_PROVIDED)으로 그대로 빼고, 회선 수는 근거 문구에만 쓴다.
+  if (optional.hasFamilyBundle) {
+    const lines = whole(values.familyLineCount), discount = whole(values.familyBundleDiscountKrw);
+    if (lines !== null && lines > 0) optional.familyLineCount = lines;
+    if (discount !== null) optional.familyBundleDiscountKrw = discount;
+  }
   return optional;
 }
+
+/** 0 이상 정수 문자열이면 숫자로, 아니면 null. 입력창 값은 문자열이라 여기서 한 번만 거른다. */
+const whole = value => (/^\d+$/.test(String(value ?? '').trim()) ? Number(value) : null);
 
 export function recommendationRequest(values, subscriptions) {
   if (subscriptions.some(s => s.wanted && s.unavailable)) throw new Error('목록에서 변경된 구독을 삭제하고 다시 선택해 주세요.');

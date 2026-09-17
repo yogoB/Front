@@ -10,6 +10,13 @@ import { setInput } from '../lib/session.js';
 
 const STEPS = ['기본', '요금제', '구독'];
 const DEFAULT_WISH = [1, 2, 6];
+const FEE_MAX = 999_999;   // 월 통신비·할인액 직접입력 상한(원)
+
+/** 숫자만 남기고 상한에서 자른다. type=number 의 max 는 타이핑을 막지 못하므로 onChange 에서 처리한다. */
+const clampDigits = (text, max) => {
+  const digits = String(text).replace(/\D/g, '');
+  return digits && Number(digits) > max ? String(max) : digits;
+};
 
 export default function Detail() {
   const navigate = useNavigate();
@@ -30,6 +37,9 @@ export default function Detail() {
   const [networkType, setNetworkType] = useState(null);
   const [contractType, setContractType] = useState(null);
   const [hasFamilyBundle, setHasFamilyBundle] = useState(null);
+  const [familyLineCount, setFamilyLineCount] = useState('');          // 근거 문구용. 금액 계산에 쓰지 않는다
+  const [familyDiscount, setFamilyDiscount] = useState('');            // 월 결합 할인액(원). BE 가 그대로 뺀다(G-28)
+  const [feeText, setFeeText] = useState('');                          // 직접입력 통신비. 상한 999,999원
   const [wish, setWish] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -66,6 +76,9 @@ export default function Detail() {
       fee,
       // BE optional 로 그대로 넘어간다. null 은 보내지 않아 missingInputs 안내가 유지된다.
       networkType, contractType, hasFamilyBundle,
+      // 결합 중일 때만 의미가 있다. 빈 값은 Results.buildRequest 가 뺀다.
+      familyLineCount: hasFamilyBundle ? familyLineCount : '',
+      familyBundleDiscountKrw: hasFamilyBundle ? familyDiscount : '',
       subs: wish.map(w => {
         const t = w.service.tiers.find(t => t.id === w.tierId);
         return { id: w.id, name: w.service.name, tierId: t.id, tierName: t.name,
@@ -137,24 +150,46 @@ export default function Detail() {
                   <Choice label="직접입력" active={customFee} onClick={() => setCustomFee(true)} />
                 </div>
                 {customFee && (
-                  <input type="number" inputMode="numeric" min={0} step={100} placeholder="예: 55000" autoFocus
-                         aria-label="통신비 직접 입력(원)"
+                  <input type="number" inputMode="numeric" min={0} max={FEE_MAX} step={100} placeholder="예: 55000" autoFocus
+                         aria-label="통신비 직접 입력(원)" value={feeText}
                          onChange={e => {
-                           const value = Number(e.target.value);
-                           setFee(Number.isSafeInteger(value) && value > 0
-                             ? { label: `${value.toLocaleString('ko-KR')}원`, amount: value } : null);
+                           // max 속성은 타이핑을 막지 못한다 — 여기서 잘라 상한을 넘긴 값이 화면에도 상태에도 남지 않게 한다.
+                           const text = clampDigits(e.target.value, FEE_MAX);
+                           setFeeText(text);
+                           const value = Number(text);
+                           setFee(text && value > 0 ? { label: `${value.toLocaleString('ko-KR')}원`, amount: value } : null);
                          }}
                          className="field mt-3 max-w-[220px]" />
                 )}
 
                 <h2 className="mt-12 text-xl font-extrabold">아래를 알려주시면 더 정확해져요</h2>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted">모르면 건너뛰어도 결과는 나와요. 아는 만큼만 골라주세요.</p>
+                {/* "잘 모르겠어요" 칩은 뺐다. 안 고르면 null 그대로라 missingInputs 안내가 나간다(원칙 5-①). */}
                 <ChoiceGroup label="선택약정 25% 할인" stack value={contractType} onChange={setContractType}
-                  options={[['SELECTIVE_25', '받고 있어요'], ['NONE', '받고 있지 않아요'], [null, '잘 모르겠어요']]} />
+                  options={[['SELECTIVE_25', '받고 있어요'], ['NONE', '받고 있지 않아요']]} />
+                {/* "기타"는 null — BE 가 망 필터를 걸지 않는다. 3G 를 보내는 경로는 화면에서만 사라졌고 BE enum 은 그대로다. */}
                 <ChoiceGroup label="사용 중인 통신망" value={networkType} onChange={setNetworkType}
-                  options={[['5G', '5G'], ['LTE', 'LTE'], ['3G', '3G'], [null, '상관없어요']]} />
+                  options={[['5G', '5G'], ['LTE', 'LTE'], [null, '기타']]} />
                 <ChoiceGroup label="가족 결합" stack value={hasFamilyBundle} onChange={setHasFamilyBundle}
-                  options={[[true, '하고 있어요'], [false, '하고 있지 않아요'], [null, '잘 모르겠어요']]} />
+                  options={[[true, '하고 있어요'], [false, '하고 있지 않아요']]} />
+                {hasFamilyBundle === true && (
+                  <div className="mt-4 grid gap-4 rounded-card border border-line bg-white p-5 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="family-lines" className="mb-2 block text-sm font-semibold">결합 회선 수</label>
+                      <input id="family-lines" type="number" inputMode="numeric" min={1} max={99} placeholder="예: 3"
+                             value={familyLineCount} onChange={e => setFamilyLineCount(clampDigits(e.target.value, 99))}
+                             className="field" />
+                      <p className="mt-1.5 text-xs leading-relaxed text-muted">근거 문구에만 써요. 회선 수로 할인액을 추정하지 않아요.</p>
+                    </div>
+                    <div>
+                      <label htmlFor="family-discount" className="mb-2 block text-sm font-semibold">월 결합 할인액(원)</label>
+                      <input id="family-discount" type="number" inputMode="numeric" min={0} max={FEE_MAX} step={100} placeholder="예: 11000"
+                             value={familyDiscount} onChange={e => setFamilyDiscount(clampDigits(e.target.value, FEE_MAX))}
+                             className="field" />
+                      <p className="mt-1.5 text-xs leading-relaxed text-muted">적어 주신 금액을 그대로 빼서 계산해요. 모르면 비워 두세요.</p>
+                    </div>
+                  </div>
+                )}
                 <Actions onNext={() => go(3)} />
               </>
             )}
