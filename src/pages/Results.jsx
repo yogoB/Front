@@ -158,10 +158,13 @@ function buildRequest(source) {
 }
 
 /* 모르면 막히지 않는다(원칙 5-①): 빠진 입력과 카탈로그 결손을 그대로 안내한다. */
+/* ⓘ 안내. missingInputs 문장은 서버(notices)가 만든다 — 같은 값으로 두 곳에서 문장을
+   만들면 표현이 갈라진다(D-46). 여기 남는 둘은 서버가 알 수 없는 것뿐이다:
+   데이터 입력을 건너뛴 화면 상태와, 결과가 없어 서버가 내레이터를 부르지 않은 경우. */
 function buildNotices(source, data, best) {
   const notices = [];
   if (!source.data) notices.push(`데이터 사용량을 건너뛰어 ${DEFAULT_GB}GB 기준으로 계산했어요. 실제 사용량을 넣으면 결과가 정확해져요.`);
-  for (const missing of data.missingInputs || []) notices.push(`${missing.impact} — ${missing.howToFind}`);
+  notices.push(...(data.notices || []));
   if (!best) notices.push('조건에 맞는 요금제를 아직 찾지 못했어요. 조건을 바꾸거나 잠시 후 다시 시도해 주세요.');
   return notices;
 }

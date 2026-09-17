@@ -9,13 +9,6 @@ import { useMember, forgetMember } from '../lib/useMember.js';
 /** BE 카탈로그의 통신망 코드 → 화면 표기. 모르는 값은 그대로 보여준다. */
 const NETWORKS = { FIVE_G: '5G', LTE: 'LTE', THREE_G: '3G' };
 
-/** BE 탐지 규칙(docs/domain.md §7)의 화면 문구. 금액·판정은 BE 가 하고 여기선 이름만 붙인다. */
-const RULES = {
-  BENEFIT_OVERLAP: ['요금제에 포함된 구독을 따로 결제 중', '요금제 혜택으로 이미 제공돼요. 개별 결제를 해지하면 그만큼 줄어요.'],
-  TIER_DUPLICATE: ['같은 서비스를 두 등급으로 결제 중', '더 비싼 등급 하나만 남기면 나머지가 줄어요.'],
-  BUNDLE_OVERLAP: ['묶음 상품이 더 싼 조합', '개별 결제 합계가 묶음 상품보다 비싸요.'],
-};
-
 const message = e => (e instanceof ApiError ? e.message : '요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.');
 
 export default function MyPage() {
@@ -24,7 +17,7 @@ export default function MyPage() {
   const [plans, setPlans] = useState([]);       // 현재 요금제 검색·이름 표시
   const [services, setServices] = useState([]); // 구독 추가 폼의 서비스·등급
   const [subscriptions, setSubscriptions] = useState([]);
-  const [findings, setFindings] = useState([]);
+  const [findings, setFindings] = useState(null);   // { findings, lines, summary } — 서버가 문구까지 만든다(D-46)
 
   useEffect(() => { if (loaded) setMember(loaded); }, [loaded]);
 
@@ -38,6 +31,7 @@ export default function MyPage() {
 
   const reloadSubs = () => request('/api/v1/me/subscriptions', { member: true })
     .then(({ data }) => setSubscriptions(data)).catch(() => {});
+  // 문구·요약은 서버가 만든다(D-46). 규칙이 늘어도 화면은 그대로다.
   const reloadDetections = () => request('/api/v1/me/detections', { member: true })
     .then(({ data }) => setFindings(data)).catch(() => {});
 
@@ -67,7 +61,7 @@ export default function MyPage() {
         <CurrentPlan member={member} plans={plans} onSaved={id => { setMember(m => ({ ...m, currentPlanId: id })); reloadDetections(); }} />
         <Subscriptions services={services} rows={subscriptions} onChanged={() => { reloadSubs(); reloadDetections(); }} />
         <PaymentImport onImported={() => { reloadSubs(); reloadDetections(); }} />
-        <Detections findings={findings} services={services} hasPlan={Boolean(member?.currentPlanId)} />
+        <Detections detection={findings} hasPlan={Boolean(member?.currentPlanId)} />
         <DeleteAccount />
       </main>
       <div className="mx-auto w-full max-w-[760px] px-6"><Footer /></div>
@@ -390,40 +384,29 @@ function PaymentImport({ onImported }) {
   );
 }
 
-function Detections({ findings, services, hasPlan }) {
-  /** BE 가 주는 참조는 `service:{id}` / `bundle:{id}` 다. 서비스는 카탈로그 이름으로 바꾸고 나머지는 그대로 둔다. */
-  const targetName = ref => {
-    const [kind, id] = String(ref).split(':');
-    if (kind === 'service') {
-      const s = services.find(x => String(x.id) === id);
-      return s ? `${s.icon} ${s.name}` : `서비스 #${id}`;
-    }
-    return kind === 'bundle' ? '묶음 상품' : ref;
-  };
+function Detections({ detection, hasPlan }) {
+  const lines = detection?.lines ?? [];
+  const summary = detection?.summary ?? '';
 
   return (
-    // 결론을 먼저 낸다(원칙 5-③)지만 합계·연 환산은 BE 가 줄 때까지 붙이지 않는다(절대 원칙 2).
+    // 제목·대상·금액 표기·다음 행동 문구는 전부 서버가 만든다(D-46).
+    // 화면은 배치만 한다 — 탐지 규칙이 늘어도 여기는 고치지 않는다.
     <Card title="중복 결제 점검"
-          right={findings.length ? <span className="font-bold text-danger">{findings.length}건</span> : null}>
+          right={lines.length ? <span className="font-bold text-danger">{lines.length}건</span> : null}>
       <ul className="m-0 grid list-none gap-2 p-0">
-        {findings.map((f, i) => {
-          const [title, how] = RULES[f.rule] ?? [f.rule, ''];
-          return (
-            <li key={i} className="rounded-xl border border-line px-4 py-3">
-              <div className="flex items-baseline justify-between gap-3">
-                <strong className="font-bold">{title}</strong>
-                <span className="text-sm font-bold text-danger tnum">월 {won(f.wastedAmount)}</span>
-              </div>
-              <p className="mt-1 text-sm text-ink-soft">{targetName(f.targetRef)}</p>
-              <p className="mt-0.5 text-[13px] text-muted">{how}</p>
-            </li>
-          );
-        })}
+        {lines.map((line, i) => (
+          <li key={i} className="rounded-xl border border-line px-4 py-3">
+            <div className="flex items-baseline justify-between gap-3">
+              <strong className="font-bold">{line.title}</strong>
+              <span className="text-sm font-bold text-danger tnum">{line.amount}</span>
+            </div>
+            <p className="mt-1 text-sm text-ink-soft">{line.target}</p>
+            {line.how && <p className="mt-0.5 text-[13px] text-muted">{line.how}</p>}
+          </li>
+        ))}
       </ul>
       <Status>
-        {findings.length ? '해지·변경은 각 서비스에서 직접 해주세요. 요고비는 금액만 알려드려요.'
-          : hasPlan ? '중복으로 새는 금액이 없어요.'
-            : '현재 요금제를 저장하면 요금제 혜택과 겹치는 구독까지 찾아드려요.'}
+        {summary || (hasPlan ? '' : '현재 요금제를 저장하면 요금제 혜택과 겹치는 구독까지 찾아드려요.')}
       </Status>
     </Card>
   );
