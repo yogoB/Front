@@ -5,6 +5,7 @@ import { request, ApiError } from '../lib/api.js';
 import { loadCatalog } from '../lib/catalog-data.js';
 import { won, matches, tierPrice, tierKrwGuess, integer } from '../lib/model.js';
 import { useMember, forgetMember } from '../lib/useMember.js';
+import { MemberCheckFailed } from '../components/GuestGate.jsx';
 
 /** BE 카탈로그의 통신망 코드 → 화면 표기. 모르는 값은 그대로 보여준다. */
 const NETWORKS = { FIVE_G: '5G', LTE: 'LTE', THREE_G: '3G' };
@@ -36,6 +37,7 @@ export default function MyPage() {
     .then(({ data }) => setFindings(data)).catch(() => {});
 
   if (loaded === undefined) return <><Header /><p className="p-10 text-center text-muted">불러오는 중…</p></>;
+  if (loaded === false) return <><Header /><MemberCheckFailed /></>;
 
   // 비회원도 화면은 열린다(원칙 5-①). 저장이 필요한 부분만 로그인 안내로 바꾼다.
   if (loaded === null) {

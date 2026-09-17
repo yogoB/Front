@@ -7,6 +7,10 @@ export class ApiError extends Error {
   }
 }
 
+// 회원 호출이 401 을 받으면 알린다 — useMember 가 캐시된 /me 를 버리고 다시 확인한다(순환 import 대신 콜백).
+let unauthorized = () => {};
+export const onUnauthorized = fn => { unauthorized = fn; };
+
 export function backendUrl(path) {
   if (!path.startsWith('/') || path.startsWith('//')) throw new Error('잘못된 요청 경로입니다.');
   return API_BASE_URL + path;
@@ -36,6 +40,7 @@ export async function request(path, { method = 'GET', body, signal, member = fal
     try { result = await response.json(); }
     catch { throw new ApiError('서버 응답을 읽지 못했어요. 잠시 후 다시 시도해 주세요.', response.status); }
     if (!response.ok) {
+      if (member && response.status === 401) unauthorized(path);
       const error = result.error || {};
       throw new ApiError(error.message || '요청을 처리하지 못했어요.', response.status, error.code, error.field);
     }

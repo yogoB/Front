@@ -20,7 +20,9 @@ export default function AuthReturn() {
 
     // success 로 돌아왔는데 세션이 안 잡혔으면 로그인된 게 아니다 — 그렇게 적지 않는다.
     if (state === 'success' && !member) {
-      setNote('로그인은 됐지만 이 브라우저에 세션이 남지 않았어요. 쿠키를 허용한 뒤 다시 시도해 주세요.');
+      setNote(member === null
+        ? '로그인은 됐지만 이 브라우저에 세션이 남지 않았어요. 쿠키를 허용한 뒤 다시 시도해 주세요.'
+        : '로그인 상태를 확인하지 못했어요. 잠시 후 새로고침해 주세요.');
     } else if (state === 'success') {
       const next = takeNext();
       if (next) { navigate(next, { replace: true }); return; }

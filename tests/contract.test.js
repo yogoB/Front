@@ -1,7 +1,7 @@
 import test from 'node:test';
 import { readFileSync, readdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
-import { request, ApiError } from '../src/lib/api.js';
+import { request, ApiError, onUnauthorized } from '../src/lib/api.js';
 import { DATA_BUCKETS, FEE_BUCKETS, loadCarriers } from '../src/lib/catalog-data.js';
 import { parseDay, icsEscape, icsText, monthGrid, relativeDay, EVENTS_FROM_EXPIRY, EVENTS_FROM_TODAY, googleUrl, startOfToday } from '../src/lib/schedule.js';
 import { integer, optionalInputs, recommendationRequest, calculatorRequest, comparisonCsv, splitLines, matches, clampDigits } from '../src/lib/model.js';
@@ -72,6 +72,15 @@ test('each member mutation obtains fresh CSRF and uses cookies, including DELETE
   await request('/api/v1/me/nickname', { member: true, method: 'POST', body: { nickname: '새닉' } });
   await request('/api/v1/me/sessions/abc', { member: true, method: 'DELETE' });
   assert.equal(tokens, 2); assert.equal(calls.length, 4);
+});
+test('회원 호출의 401 만 세션 재확인 콜백을 부른다', async t => {
+  const seen = [];
+  onUnauthorized(path => seen.push(path));
+  t.mock.method(globalThis, 'fetch', async () => json({ error: { code: 'YGB-AUTH-001', message: '로그인 필요' } }, 401));
+  await assert.rejects(request('/api/v1/me/subscriptions', { member: true }), e => e.status === 401);
+  await assert.rejects(request('/api/v1/catalog/services'), e => e.status === 401);   // 공개 호출은 세션과 무관
+  assert.deepEqual(seen, ['/api/v1/me/subscriptions']);
+  onUnauthorized(() => {});
 });
 test('HTTP error code/field survives and network/non-JSON failures are actionable', async t => {
   const fetch = t.mock.method(globalThis, 'fetch', async () => json({ error: { code: 'YGB-REQ-001', message: '입력 확인', field: 'monthlyDataGb' } }, 400));

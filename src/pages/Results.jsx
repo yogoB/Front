@@ -5,7 +5,7 @@ import { request, ApiError, backendUrl } from '../lib/api.js';
 import { won, provenance, splitLines } from '../lib/model.js';
 import { getInput, setResult, setNext } from '../lib/session.js';
 import { useMember } from '../lib/useMember.js';
-import GuestGate from '../components/GuestGate.jsx';
+import GuestGate, { MemberCheckFailed } from '../components/GuestGate.jsx';
 
 const DEFAULT_GB = 10;   // 데이터 사용량을 건너뛴 경우의 계산 기준. 숨기지 않고 화면에 적는다(원칙 5-①).
 
@@ -21,7 +21,7 @@ export default function Results() {
 
   useEffect(() => {
     // 비회원이면 **계산도 하지 않는다** — 금액이 한 줄도 비치지 않아야 하므로 아예 받아오지 않는다(D-36).
-    if (member === undefined || member === null || !input) return;
+    if (!member || !input) return;
     if (!keptSubs(input).length) { setFailure('추천에 포함할 구독 서비스를 고르지 않았어요. 다시 선택해 주세요.'); return; }
     request('/api/v1/recommendations', { method: 'POST', body: buildRequest(input) })
       .then(({ data }) => setData(data))
@@ -30,6 +30,7 @@ export default function Results() {
 
   if (!input) return <Empty message="모드를 선택하고 조건을 입력하면 결과를 볼 수 있어요." />;
   if (member === undefined) return <><Header /><p className="p-10 text-center text-muted">불러오는 중…</p></>;
+  if (member === false) return <><Header /><MemberCheckFailed /></>;
   if (member === null) {
     return <GuestGate onGoogle={() => { setNext('/results'); location.href = backendUrl('/oauth2/authorization/google'); }}
                       onBack={() => navigate('/modes')} />;

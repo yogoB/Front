@@ -1,3 +1,4 @@
+import { forgetMember } from '../lib/useMember.js';
 import { Header } from './Layout.jsx';
 
 /* 비회원 화면. 리포트 대신 이것 하나만 그린다(ux-flow D-36, 사용자 결정 2026-09-17).
@@ -38,3 +39,14 @@ const GoogleMark = () => (
     <path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6A9 9 0 0 0 .9 5l3 2.3C4.6 5.2 6.6 3.6 9 3.6z" />
   </svg>
 );
+
+/** 로그인 여부 확인 실패(useMember → false) 화면. 게이트가 아니다 — 회원일 수도 있으니 로그인을 시키지 않고 다시 묻는다. */
+export function MemberCheckFailed() {
+  return (
+    <main className="mx-auto my-20 max-w-[560px] px-6 text-center">
+      <h1 className="text-[22px] font-extrabold">로그인 상태를 확인하지 못했어요</h1>
+      <p className="mt-3 text-muted">서버 응답이 늦거나 연결이 끊겼어요. 잠시 후 다시 시도해 주세요.</p>
+      <button type="button" onClick={forgetMember} className="btn btn-brand mt-6">다시 시도</button>
+    </main>
+  );
+}
