@@ -325,7 +325,7 @@ function ReportWrong({ planId, planName }) {
   );
 }
 
-/* 상황 정리 문장은 BE(/recommendations 의 message)가 준다 — AI 서버의 결정론적 템플릿이라
+/* 상황 정리 문장은 BE(/recommendations 의 message)가 준다 — 내레이터의 결정론적 템플릿이라
    모델 키가 없어도 나온다(D-38). AI 에 아예 닿지 못하면 null 이고, 그때는 화면이 최소 설명을 적는다.
    화면이 금액을 문장으로 다시 쓰지 않는다 — 숫자를 만드는 곳은 계산 서버 하나다(절대 원칙 2). */
 function Summary({ message }) {
