@@ -14,6 +14,17 @@ export const matches = (haystack, needle) => {
   return !key || searchKey(haystack).includes(key);
 };
 
+/** 띄어쓴 낱말을 **모두** 포함하는가(순서 무시). "SKT 청년"처럼 통신사 이름을 앞에 붙여 치는 사람이 많은데
+    통짜 비교로는 "0 청년 다이렉트 62" 가 걸리지 않는다 — 실제로 "청년 요금제가 안 나온다"는 제보가 있었다(2026-09-18).
+    drop 에 준 이름(고른 통신사)과 겹치는 낱말은 검색어에서 뺀다 — 이미 그 통신사 안에서 찾고 있기 때문이다. */
+export const matchesAll = (haystack, query, drop = '') => {
+  const skip = searchKey(drop);
+  const words = String(query ?? '').trim().split(/\s+/).map(searchKey)
+    .filter(word => word && !(skip && skip.includes(word)));
+  const key = searchKey(haystack);
+  return words.every(word => key.includes(word));
+};
+
 /** 해외 결제 등급인가. 원화 확정 금액이 없어 계산에는 사용자가 확인한 금액이 필요하다. */
 export const isForeign = tier => Boolean(tier?.currency) && tier.currency !== 'KRW';
 

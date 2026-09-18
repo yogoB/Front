@@ -1,4 +1,5 @@
 import { tierPrice, foreignNote, matches } from '../lib/model.js';
+import { SearchState } from './Flow.jsx';
 
 /** 금액 옆의 작은 ⓘ — 마우스를 올리면 근거가 뜬다(사용자 결정 2026-09-18). 글자보다 작게 둔다.
     목록이 overflow-y-auto 안이라 CSS 말풍선(.info)은 잘린다 — 브라우저 기본 툴팁을 쓴다.
@@ -9,13 +10,14 @@ export const PriceNote = ({ note }) => note ? (
 ) : null;
 
 /** 구독 목록. 검색 + 멀티셀렉트가 기본이고 나열은 그 결과다(ux-flow A3). */
-export default function SubscriptionPicker({ subs, query, onQuery, onToggle, onTier }) {
+export default function SubscriptionPicker({ subs, query, onQuery, onToggle, onTier, status = 'ready', onRetry }) {
   const shown = subs.filter(s => matches(s.service.name, query));
   return (
     <>
       <div className="mb-4">
         <input value={query} onChange={e => onQuery(e.target.value)}
-               placeholder="서비스 검색" aria-label="서비스 검색"
+               placeholder={status === 'loading' ? '구독 목록을 불러오는 중이에요…' : '서비스 검색'}
+               aria-label="서비스 검색" aria-busy={status === 'loading'}
                className="field" />
       </div>
       <div className="flex max-h-[420px] flex-col overflow-y-auto rounded-card border border-line bg-white">
@@ -43,7 +45,8 @@ export default function SubscriptionPicker({ subs, query, onQuery, onToggle, onT
             </label>
           );
         })}
-        {!shown.length && <p className="px-4 py-6 text-center text-sm text-muted">검색 결과가 없어요.</p>}
+        {/* 로딩·실패를 0건으로 적지 않는다(사용자 피드백 2026-09-18). */}
+        {!shown.length && <SearchState status={status} onRetry={onRetry} empty="검색 결과가 없어요." className="px-4 py-6 text-center text-sm" />}
       </div>
     </>
   );

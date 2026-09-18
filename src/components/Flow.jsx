@@ -94,3 +94,26 @@ export function RangeCard({ label, value, idx, max, onChange, ariaLabel }) {
     </div>
   );
 }
+
+/** 검색 목록의 세 상태를 한 자리에서 그린다 — 로딩 / 실패 / 0건.
+    사용자 피드백(2026-09-18): "처음에 눌렀는데 반응이 없어서 결과가 없는 건지 로딩이 오래 걸리는 건지 몰랐다."
+    카탈로그가 도착하기 전에도 "없어요"를 띄우고 있었다. 로딩과 0건은 다른 말이어야 한다. */
+export function SearchState({ status, empty, onRetry, className = 'px-4 py-3 text-sm' }) {
+  if (status === 'loading') {
+    return (
+      <p className={`flex items-center gap-2 text-muted ${className}`}>
+        <span aria-hidden="true" className="inline-block size-3.5 animate-spin rounded-full border-2 border-line border-t-brand" />
+        불러오는 중이에요 · 잠시만 기다려 주세요
+      </p>
+    );
+  }
+  if (status === 'failed') {
+    return (
+      <p className={`flex flex-wrap items-center gap-2 text-muted ${className}`}>
+        목록을 불러오지 못했어요.
+        {onRetry && <button type="button" onClick={onRetry} className="btn-text font-semibold text-brand-ink">다시 시도</button>}
+      </p>
+    );
+  }
+  return <p className={`text-muted ${className}`}>{empty}</p>;
+}

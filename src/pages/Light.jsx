@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Layout.jsx';
 import { FlowHead, Question, ErrorLine, Actions, RangeCard } from '../components/Flow.jsx';
@@ -24,13 +24,19 @@ export default function Light() {
   const [feeText, setFeeText] = useState('');          // 직접입력 통신비. 상한 FEE_MAX(디테일과 같다)
   const [subs, setSubs] = useState([]);               // 카탈로그를 받은 뒤 채운다 (BE 가 원본)
   const [query, setQuery] = useState('');
+  const [catalogState, setCatalogState] = useState('loading');   // loading | ready | failed — 로딩과 0건은 다른 말이다
 
   /* 구독 카탈로그는 BE 가 원본이다. 목업 가격으로 대체하지 않는다. */
-  useEffect(() => {
-    loadCatalog()
-      .then(catalog => setSubs(catalog.map(s => ({ id: s.id, service: s, tierId: s.tiers[0].id, checked: false }))))
-      .catch(e => setError(e.message || '구독 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'));
+  const fetchCatalog = useCallback(() => {
+    setCatalogState('loading');
+    return loadCatalog()
+      .then(catalog => {
+        setSubs(catalog.map(s => ({ id: s.id, service: s, tierId: s.tiers[0].id, checked: false })));
+        setCatalogState('ready');
+      })
+      .catch(e => { setCatalogState('failed'); setError(e.message || '구독 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'); });
   }, []);
+  useEffect(() => { fetchCatalog(); }, [fetchCatalog]);
 
   const go = next => { setError(''); setStep(next); };
   const back = () => (step > 1 ? go(step - 1) : navigate('/modes'));
@@ -121,7 +127,7 @@ export default function Light() {
                 구독 서비스 정보를 알려주세요
               </Question>
               <SubscriptionPicker
-                subs={subs} query={query} onQuery={setQuery}
+                subs={subs} query={query} onQuery={setQuery} status={catalogState} onRetry={fetchCatalog}
                 onToggle={id => setSubs(list => list.map(s => s.id === id ? { ...s, checked: !s.checked } : s))}
                 onTier={(id, tierId) => setSubs(list => list.map(s => s.id === id ? { ...s, tierId } : s))} />
               <Actions onNext={analyze} nextLabel="분석 시작하기" />

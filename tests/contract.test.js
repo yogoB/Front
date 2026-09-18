@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { request, ApiError, onUnauthorized } from '../src/lib/api.js';
 import { DATA_BUCKETS, FEE_BUCKETS, loadCarriers } from '../src/lib/catalog-data.js';
 import { parseDay, icsEscape, icsText, monthGrid, relativeDay, EVENTS_FROM_EXPIRY, EVENTS_FROM_TODAY, googleUrl, startOfToday, isoDay } from '../src/lib/schedule.js';
-import { integer, buildRequest, DEFAULT_GB, splitLines, matches, clampDigits } from '../src/lib/model.js';
+import { integer, buildRequest, DEFAULT_GB, splitLines, matches, matchesAll, clampDigits } from '../src/lib/model.js';
 
 // 추천 요청은 화면이 세션에 담아 둔 입력으로 만든다(model.buildRequest). 요청을 만드는 곳은 그 함수 하나다 —
 // 전에는 이 테스트가 아무 화면도 부르지 않는 낡은 빌더를 검사하고 있었다(레거시 정리 2026-09-18).
@@ -235,6 +235,20 @@ test('ICS UID 는 기준일이 바뀌어도 같다 — 다시 받으면 쌓이�
   const b = uids(icsText(EVENTS_FROM_TODAY, new Date(2026, 5, 20), null));
   assert.deepEqual(a, b);
   assert.equal(new Set(a).size, a.length);                   // 한 파일 안에서는 서로 달라야 한다
+});
+
+// 사용자 제보(2026-09-18): "SKT 청년 59 같은 게 안 나온다". 통신사 이름을 앞에 붙여 치면 통짜 비교로는 안 걸렸다.
+test('요금제 검색은 띄어쓴 낱말을 모두 포함하면 걸린다', () => {
+  assert.ok(matchesAll('0 청년 다이렉트 62', 'SKT 청년', 'SKT'));     // 통신사 이름은 검색어에서 뺀다
+  assert.ok(matchesAll('0 청년 다이렉트 62', '청년 62', 'SKT'));      // 순서가 달라도 걸린다
+  assert.ok(matchesAll('0 청년 다이렉트 62', '', 'SKT'));             // 빈 검색어는 전부 통과
+  assert.ok(!matchesAll('0 청년 다이렉트 62', 'SKT 청년 59', 'SKT')); // 진짜 없는 것은 없다고 나와야 한다
+});
+
+// '변경 최소' 열은 BE 의 minimalChange 다(D-55). 화면이 통신사로 고르면 SKT 사용자에게 알뜰폰이 '변경 최소'로 나왔다.
+test('결과 화면은 변경 최소 조합을 BE minimalChange 로 받는다', () => {
+  const code = readFileSync('src/pages/Results.jsx', 'utf8');
+  assert.match(code, /'minimalChange' in data/, 'minimalChange 를 응답에서 읽지 않는다');
 });
 
 // 추천은 공개 경로지만 쿠키는 보내야 한다 — BE 가 principal 유무로 REPORT_SHOWN/GATE_SHOWN 을 가른다(D-36).

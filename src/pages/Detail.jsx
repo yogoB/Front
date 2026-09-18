@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Layout.jsx';
-import { FlowHead, Question, ErrorLine, Actions, RangeCard } from '../components/Flow.jsx';
+import { FlowHead, Question, ErrorLine, Actions, RangeCard, SearchState } from '../components/Flow.jsx';
 import { Choice, ChoiceGroup } from '../components/Choice.jsx';
 import Analyzing from '../components/Analyzing.jsx';
 import { loadCatalog, loadPlans, carriersOf, DATA_BUCKETS, FEE_BUCKETS } from '../lib/catalog-data.js';
-import { won, tierPrice, foreignNote, tierKrwGuess, isForeign, matches, searchKey, clampDigits, FEE_MAX } from '../lib/model.js';
+import { won, tierPrice, foreignNote, tierKrwGuess, isForeign, matches, matchesAll, searchKey, clampDigits, FEE_MAX } from '../lib/model.js';
 import { PriceNote } from '../components/SubscriptionPicker.jsx';
 import { setInput } from '../lib/session.js';
+import { request } from '../lib/api.js';
 
 const STEPS = ['기본', '요금제', '구독'];
 const DEFAULT_WISH = [1, 2, 6];
@@ -21,6 +22,9 @@ export default function Detail() {
   const [catalog, setCatalog] = useState([]);
   const [carriers, setCarriers] = useState([]);
   const [plans, setPlans] = useState([]);                 // 요금제 전량 — 통신사 목록과 같은 응답
+  // 로딩과 0건은 다른 말이다(사용자 피드백 2026-09-18). loading | ready | failed 셋을 구분해 화면이 골라 적는다.
+  const [catalogState, setCatalogState] = useState('loading');
+  const [plansState, setPlansState] = useState('loading');
   const [currentPlan, setCurrentPlan] = useState(null);    // 지금 쓰는 요금제(선택). 고르면 BE 가 '현재' 열을 계산한다(G-30)
 
   const [carrier, setCarrier] = useState(null);       // { name, mvno }
@@ -40,18 +44,26 @@ export default function Detail() {
   const [wish, setWish] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
 
-  useEffect(() => {
-    loadCatalog()
+  const fetchCatalog = useCallback(() => {
+    setCatalogState('loading');
+    return loadCatalog()
       .then(list => {
         setCatalog(list);
+        setCatalogState('ready');
         // 기본 선택을 채운다. 카탈로그에 없는 서비스는 조용히 건너뛴다.
         setWish(DEFAULT_WISH.map(id => list.find(s => s.id === id)).filter(Boolean)
           .map(service => ({ id: service.id, service, tierId: service.tiers[0].id, disposition: '유지' })));
       })
-      .catch(e => setError(e.message || '구독 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'));
-    // 통신사 목록은 따로 받는다. 실패해도 구독 단계까지는 진행할 수 있어야 하므로 화면을 막지 않는다.
-    loadPlans().then(list => { setPlans(list); setCarriers(carriersOf(list)); }).catch(() => {});
+      .catch(e => { setCatalogState('failed'); setError(e.message || '구독 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'); });
   }, []);
+  // 통신사 목록은 따로 받는다. 실패해도 구독 단계까지는 진행할 수 있어야 하므로 화면을 막지 않는다.
+  const fetchPlans = useCallback(() => {
+    setPlansState('loading');
+    return loadPlans()
+      .then(list => { setPlans(list); setCarriers(carriersOf(list)); setPlansState('ready'); })
+      .catch(() => setPlansState('failed'));
+  }, []);
+  useEffect(() => { fetchCatalog(); fetchPlans(); }, [fetchCatalog, fetchPlans]);
 
   const go = next => { setError(''); setStep(next); };
   const back = () => (step > 1 ? go(step - 1) : navigate('/modes'));
@@ -108,13 +120,14 @@ export default function Detail() {
               <>
                 <Question kicker="현재 통신사">어떤 통신사를 쓰고 계세요?</Question>
                 <CarrierSearch
-                  carriers={carriers}
+                  carriers={carriers} status={plansState} onRetry={fetchPlans}
                   query={carrierQuery} onQuery={q => { setCarrierQuery(q); setShowSuggest(true); }}
                   open={showSuggest} selected={carrier}
                   onPick={c => { setCarrier({ name: c.name, mvno: c.mvno }); setCarrierQuery(c.name); setShowSuggest(false); }}
                   onClear={() => { setCarrier(null); setCarrierQuery(''); setContractHas(null); setContractEnd(''); setCurrentPlan(null); }} />
                 {carrier && (
-                  <PlanSearch plans={plans} carrier={carrier.name} selected={currentPlan} onPick={setCurrentPlan} onClear={() => setCurrentPlan(null)} />
+                  <PlanSearch plans={plans} status={plansState} onRetry={fetchPlans} carrier={carrier.name}
+                              selected={currentPlan} onPick={setCurrentPlan} onClear={() => setCurrentPlan(null)} />
                 )}
                 {carrier && (
                   <div>
@@ -251,7 +264,7 @@ export default function Detail() {
         </div>
 
         {modalOpen && (
-          <AddModal catalog={catalog} chosen={wish.map(w => w.id)}
+          <AddModal catalog={catalog} status={catalogState} onRetry={fetchCatalog} chosen={wish.map(w => w.id)}
                     onClose={() => setModalOpen(false)}
                     onAdd={ids => {
                       setWish(list => [...list, ...ids.map(id => {
@@ -269,7 +282,7 @@ export default function Detail() {
 /* 통신사 — 검색 자동완성. 전체 목록을 나열하지 않고 입력하면 일치하는 것만 제안한다.
    목록에 없으면 입력한 이름을 그대로 고를 수 있다(QA 2026-09-17) — BE 가 모르는 이름을 결손으로 기록해 수집 대상이 된다.
    직접 입력한 통신사는 3사가 아니므로 mvno 로 둔다. 고른 뒤에는 ✕ 로 되돌린다. */
-function CarrierSearch({ query, onQuery, open, selected, onPick, onClear, carriers }) {
+function CarrierSearch({ query, onQuery, open, selected, onPick, onClear, carriers, status = 'ready', onRetry }) {
   const found = useMemo(
     () => (query.trim() ? carriers.filter(c => matches(c.name, query) || (c.mvno && matches('알뜰폰', query))) : []),
     [query, carriers]);
@@ -287,8 +300,15 @@ function CarrierSearch({ query, onQuery, open, selected, onPick, onClear, carrie
   return (
     <div>
       <input value={query} onChange={e => onQuery(e.target.value)} onFocus={() => onQuery(query)}
-             placeholder="통신사 이름을 입력하세요" aria-label="통신사 검색" className="field" />
-      {open && typed && (
+             placeholder={status === 'loading' ? '통신사 목록을 불러오는 중이에요…' : '통신사 이름을 입력하세요'}
+             aria-label="통신사 검색" aria-busy={status === 'loading'} className="field" />
+      {open && typed && status !== 'ready' && (
+        <div className="mt-2 overflow-hidden rounded-card border border-line bg-white">
+          {/* 목록이 아직 없을 때 "일치하는 통신사가 없어요"를 띄우면 로딩을 0건으로 읽는다(사용자 피드백). */}
+          <SearchState status={status} onRetry={onRetry} empty="" />
+        </div>
+      )}
+      {open && typed && status === 'ready' && (
         <div className="mt-2 overflow-hidden rounded-card border border-line bg-white">
           {found.map(c => (
             <button key={c.name} type="button" onClick={() => onPick(c)}
@@ -312,10 +332,24 @@ function CarrierSearch({ query, onQuery, open, selected, onPick, onClear, carrie
 
 /* 지금 쓰는 요금제(선택, G-30). 고른 통신사의 요금제만 후보이고, 검색 규칙은 통신사와 같다(소문자+공백 제거).
    1,700여 건이라 상위 8건만 보여준다. 고르면 id 만 BE 로 가고, '현재' 열을 BE 가 같은 계산기로 낸다. */
-function PlanSearch({ plans, carrier, selected, onPick, onClear }) {
+function PlanSearch({ plans, carrier, selected, onPick, onClear, status = 'ready', onRetry }) {
   const [query, setQuery] = useState('');
+  const [reported, setReported] = useState('');
   const mine = useMemo(() => plans.filter(p => searchKey(p.carrier) === searchKey(carrier)), [plans, carrier]);
-  const found = query.trim() ? mine.filter(p => matches(p.name, query)).slice(0, 8) : [];
+  // 낱말을 모두 포함하면 걸린다 — "SKT 청년"으로도 "0 청년 다이렉트 62"를 찾는다(통짜 비교로는 안 걸렸다).
+  const found = query.trim() ? mine.filter(p => matchesAll(p.name, query, carrier)).slice(0, 8) : [];
+
+  /* 카탈로그에 없는 요금제는 사용자가 알려 줄 수 있다 — 그래야 수집 대상이 된다.
+     지금은 일반 제보 경로로 보낸다(백오피스 제보 게시판). BE 에 결손 기록 경로가 생기면 그쪽으로 옮긴다. */
+  async function reportMissing() {
+    const text = query.trim();
+    setReported('보내는 중…');
+    try {
+      await request('/api/v1/reports', { method: 'POST', member: true,
+        body: { category: 'OTHER', description: `요금제 결손 제보 — ${carrier} "${text}" 가 목록에 없어요.`, pageUrl: '/detail' } });
+      setReported('알려주셔서 고마워요. 수집 목록에 올릴게요.');
+    } catch (e) { setReported(e.message || '알리지 못했어요. 잠시 후 다시 시도해 주세요.'); }
+  }
   return (
     <div className="mt-5">
       <label htmlFor="current-plan" className="mb-2 block text-sm font-semibold">
@@ -333,9 +367,17 @@ function PlanSearch({ plans, carrier, selected, onPick, onClear }) {
       ) : (
         <>
           <input id="current-plan" value={query} onChange={e => setQuery(e.target.value)} autoComplete="off"
-                 placeholder={mine.length ? '요금제 이름 검색' : '이 통신사의 요금제가 카탈로그에 없어요'} disabled={!mine.length}
+                 placeholder={status === 'loading' ? '요금제를 불러오는 중이에요…'
+                   : status === 'failed' ? '요금제 목록을 불러오지 못했어요'
+                   : mine.length ? '요금제 이름 검색' : '이 통신사의 요금제가 카탈로그에 없어요'}
+                 disabled={status === 'ready' && !mine.length} aria-busy={status === 'loading'}
                  className="field disabled:bg-bg-soft disabled:text-muted" />
-          {query.trim() && (
+          {status !== 'ready' && (
+            <div className="mt-2 overflow-hidden rounded-card border border-line bg-white">
+              <SearchState status={status} onRetry={onRetry} empty="" />
+            </div>
+          )}
+          {status === 'ready' && query.trim() && (
             <div className="mt-2 overflow-hidden rounded-card border border-line bg-white">
               {found.length ? found.map(p => (
                 <button key={p.id} type="button" onClick={() => { onPick(p); setQuery(''); }}
@@ -343,7 +385,14 @@ function PlanSearch({ plans, carrier, selected, onPick, onClear }) {
                   <span>{p.name}</span>
                   <small className="text-xs font-medium text-muted tnum">월 {won(p.basePrice)}</small>
                 </button>
-              )) : <p className="px-4 py-3 text-sm text-muted">일치하는 요금제가 없어요. 모르면 비워 두고 아래에서 통신비를 직접 넣어도 돼요.</p>}
+              )) : (
+                <div className="px-4 py-3 text-sm text-muted">
+                  <p><strong className="text-ink-soft">"{query.trim()}"</strong> 는 목록에 없어요. 비워 두고 아래에서 통신비를 직접 넣어도 괜찮아요.</p>
+                  {reported
+                    ? <p className="mt-1.5 font-semibold text-brand-ink">{reported}</p>
+                    : <button type="button" onClick={reportMissing} className="btn-text mt-1 font-semibold text-brand-ink">이 요금제가 없다고 알려주기</button>}
+                </div>
+              )}
             </div>
           )}
         </>
@@ -379,7 +428,7 @@ const Row = ({ label, value }) => (
 );
 
 /** 추가 모달. <dialog> 는 포커스 가둠·백드롭을 브라우저가 해준다 — 직접 만들지 않는다. */
-function AddModal({ catalog, chosen, onClose, onAdd }) {
+function AddModal({ catalog, chosen, onClose, onAdd, status = 'ready', onRetry }) {
   const ref = useRef(null);
   const [query, setQuery] = useState('');
   const [picked, setPicked] = useState([]);
@@ -395,7 +444,8 @@ function AddModal({ catalog, chosen, onClose, onAdd }) {
                 className="-mr-2 grid size-10 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-base text-muted hover:bg-bg-soft">✕</button>
       </div>
       <input value={query} onChange={e => setQuery(e.target.value)} autoFocus
-             placeholder="서비스 검색" aria-label="서비스 검색" className="field mb-4" />
+             placeholder={status === 'loading' ? '구독 목록을 불러오는 중이에요…' : '서비스 검색'}
+             aria-label="서비스 검색" aria-busy={status === 'loading'} className="field mb-4" />
       <div className="mb-4 flex max-h-[320px] flex-col overflow-y-auto rounded-card border border-line">
         {shown.map(s => (
           <label key={s.id} className="grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line px-4 py-3 last:border-b-0">
@@ -409,7 +459,7 @@ function AddModal({ catalog, chosen, onClose, onAdd }) {
             </span>
           </label>
         ))}
-        {!shown.length && <p className="p-4 text-sm text-muted">추가할 서비스가 없어요.</p>}
+        {!shown.length && <SearchState status={status} onRetry={onRetry} empty="추가할 서비스가 없어요." className="p-4 text-sm" />}
       </div>
       <button type="button" onClick={() => onAdd(picked)} className="btn btn-brand btn-block">추가</button>
     </dialog>
