@@ -72,7 +72,10 @@ export default function Results() {
   async function saveToMyPage() {
     setSaveNote('저장 중…');
     try {
-      // 스냅숏 금액은 BE 가 같은 계산기로 만들어 저장한다(계약 제안) — 화면 숫자를 되돌려 보내지 않는다(원칙 2·4).
+      // 스냅숏 금액은 BE 가 같은 계산기로 만들어 저장한다 — 화면 숫자를 되돌려 보내지 않는다(원칙 2·4).
+      // tierIds 는 1개 이상 필수(BE 확정 2026-09-18, 계산기와 같은 검증). 화면 입력은 선택 시점에
+      // 항상 tiers[0] 을 채우므로(Light·Detail) 유지 구독이 있는 한 비지 않는다. 50개 초과 409 는
+      // 서버 문장을 그대로 보여준다(D-46) — 마이페이지에서 지우고 다시 저장하는 흐름이다.
       await request('/api/v1/me/saved-results', { method: 'POST', member: true,
         body: { planId: best.planId, tierIds: keptSubs(input).map(s => s.tierId).filter(Boolean), optional: buildRequest(input).optional } });
       setSaveNote('마이페이지에 저장했어요.');
