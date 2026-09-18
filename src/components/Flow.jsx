@@ -1,6 +1,35 @@
 import { useEffect, useRef } from 'react';
 
-/** 단계 표시(시안) — 점 아래 라벨, 점 사이 가는 선. 지나온 단계는 눌러서 돌아갈 수 있다. */
+/** 단계 표시(시안) — 점 아래 라벨, 점 사이 가는 선. 지나온 단계는 눌러서 돌아갈 수 있다.
+    `49d36eb` 가 "미사용" 으로 지웠다가 운영에서 /light·/detail 이 흰 화면이 됐다(2026-09-18).
+    FlowHead 가 부르므로 미사용이 아니다 — export 를 떼 한 파일 안에서만 쓰게 두고 여기 남긴다. */
+function Progress({ steps, current, onGo }) {
+  return (
+    <ol className="m-0 flex flex-1 list-none p-0">
+      {steps.map((label, i) => {
+        const n = i + 1;
+        const done = n < current, now = n === current;
+        return (
+          <li key={label} className="relative flex flex-1 flex-col items-center">
+            {n < steps.length && (
+              <span aria-hidden="true" className={`absolute left-1/2 top-[13px] h-px w-full ${done ? 'bg-brand' : 'bg-[#cfd3da]'}`} />
+            )}
+            <button type="button" onClick={() => onGo(n)} aria-current={now ? 'step' : undefined}
+                    className={`relative z-[1] flex min-h-11 cursor-pointer flex-col items-center gap-1.5 border-0 bg-transparent px-2 text-xs font-semibold
+                      ${now ? 'text-brand-ink' : 'text-muted'}`}>
+              <span className={`grid size-[26px] place-items-center rounded-full border text-xs
+                ${now ? 'border-brand bg-brand text-white' : done ? 'border-brand bg-brand-tint text-brand-ink' : 'border-brand bg-white text-ink-soft'}`}>
+                {n}
+              </span>
+              <span>{label}</span>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export function FlowHead({ steps, current, onGo, onBack }) {
   return (
     <div className="mx-auto mb-10 mt-2 flex max-w-[560px] items-start gap-3">
