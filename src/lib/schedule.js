@@ -12,6 +12,18 @@ export const STEPS = [
   { when: '완료', title: '최종 납부액 체크', desc: '첫 청구서에서 정상 할인을 검증합니다.' },
 ];
 
+/** 실행 상세 가이드(시안). 절차 안내만 있고 금액은 없다 — 금액은 BE 만 만든다. */
+export const GUIDES = [
+  { intro: '약정 만료일, 위약금, 명의자 서류, 가족 결합 상태를 먼저 정리합니다.',
+    items: ['약정 종료일과 선택약정 할인 종료일을 확인합니다.', '가족 결합 대표 회선 여부와 동의 절차를 검토합니다.', '신분증, 요금 납부 정보, 기존 유심 상태를 미리 준비합니다.'] },
+  { intro: '추천 요금제의 공식 채널에서 번호이동으로 가입합니다.',
+    items: ['공식 홈페이지·다이렉트 몰에서 요금제와 조건을 최종 확인합니다.', '번호이동을 고르면 기존 통신사 해지는 함께 처리되는지 확인합니다.', '개통 문자를 받으면 데이터·통화가 정상인지 바로 확인합니다.'] },
+  { intro: '새 요금제 혜택과 겹치는 구독을 정리합니다.',
+    items: ['요금제 제휴 혜택으로 대체되는 구독은 다음 결제일 전에 해지합니다.', '계속 쓰는 구독은 결제 수단과 요금제 연동 여부를 확인합니다.', '연간 결제 구독은 환불 조건을 먼저 확인합니다.'] },
+  { intro: '첫 청구서에서 할인과 금액이 계산대로 적용됐는지 확인합니다.',
+    items: ['선택약정·결합 할인이 청구서에 반영됐는지 봅니다.', '이전 통신사 마지막 청구서의 위약금·일할 요금이 맞는지 확인합니다.', '금액이 다르면 화면 오른쪽 아래 오류 제보로 알려 주세요.'] },
+];
+
 /** 오늘 기준(약정 없음/이미 만료): 지금부터 순서대로 진행한다. */
 export const EVENTS_FROM_TODAY = [
   { offset: 0, label: '전환 준비 시작', step: 0 },
@@ -51,6 +63,8 @@ export function relativeDay(date, today = startOfToday()) {
 
 const pad = n => String(n).padStart(2, '0');
 /** 종일 일정용 날짜. Google·ICS 모두 시작일과 '다음 날'(끝은 배타적)을 쓴다. */
+/** `YYYY-MM-DD`. 서버에 날짜를 보낼 때 쓴다 — toISOString 은 UTC 로 밀려 하루가 어긋난다. */
+export const isoDay = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 export const dayStamp = date => `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
 const nextDay = date => { const d = new Date(date); d.setDate(d.getDate() + 1); return d; };
 
@@ -100,11 +114,11 @@ export function icsText(events, anchor, result, today = startOfToday()) {
     'CALSCALE:GREGORIAN', ...body, 'END:VCALENDAR'].join('\r\n');
 }
 
-/** 달력 격자. 앞뒤를 null 로 채워 7칸씩 끊는다. */
+/** 달력 격자. 앞뒤 빈칸을 이웃 달의 날짜로 채워 7칸씩 끊는다(시안: 30, 31, 1, 2 …). */
 export function monthGrid(year, month) {
-  const first = new Date(year, month, 1).getDay();
+  const first = new Date(year, month, 1);
+  const start = dateOf(first, -first.getDay());
   const total = new Date(year, month + 1, 0).getDate();
-  const cells = [...Array(first).fill(null), ...Array.from({ length: total }, (_, i) => i + 1)];
-  while (cells.length % 7) cells.push(null);
-  return Array.from({ length: cells.length / 7 }, (_, i) => cells.slice(i * 7, i * 7 + 7));
+  const rows = Math.ceil((first.getDay() + total) / 7);
+  return Array.from({ length: rows }, (_, w) => Array.from({ length: 7 }, (_, d) => dateOf(start, w * 7 + d)));
 }

@@ -13,6 +13,7 @@
 | 직접 선택할 요금제 목록 | `GET /api/v1/catalog/plans` |
 | 추천 결과 상세의 혜택 | `GET /api/v1/catalog/plans/{id}/benefits` |
 | 조건으로 추천 | `POST /api/v1/recommendations` |
+| 결과 설명(내레이션) | `POST /api/v1/recommendations/narrate` — 같은 본문, `{ message, notices }`. "이 결과 설명 보기"를 누를 때만 부른다(내레이션 분리, 사용자 승인 2026-09-18) |
 | 특정 요금제·등급 계산 | `POST /api/v1/calculator` |
 | 문장 추천 | `POST /api/v1/chat/messages` |
 | 로그인 상태 | `GET /api/v1/me` |
