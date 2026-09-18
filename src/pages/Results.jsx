@@ -6,7 +6,7 @@ import { request, ApiError, backendUrl } from '../lib/api.js';
 import { won, provenance, splitLines, searchKey } from '../lib/model.js';
 import { getInput, setResult, setNext } from '../lib/session.js';
 import { useMember } from '../lib/useMember.js';
-import GuestGate, { MemberCheckFailed } from '../components/GuestGate.jsx';
+import { LoginTeaser, MemberCheckFailed } from '../components/GuestGate.jsx';
 
 const DEFAULT_GB = 10;   // 데이터 사용량을 건너뛴 경우의 계산 기준. 숨기지 않고 화면에 적는다(원칙 5-①).
 
@@ -49,8 +49,9 @@ export default function Results() {
   }
 
   useEffect(() => {
-    // 비회원이면 **계산도 하지 않는다** — 금액이 한 줄도 비치지 않아야 하므로 아예 받아오지 않는다(D-36).
-    if (!member || !input) return;
+    // 비회원도 계산까지 간다(사용자 결정 2026-09-18) — 로딩이 끝나면 절감액 한 줄을 보여주고 로그인을 청한다.
+    // D-36 의 "계산도 하지 않는다"를 바꾼 것이다. 확인 중(undefined)·확인 실패(false)일 때만 기다린다.
+    if (member === undefined || member === false || !input) return;
     if (!keptSubs(input).length) { setFailure('추천에 포함할 구독 서비스를 고르지 않았어요. 다시 선택해 주세요.'); return; }
     request('/api/v1/recommendations', { method: 'POST', body: buildRequest(input) })
       .then(({ data }) => setData({ ...data, receivedAt: new Date() }))
@@ -61,12 +62,9 @@ export default function Results() {
   if (!input) return <Empty message="모드를 선택하고 조건을 입력하면 결과를 볼 수 있어요." />;
   if (member === undefined) return <><Header /><p className="p-10 text-center text-muted">불러오는 중…</p></>;
   if (member === false) return <><Header /><MemberCheckFailed /></>;
-  if (member === null) {
-    return <GuestGate onGoogle={() => { setNext('/results'); location.href = backendUrl('/oauth2/authorization/google'); }}
-                      onBack={() => navigate('/modes')} />;
-  }
   if (failure) return <Empty message={failure} />;
   if (!data) return <><Header /><p className="p-10 text-center text-muted">계산하는 중…</p></>;
+  const guest = member === null;   // 리포트는 흐리고 티저 모달로 로그인을 청한다(아래).
 
   const current = data.current ?? null;   // currentPlanId 를 보냈고 카탈로그에 있을 때만. 없으면 입력값 합계 폴백
   // 3열의 두 조합(사용자 결정 2026-09-18). 둘 다 BE 가 계산해 순위까지 매긴 결과에서 고르기만 한다.
@@ -121,6 +119,9 @@ export default function Results() {
   return (
     <div className="min-h-screen bg-bg-page">
       <Header />
+      {/* 비회원에게는 리포트를 흐려서 보여준다 — 읽히지 않게 하는 것은 아래 모달의 showModal(inert)이고,
+          흐림은 "여기에 답이 있다"를 보이는 장치다. 화면 게이트일 뿐 API 는 여전히 공개다(D-36 주석 유지). */}
+      <div className={guest ? 'select-none blur-[6px]' : undefined}>
       <main className="mx-auto max-w-page px-6 py-8">
         <span className="inline-block rounded-full bg-brand-tint px-3 py-1.5 text-[13px] font-bold text-brand-ink">
           최적화 완료
@@ -213,8 +214,24 @@ export default function Results() {
         </div>
       </main>
       <div className="mx-auto w-full max-w-page px-6"><Footer /></div>
+      </div>
+      {guest && (
+        <LoginTeaser {...teaserSaving(data)}
+                     onGoogle={() => { setNext('/results'); location.href = backendUrl('/oauth2/authorization/google'); }}
+                     onBack={() => navigate('/modes')} />
+      )}
     </div>
   );
+}
+
+/** 티저 한 줄에 쓸 절감액. BE 가 준 값 중 가장 큰 것을 **고르기만** 한다 — 빼거나 곱하지 않는다(절대 원칙 2).
+    지금 쓰는 요금제를 알려준 사람에게는 '지금보다' 절감액이 더 정확하다(G-30). */
+function teaserSaving(data) {
+  if (data.current) return { amount: data.current.monthlySavings, basis: '지금 요금제보다' };
+  return {
+    amount: data.results.reduce((top, r) => (r.monthlySavings > top ? r.monthlySavings : top), 0),
+    basis: '정가 대비',
+  };
 }
 
 const IconButton = ({ label, onClick, children }) => (
