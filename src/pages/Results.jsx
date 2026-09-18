@@ -8,7 +8,7 @@ import { getInput, setResult, setNext } from '../lib/session.js';
 import { useMember } from '../lib/useMember.js';
 import { LoginTeaser, MemberCheckFailed } from '../components/GuestGate.jsx';
 
-/** 변경이 가장 적은 조합 — 지금 통신사를 그대로 쓰는 첫 후보다. 그 통신사에 후보가 없으면 1순위를 민다.
+/** 변경이 가장 적은 조합의 **옛 선택 방식**. BE 가 minimalChange 를 주기 전(v48 이전) 응답에서만 쓴다.
     BE 가 실질월비용 오름차순으로 정렬해 주므로(RecommendationService) 목록 순서를 그대로 쓴다 —
     화면은 고르기만 하고 다시 정렬하거나 금액을 만들지 않는다(절대 원칙 2, integration.md 결과 해석).
     통신사 비교 규칙도 BE 의 sameCarrier 와 같다(공백·대소문자 무시) — searchKey 가 그 정규화다. */
@@ -70,8 +70,14 @@ export default function Results() {
   // 지금 통신사는 BE 가 확정한 current 를 먼저 믿고, 없으면 사용자가 고른 이름을 쓴다.
   const cheapest = data.results[0];
   const currentCarrier = current?.cost.carrier ?? input.carrier ?? null;
-  const recommended = cheapest && fewestChanges(data.results, currentCarrier);
+  // 2열은 BE 의 minimalChange 다(D-55) — "현재 통신사 안에서 가장 싼 조합"을 BE 가 고른다.
+  // 화면이 고르면 SKT 사용자에게 알뜰폰이 '변경 최소'로 나오던 문제가 생겼다(사용자 테스트 2026-09-18).
+  // null 은 "현재 통신사를 모르거나 그 통신사에 후보가 없다"는 뜻이라 열을 1순위로 채우고 안내를 붙인다.
+  // 필드 자체가 없으면(구버전 BE) 옛 방식으로 고른다.
+  const minimal = 'minimalChange' in data ? data.minimalChange : (cheapest && fewestChanges(data.results, currentCarrier));
+  const recommended = minimal ?? cheapest;
   const sameAsCheapest = recommended?.planId === cheapest?.planId;
+  const minimalKnown = Boolean(minimal);   // 현재 통신사 안에서 고른 것인가
   const narrated = { ...data, ...(told ?? {}) };   // 설명 필드는 첫 응답 또는 narrate 응답에서
   const notices = buildNotices(input, narrated, recommended);
   const reasons = narrated.reasons ?? [];
@@ -143,7 +149,7 @@ export default function Results() {
               </div>
               {saveNote && <span role="status" className="text-[13px] font-semibold text-ink-soft">{saveNote}</span>}
             </div>
-            <CompareTable input={input} recommended={recommended} cheapest={cheapest} sameAsCheapest={sameAsCheapest}
+            <CompareTable input={input} recommended={recommended} cheapest={cheapest} sameAsCheapest={sameAsCheapest} minimalKnown={minimalKnown}
                           current={current} months={months} planViews={planViews}
                           tools={
                             /* 저장·내려받기는 세 번째 열 머리 오른쪽에 둔다(사용자 결정 2026-09-18).
@@ -338,7 +344,7 @@ function PlanChip({ carrier, name }) {
   );
 }
 
-function CompareTable({ input, recommended, cheapest, sameAsCheapest, current, months, planViews, tools }) {
+function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKnown = true, current, months, planViews, tools }) {
   const rec = columnFacts(recommended);
   const low = columnFacts(cheapest);
   // '현재' 열: BE 가 같은 계산기로 낸 current.cost 가 있으면 그것, 없으면 입력값 합계(폴백).
@@ -373,7 +379,14 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, current, m
   ];
 
   return (
-    <div className="overflow-x-auto border-t border-line">
+    <div className="border-t border-line">
+      {!minimalKnown && (
+        <p className="bg-bg-soft px-4.5 py-2.5 text-[13px] leading-relaxed text-muted">
+          현재 통신사를 알려주시면 <strong className="text-ink-soft">번호이동 없이 바꾸는 안</strong>도 따로 찾아드려요.
+          지금 두 열은 같은 조합이에요.
+        </p>
+      )}
+      <div className="overflow-x-auto">
       {/* fixed: 내용 길이와 무관하게 비교 3열의 가로 폭을 똑같이 준다. */}
       <table className="w-full min-w-[760px] table-fixed border-collapse text-sm">
         <colgroup><col className="w-[19%]" /><col className="w-[27%]" /><col className="w-[27%]" /><col className="w-[27%]" /></colgroup>
@@ -386,14 +399,15 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, current, m
               {curTotal}
             </ColHead>
             <ColHead tone="best" title="추천 · 변경 최소 🌟" checked="brand"
-                     sub={sameAsCheapest ? '지금 조건에서 가장 나은 조합 · 체감 환산 월 요금'
+                     sub={!minimalKnown ? '지금 조건에서 가장 나은 조합 · 체감 환산 월 요금'
+                       : sameAsCheapest ? `${recommended.carrier} 그대로가 가장 싼 조합이에요`
                        : `${recommended.carrier} 그대로 · 번호이동 없이 바꾸는 조합`}
                      save={recommended.monthlySavings > 0
                        ? `정가 대비 ${months === 12 ? '연' : months === 6 ? '6개월' : '월'} ${won(periodSaving)} 절감` : ''}>
               {won(recommended.monthlyTotal)}
             </ColHead>
             <ColHead tone="base" title="최저가 조합" tools={tools}
-                     sub={sameAsCheapest ? '추천 조합이 가장 싼 조합이에요'
+                     sub={sameAsCheapest ? '추천 조합과 같은 조합이에요'
                        : `월 총액이 가장 낮은 조합 · ${cheapest.carrier} 로 옮겨야 해요`}>
               {/* 정가와 체감가가 같으면(할인 없음) 취소선을 긋지 않는다 — 같은 금액을 두 번 적는 꼴이다. */}
               {cheapest.baseline !== cheapest.monthlyTotal &&
@@ -415,6 +429,7 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, current, m
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
