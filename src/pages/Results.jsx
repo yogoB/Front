@@ -3,15 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { toPng } from 'html-to-image';
 import { Header, Footer } from '../components/Layout.jsx';
 import { request, ApiError, backendUrl } from '../lib/api.js';
-import { won, provenance, splitLines, searchKey } from '../lib/model.js';
+import { won, provenance, splitLines, searchKey, buildRequest, keptSubs, DEFAULT_GB } from '../lib/model.js';
 import { getInput, setResult, setNext } from '../lib/session.js';
 import { useMember } from '../lib/useMember.js';
 import { LoginTeaser, MemberCheckFailed } from '../components/GuestGate.jsx';
-
-const DEFAULT_GB = 10;   // 데이터 사용량을 건너뛴 경우의 계산 기준. 숨기지 않고 화면에 적는다(원칙 5-①).
-
-/** 유지하기로 한 구독만 추천 대상이다(디테일 모드의 '해지'는 제외). */
-const keptSubs = source => (source.subs || []).filter(s => !s.disposition || s.disposition === '유지');
 
 /** 변경이 가장 적은 조합 — 지금 통신사를 그대로 쓰는 첫 후보다. 그 통신사에 후보가 없으면 1순위를 민다.
     BE 가 실질월비용 오름차순으로 정렬해 주므로(RecommendationService) 목록 순서를 그대로 쓴다 —
@@ -291,34 +286,6 @@ const Delta = ({ label, value }) => (
     <dd className="m-0 mt-0.5 text-lg font-bold tnum">{value}</dd>
   </div>
 );
-
-function buildRequest(source) {
-  const optional = {};
-  // 통신사 이름을 그대로 보낸다. BE 는 금액에 쓰지 않고, 카탈로그에 없는 이름이면 결손(catalog_candidate)으로
-  // 기록해 수집 우선순위를 만든다 — 그래서 '알뜰폰'으로 뭉뚱그리지 않는다(QA 2026-09-17).
-  if (source.carrier) optional.currentCarrier = source.carrier;
-  // 지금 쓰는 요금제(G-30). BE 가 '현재' 열을 같은 계산기로 내고 요금제의 통신사를 현재 통신사로 확정한다.
-  if (source.currentPlanId) optional.currentPlanId = source.currentPlanId;
-  // 모른다고 한 값은 빼서 missingInputs 안내가 그대로 남는다(원칙 5-①).
-  if (source.networkType) optional.networkType = source.networkType;
-  if (source.contractType) optional.contractType = source.contractType;
-  if (typeof source.hasFamilyBundle === 'boolean') optional.hasFamilyBundle = source.hasFamilyBundle;
-  // 결합 중일 때만 회선 수·월 할인액(G-28). 빈 값은 보내지 않는다 — 할인액이 없으면 BE 가 missingInputs 로 알려준다.
-  if (source.hasFamilyBundle === true) {
-    const lines = Number(source.familyLineCount), discount = Number(source.familyBundleDiscountKrw);
-    if (source.familyLineCount !== '' && Number.isInteger(lines) && lines >= 2 && lines <= 10) optional.familyLineCount = lines;
-    if (source.familyBundleDiscountKrw !== '' && Number.isInteger(discount) && discount >= 0) optional.familyBundleDiscountKrw = discount;
-  }
-  return {
-    required: {
-      monthlyDataGb: source.data?.gb ?? DEFAULT_GB,
-      wantedServiceIds: keptSubs(source).map(s => s.id),
-      // 사용자가 고른 등급을 그대로 보낸다. 없으면 BE 가 대표 등급을 고른다(챗봇 경로와 같은 기본값).
-      wantedTierIds: keptSubs(source).map(s => s.tierId).filter(Boolean),
-    },
-    optional,
-  };
-}
 
 /* 모르면 막히지 않는다(원칙 5-①): 빠진 입력과 카탈로그 결손을 그대로 안내한다. */
 /* ⓘ 안내. missingInputs 문장은 서버(notices)가 만든다 — 같은 값으로 두 곳에서 문장을

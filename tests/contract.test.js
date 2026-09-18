@@ -4,32 +4,41 @@ import assert from 'node:assert/strict';
 import { request, ApiError, onUnauthorized } from '../src/lib/api.js';
 import { DATA_BUCKETS, FEE_BUCKETS, loadCarriers } from '../src/lib/catalog-data.js';
 import { parseDay, icsEscape, icsText, monthGrid, relativeDay, EVENTS_FROM_EXPIRY, EVENTS_FROM_TODAY, googleUrl, startOfToday, isoDay } from '../src/lib/schedule.js';
-import { integer, optionalInputs, recommendationRequest, calculatorRequest, comparisonCsv, splitLines, matches, clampDigits } from '../src/lib/model.js';
+import { integer, buildRequest, DEFAULT_GB, splitLines, matches, clampDigits } from '../src/lib/model.js';
 
-const values = { monthlyDataGb: '20', currentCarrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: 'false', fee: '55000', budget: '70000', contractEnd: '2027-01-01' };
-const subs = [{ id: 1, tierId: 2, wanted: true }, { id: 3, tierId: 8, wanted: false }];
-test('filter/calculator use server IDs, exact enums and only supported fields', () => {
-  assert.deepEqual(recommendationRequest(values, subs), {
+// 추천 요청은 화면이 세션에 담아 둔 입력으로 만든다(model.buildRequest). 요청을 만드는 곳은 그 함수 하나다 —
+// 전에는 이 테스트가 아무 화면도 부르지 않는 낡은 빌더를 검사하고 있었다(레거시 정리 2026-09-18).
+const base = { data: { gb: 20 }, subs: [{ id: 1, tierId: 2 }] };
+const optionalOf = extra => buildRequest({ ...base, ...extra }).optional;
+
+test('추천 요청은 서버 ID·enum·지원 필드만 담는다', () => {
+  assert.deepEqual(buildRequest({ ...base, carrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: false }), {
     required: { monthlyDataGb: 20, wantedServiceIds: [1], wantedTierIds: [2] },
-    optional: { currentCarrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: false }
+    optional: { currentCarrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: false },
   });
-  assert.deepEqual(calculatorRequest(5, optionalInputs(values), subs), { planId: 5, tierIds: [2], optional: optionalInputs(values) });
-  assert.deepEqual(optionalInputs({ currentCarrier: '', networkType: '', contractType: '', hasFamilyBundle: '' }), {});
-  // 가족결합 회선 수·할인액(G-28)은 결합 true 일 때만, 정수일 때만 나간다. 결합이 아니면 적어도 버린다.
-  assert.deepEqual(optionalInputs({ hasFamilyBundle: 'true', familyLineCount: '3', familyBundleDiscountKrw: '11000' }),
+  // 모른다고 한 값은 아예 보내지 않는다 — 그래야 BE 의 missingInputs 안내가 남는다(원칙 5-①).
+  assert.deepEqual(optionalOf({}), {});
+  // 데이터를 건너뛰면 기본 기준으로 계산한다. 화면이 그 사실을 ⓘ 로 적는다.
+  assert.equal(buildRequest({ subs: base.subs }).required.monthlyDataGb, DEFAULT_GB);
+  // 디테일에서 '해지'로 정한 구독은 추천 대상이 아니다.
+  assert.deepEqual(buildRequest({ ...base, subs: [{ id: 1, tierId: 2, disposition: '해지' }, { id: 3, tierId: 4, disposition: '유지' }] }).required,
+    { monthlyDataGb: 20, wantedServiceIds: [3], wantedTierIds: [4] });
+  // 지금 쓰는 요금제는 고른 경우에만 보낸다(G-30).
+  assert.equal(optionalOf({ currentPlanId: 42 }).currentPlanId, 42);
+  assert.equal('currentPlanId' in optionalOf({ currentPlanId: null }), false);
+});
+
+test('가족결합 회선 수·할인액은 결합 중일 때만, 정수 범위만 나간다 (G-28)', () => {
+  const bundle = extra => optionalOf({ hasFamilyBundle: true, familyLineCount: '', familyBundleDiscountKrw: '', ...extra });
+  assert.deepEqual(bundle({ familyLineCount: '3', familyBundleDiscountKrw: '11000' }),
     { hasFamilyBundle: true, familyLineCount: 3, familyBundleDiscountKrw: 11000 });
-  assert.deepEqual(optionalInputs({ hasFamilyBundle: 'true', familyLineCount: '', familyBundleDiscountKrw: '0' }),
-    { hasFamilyBundle: true, familyBundleDiscountKrw: 0 });
-  assert.deepEqual(optionalInputs({ hasFamilyBundle: 'false', familyLineCount: '3', familyBundleDiscountKrw: '-5' }), { hasFamilyBundle: false });
-  assert.deepEqual(optionalInputs({ currentPlanId: '42' }), { currentPlanId: 42 });
-  assert.deepEqual(optionalInputs({ currentPlanId: '0' }), {});
-  // 회선 수는 2~10 만. 1회선·11회선은 버리고 할인액만 나간다.
-  assert.deepEqual(optionalInputs({ hasFamilyBundle: 'true', familyLineCount: '1', familyBundleDiscountKrw: '5000' }), { hasFamilyBundle: true, familyBundleDiscountKrw: 5000 });
-  assert.deepEqual(optionalInputs({ hasFamilyBundle: 'true', familyLineCount: '11' }), { hasFamilyBundle: true });
-  assert.throws(() => recommendationRequest(values, [{ ...subs[0], wanted: false }]));
-  assert.throws(() => calculatorRequest(5, {}, []));
-  assert.throws(() => recommendationRequest(values, [{ ...subs[0], unavailable: true }]), /다시 선택/);
-  assert.throws(() => calculatorRequest(5, {}, [{ ...subs[0], unavailable: true }]), /다시 선택/);
+  assert.deepEqual(bundle({ familyBundleDiscountKrw: '0' }), { hasFamilyBundle: true, familyBundleDiscountKrw: 0 });
+  // 회선 수는 2~10 만. 1회선·11회선은 버리고 할인액만 보낸다.
+  assert.deepEqual(bundle({ familyLineCount: '1', familyBundleDiscountKrw: '5000' }), { hasFamilyBundle: true, familyBundleDiscountKrw: 5000 });
+  assert.deepEqual(bundle({ familyLineCount: '11' }), { hasFamilyBundle: true });
+  // 음수 할인액은 버린다. 결합이 아니면 회선 수·할인액을 적어도 함께 버린다.
+  assert.deepEqual(bundle({ familyBundleDiscountKrw: '-5' }), { hasFamilyBundle: true });
+  assert.deepEqual(optionalOf({ hasFamilyBundle: false, familyLineCount: '3', familyBundleDiscountKrw: '5000' }), { hasFamilyBundle: false });
 });
 test('clampDigits keeps digits only and caps at the given maximum', () => {
   assert.equal(clampDigits('55,000원', 200_000), '55000');
@@ -39,26 +48,18 @@ test('clampDigits keeps digits only and caps at the given maximum', () => {
 });
 test('integer inputs do not silently rewrite invalid amounts or fractional GB', () => {
   for (const bad of ['', '-55000', '12.5', '1e3', '1,000', 'NaN', '9007199254740992']) assert.throws(() => integer(bad, '금액'));
-  for (const bad of ['0', '-1', '2.5', '2147483648']) assert.throws(() => recommendationRequest({ ...values, monthlyDataGb: bad }, subs));
   assert.equal(integer('0', '금액'), 0);
   assert.equal(integer(' 20 ', 'GB', 1), 20);
-});
-test('CSV preserves server amounts/provenance and neutralizes formula-like strings', () => {
-  const csv = comparisonCsv([{ planId: 1, carrier: 'KT', planName: '=HYPERLINK("x")', monthlyTotal: 12345, baseline: 20000, monthlySavings: 7655, annualSavings: 91860,
-    breakdown: [{ label: '할인, 항목', amount: -7655, provenance: 'DERIVED', note: '+악성\n문자열' }] }]);
-  assert.ok(csv.includes('"12345"')); assert.ok(csv.includes('"-7655"'));
-  assert.ok(csv.includes('"\'=HYPERLINK(""x"")"')); assert.ok(csv.includes('"\'+악성\n문자열"'));
-  assert.ok(csv.includes('"DERIVED"')); assert.ok(csv.startsWith('\uFEFF'));
 });
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 test('public calls unwrap nothing, retain warnings and never depend on auth', async t => {
   t.mock.method(globalThis, 'fetch', async (url, options) => {
     assert.equal(url, '/api/v1/recommendations'); assert.equal(options.credentials, 'omit');
     assert.equal(options.headers['Content-Type'], 'application/json');
-    assert.deepEqual(JSON.parse(options.body), recommendationRequest(values, subs));
+    assert.deepEqual(JSON.parse(options.body), buildRequest(base));
     return json({ data: { results: [] }, warnings: [{ code: 'YGB-EXT-001', message: '설명 실패' }] });
   });
-  const response = await request('/api/v1/recommendations', { method: 'POST', body: recommendationRequest(values, subs) });
+  const response = await request('/api/v1/recommendations', { method: 'POST', body: buildRequest(base) });
   assert.equal(response.warnings[0].code, 'YGB-EXT-001');
 });
 test('each member mutation obtains fresh CSRF and uses cookies, including DELETE', async t => {

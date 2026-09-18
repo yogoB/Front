@@ -56,8 +56,3 @@ export function Footer() {
     </footer>
   );
 }
-
-/** 본문 폭·여백을 한 곳에서 정한다. 화면마다 다른 max-width 를 쓰지 않는다. */
-export function Page({ children, width = 'max-w-page' }) {
-  return <main className={`mx-auto ${width} px-6 py-6`}>{children}</main>;
-}
