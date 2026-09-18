@@ -19,7 +19,9 @@ const stamp = d => `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0
 export default function Results() {
   const navigate = useNavigate();
   const member = useMember();
-  const input = getInput();
+  // 마운트에 한 번만 읽는다. 렌더마다 getInput() 을 부르면 매번 새 객체라 아래 효과의 deps 가
+  // 계속 어긋나 /recommendations 를 무한 재요청한다(React 전환 때부터 있던 버그 — 2026-09-18 발견).
+  const [input] = useState(getInput);
   const [data, setData] = useState(null);
   const [failure, setFailure] = useState('');
   const [months, setMonths] = useState(12);   // 절감액 기준 기간(시안 기본 12개월)
