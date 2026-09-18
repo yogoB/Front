@@ -22,15 +22,18 @@ export default function ReportFab() {
   const [open, setOpen] = useState(false);
   return (
     <>
+      {/* gap 을 쓰면 글자 스팬이 0px 여도 간격이 남아 기본 상태가 타원이 된다(64×76).
+          기본은 px-2.5 + 아이콘 44px = 지름 64px 정원, 간격은 hover 때 글자 쪽 margin 으로만 생긴다. */}
       <button type="button" onClick={() => setOpen(true)} aria-label="오류 제보"
-              className="group fixed bottom-6 right-6 z-40 flex h-16 cursor-pointer items-center gap-3 rounded-full border-0
-                         bg-brand pl-2.5 pr-2.5 text-white shadow-[0_14px_30px_rgba(170,150,255,.45)] transition-all duration-200
+              className="group fixed bottom-6 right-6 z-40 flex h-16 cursor-pointer items-center rounded-full border-0
+                         bg-brand px-2.5 text-white shadow-[0_14px_30px_rgba(170,150,255,.45)] transition-all duration-200
                          hover:pr-7 focus-visible:pr-7">
         <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white/20">
           <Envelope />
         </span>
         <span className="max-w-0 overflow-hidden whitespace-nowrap text-[22px] font-extrabold tracking-[-.01em] opacity-0
-                         transition-all duration-200 group-hover:max-w-40 group-hover:opacity-100 group-focus-visible:max-w-40 group-focus-visible:opacity-100">
+                         transition-all duration-200 group-hover:ml-3 group-hover:max-w-40 group-hover:opacity-100
+                         group-focus-visible:ml-3 group-focus-visible:max-w-40 group-focus-visible:opacity-100">
           오류 제보
         </span>
       </button>

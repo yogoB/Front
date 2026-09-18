@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toPng } from 'html-to-image';
 import { Header, Footer } from '../components/Layout.jsx';
 import { request, ApiError, backendUrl } from '../lib/api.js';
-import { won, provenance, splitLines, comparisonCsv } from '../lib/model.js';
+import { won, provenance, splitLines } from '../lib/model.js';
 import { getInput, setResult, setNext } from '../lib/session.js';
 import { useMember } from '../lib/useMember.js';
 import GuestGate from '../components/GuestGate.jsx';
@@ -22,6 +23,9 @@ export default function Results() {
   const [data, setData] = useState(null);
   const [failure, setFailure] = useState('');
   const [months, setMonths] = useState(12);   // 절감액 기준 기간(시안 기본 12개월)
+  const [plans, setPlans] = useState([]);     // 요금제 제원(데이터·통화 행) — 카탈로그에서 조회만 한다
+  const [saveNote, setSaveNote] = useState('');
+  const cardRef = useRef(null);
 
   useEffect(() => {
     // 비회원이면 **계산도 하지 않는다** — 금액이 한 줄도 비치지 않아야 하므로 아예 받아오지 않는다(D-36).
@@ -30,6 +34,7 @@ export default function Results() {
     request('/api/v1/recommendations', { method: 'POST', body: buildRequest(input) })
       .then(({ data }) => setData({ ...data, receivedAt: new Date() }))
       .catch(e => setFailure(e instanceof ApiError ? e.message : '추천을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'));
+    request('/api/v1/catalog/plans').then(({ data }) => setPlans(data)).catch(() => {});
   }, [member, input]);
 
   if (!input) return <Empty message="모드를 선택하고 조건을 입력하면 결과를 볼 수 있어요." />;
@@ -44,6 +49,39 @@ export default function Results() {
   const best = data.results[0];
   const current = data.current ?? null;   // currentPlanId 를 보냈고 카탈로그에 있을 때만. 없으면 입력값 합계 폴백
   const notices = buildNotices(input, data, best);
+  const planViews = {
+    best: best && plans.find(p => p.id === best.planId),
+    current: current && plans.find(p => p.id === current.cost.planId),
+  };
+  // 6개월 탭은 BE 가 semiannualSavings 를 주기 시작하면 저절로 나타난다(계약 제안 2026-09-18).
+  // 월 절감 ×6 으로 채우지 않는다 — 프론트 기간 환산은 절대 원칙 2 위반이다(contract.test.js 가드).
+  const tabs = [1, 6, 12].filter(m => m !== 6 || best?.semiannualSavings != null);
+
+  async function saveImage() {
+    setSaveNote('');
+    try {
+      // 캡처는 화면에 있는 것만 담는다 — 숫자를 다시 그리지 않는다. 도구 줄(data-nocapture)만 뺀다.
+      const dataUrl = await toPng(cardRef.current, {
+        pixelRatio: 2, backgroundColor: '#ffffff',
+        filter: node => !(node.dataset && 'nocapture' in node.dataset),
+      });
+      Object.assign(document.createElement('a'), { href: dataUrl, download: '요고비-요금비교.png' }).click();
+    } catch { setSaveNote('이미지를 만들지 못했어요. 잠시 후 다시 시도해 주세요.'); }
+  }
+
+  async function saveToMyPage() {
+    setSaveNote('저장 중…');
+    try {
+      // 스냅숏 금액은 BE 가 같은 계산기로 만들어 저장한다(계약 제안) — 화면 숫자를 되돌려 보내지 않는다(원칙 2·4).
+      await request('/api/v1/me/saved-results', { method: 'POST', member: true,
+        body: { planId: best.planId, tierIds: keptSubs(input).map(s => s.tierId).filter(Boolean), optional: buildRequest(input).optional } });
+      setSaveNote('마이페이지에 저장했어요.');
+    } catch (e) {
+      setSaveNote(e instanceof ApiError && [404, 405].includes(e.status)
+        ? '저장 기능을 준비 중이에요 — 서버가 아직 이 요청을 받지 않아요.'
+        : e instanceof ApiError ? e.message : '저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
+    }
+  }
 
   return (
     <div className="min-h-screen bg-bg-page">
@@ -53,9 +91,34 @@ export default function Results() {
           AI 최적화 분석 완료
         </span>
         <h1 className="mb-1 mt-4 text-2xl font-extrabold tracking-[-.01em] md:text-[28px]">최적 요금 조합 비교 분석</h1>
-        <p className="mb-2 text-sm text-muted">카탈로그 가격 기준 · {stamp(data.receivedAt)} 계산</p>
+        <p className="mb-6 text-sm text-muted">카탈로그 가격 기준 · {stamp(data.receivedAt)} 계산</p>
 
-        {best && <SaveHero best={best} current={current} />}
+        {/* 시안의 결과 카드 하나 — 기간 토글·저장 아이콘·3열 비교표·추천 사유를 한 판에 담는다. */}
+        {best && (
+          <section ref={cardRef} className="card overflow-hidden">
+            <div data-nocapture className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-2.5">
+              <div className="flex flex-wrap items-center gap-2 text-[13px] font-semibold text-ink-soft">
+                절감액 기준 기간:
+                {tabs.map(m => (
+                  <button key={m} type="button" onClick={() => setMonths(m)} aria-pressed={months === m}
+                          className={`min-h-11 cursor-pointer rounded-full border px-3.5 text-[13px] font-semibold transition-colors
+                            ${months === m ? 'border-brand bg-brand-tint text-brand-ink' : 'border-line bg-white text-ink-soft hover:bg-bg-soft'}`}>
+                    {m}개월
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1">
+                {saveNote && <span role="status" className="mr-2 text-[13px] font-semibold text-ink-soft">{saveNote}</span>}
+                <IconButton label="마이페이지에 저장" onClick={saveToMyPage}><BookmarkIcon /></IconButton>
+                <IconButton label="이미지로 저장" onClick={saveImage}><DownloadIcon /></IconButton>
+              </div>
+            </div>
+            <CompareTable input={input} best={best} current={current} months={months} planViews={planViews} />
+            {data.reasons?.length > 0 && <Reasons reasons={data.reasons} />}
+          </section>
+        )}
+        {best && <SaveResult input={input} best={best} current={current} />}
+
         <Summary message={data.message} />
         <p className="my-6 max-w-prose rounded-xl bg-warn-tint px-4 py-3 text-sm leading-relaxed text-warn-ink">
           {current
@@ -84,31 +147,6 @@ export default function Results() {
           </div>
         )}
 
-        {/* 시안의 결과 카드 하나 — 기간 토글·내보내기·3열 비교표·추천 사유를 한 판에 담는다. */}
-        {best && (
-          <section className="card overflow-hidden">
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-2.5">
-              {/* 시안의 6개월 탭은 없다 — 월 절감 ×6 은 프론트의 기간 환산이라 절대 원칙 2 에 걸린다
-                  (contract.test.js 가드). BE 가 주는 월·연 두 값만 그대로 보여준다. */}
-              <div className="flex flex-wrap items-center gap-2 text-[13px] font-semibold text-ink-soft">
-                절감액 기준 기간:
-                {[1, 12].map(m => (
-                  <button key={m} type="button" onClick={() => setMonths(m)} aria-pressed={months === m}
-                          className={`min-h-11 cursor-pointer rounded-full border px-3.5 text-[13px] font-semibold transition-colors
-                            ${months === m ? 'border-brand bg-brand-tint text-brand-ink' : 'border-line bg-white text-ink-soft hover:bg-bg-soft'}`}>
-                    {m}개월
-                  </button>
-                ))}
-              </div>
-              {/* 서버 결과·출처를 그대로 내린다(integration.md 결과 내보내기). 저장(북마크)은 서버 API 가 없어 만들지 않는다. */}
-              <button type="button" onClick={() => downloadCsv(data.results)} className="btn-text">↓ CSV 내려받기</button>
-            </div>
-            <CompareTable input={input} best={best} current={current} months={months} />
-            {data.reasons?.length > 0 && <Reasons reasons={data.reasons} />}
-          </section>
-        )}
-        {best && <SaveResult input={input} best={best} current={current} />}
-
         <ul className="mt-8 flex list-none flex-wrap gap-2.5 p-0">
           {['금액마다 출처 표시', '안 쓰는 혜택은 0원으로 계산', '카드·계좌 연결 없음'].map(t => (
             <li key={t} className="chip bg-white"><span className="size-1.5 rounded-full bg-brand" aria-hidden="true" />{t}</li>
@@ -131,45 +169,20 @@ export default function Results() {
   );
 }
 
-/* 결론 먼저(원칙 5-③) — 다만 금액을 하나도 만들지 않는다(원칙 2).
-   월·연 절감은 BE 의 monthlySavings·annualSavings 를 그대로 쓴다. 기준은 정가(baseline)이며
-   사용자의 현재 청구액이 아니다(integration.md 결과 해석). */
-function SaveHero({ best, current }) {
-  // current 가 있으면 "지금보다" 가 기준이다(G-30). 차액은 BE 가 뺀 값(current.monthlySavings)을 그대로 쓴다 —
-  // 화면에서 current − best 를 다시 계산하지 않는다. 음수(지금이 더 쌈)도 숨기지 않는다.
-  let head, amount, foot;
-  if (current) {
-    const diff = current.monthlySavings;
-    if (diff > 0) { head = '지금보다 매달'; amount = won(diff); foot = `1년이면 ${won(current.annualSavings)}`; }
-    else if (diff < 0) { head = '지금 요금제가 더 싸요 — 매달'; amount = won(-diff); foot = '추천 조합으로 옮기면 그만큼 더 내요'; }
-    else { head = '지금과 같은 금액이에요'; amount = won(best.monthlyTotal); foot = '옮겨도 월 요금은 그대로예요'; }
-  } else {
-    const saving = best.monthlySavings > 0;
-    head = saving ? '정가 대비 매달' : '추천 조합은 매달';
-    amount = won(saving ? best.monthlySavings : best.monthlyTotal);
-    foot = saving ? `1년이면 ${won(best.annualSavings)}` : '정가보다 싼 조합을 찾지 못했어요';
-  }
-  return (
-    <section className="mb-6 mt-4 flex flex-wrap items-center justify-between gap-6 rounded-card bg-brand-tint px-6 py-6 md:px-8">
-      <div>
-        <span className="block text-sm font-semibold text-brand-ink">{head}</span>
-        <strong className="my-1 block text-[40px] font-extrabold leading-tight tracking-[-.02em] text-brand-strong tnum">{amount}</strong>
-        <span className="block text-sm font-semibold text-ink-soft">{foot}</span>
-      </div>
-      <dl className="m-0 flex flex-wrap gap-2.5">
-        <Delta label="추천 조합" value={won(best.monthlyTotal)} />
-        {current && <Delta label="지금 요금제" value={won(current.cost.monthlyTotal)} />}
-        <Delta label="정가 기준" value={won(best.baseline)} />
-      </dl>
-    </section>
-  );
-}
+const IconButton = ({ label, onClick, children }) => (
+  <button type="button" onClick={onClick} aria-label={label} title={label}
+          className="grid size-11 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-ink-soft hover:bg-bg-soft">
+    {children}
+  </button>
+);
 
-const Delta = ({ label, value }) => (
-  <div className="min-w-[128px] rounded-xl bg-white px-4 py-3">
-    <dt className="text-xs font-semibold text-muted">{label}</dt>
-    <dd className="m-0 mt-0.5 text-lg font-bold tnum">{value}</dd>
-  </div>
+const BookmarkIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8"
+       strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12v18l-6-4-6 4z" /></svg>
+);
+const DownloadIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8"
+       strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v11" /><path d="m7 10 5 5 5-5" /><path d="M4 21h16" /></svg>
 );
 
 function buildRequest(source) {
@@ -218,19 +231,19 @@ function currentTotal(source) {
   return source.fee.amount + keptSubs(source).reduce((sum, s) => sum + (s.price || 0), 0);
 }
 
-/** 서버 결과·출처를 그대로 CSV 로 내린다(integration.md 결과 내보내기). 숫자를 다시 만들지 않는다. */
-function downloadCsv(results) {
-  const url = URL.createObjectURL(new Blob([comparisonCsv(results)], { type: 'text/csv;charset=utf-8' }));
-  const a = Object.assign(document.createElement('a'), { href: url, download: '요고비-요금비교.csv' });
-  a.click();
-  URL.revokeObjectURL(url);
-}
+/** 요금제 기본료 줄. BE CostCalculator 가 "<요금제명> 기본료" 라벨로 만든다 — 그 라벨을 그대로 찾는다. */
+const baseFee = cost => cost.breakdown.find(l => l.label.endsWith('기본료'));
+
+/** 카탈로그 제원 표기(금액이 아니라 데이터·통화 수량 — 표기 변환만 한다). null 은 미확인이다. */
+const fmtData = mb => mb == null ? null : `${mb % 1024 ? (mb / 1024).toFixed(1) : mb / 1024}GB`;
+const fmtVoice = min => min == null ? '확인 필요' : min === 0 ? '미제공' : `${min.toLocaleString('ko-KR')}분`;
 
 /** 결과 한 건(results[]·current.cost 모두 같은 모양)에서 비교표 열에 적을 사실을 뽑는다.
     내역 줄의 금액은 '비용'이다. 제휴 혜택은 note 로 표시되므로 그 줄만 혜택으로 센다. */
 function columnFacts(cost) {
   return {
     plan: <PlanChip carrier={cost.carrier} name={cost.planName} />,
+    fee: baseFee(cost) ? won(baseFee(cost).amount) : '—',
     benefits: cost.breakdown.filter(l => l.note === '제휴 혜택 적용').map(l => `${l.label} ${won(l.amount)}`),
     discounts: cost.breakdown.filter(l => l.amount < 0).map(l => `${l.label} ${won(l.amount)}`),
   };
@@ -249,19 +262,24 @@ function PlanChip({ carrier, name }) {
   );
 }
 
-function CompareTable({ input, best, current, months }) {
-  const dataLabel = input.data ? `${input.data.label} 충족` : `${DEFAULT_GB}GB 기준 충족`;
+function CompareTable({ input, best, current, months, planViews }) {
   const rec = columnFacts(best);
   // '현재' 열: BE 가 같은 계산기로 낸 current.cost 가 있으면 그것, 없으면 입력값 합계(폴백).
   const cur = current ? columnFacts(current.cost) : null;
   const curTotal = current ? won(current.cost.monthlyTotal) : (currentTotal(input) === null ? '—' : won(currentTotal(input)));
-  // 기간 절감액은 BE 값 그대로다: 1개월 = monthlySavings, 12개월 = annualSavings. 곱하지 않는다(절대 원칙 2).
-  const periodSaving = months === 12 ? best.annualSavings : best.monthlySavings;
+  // 기간 절감액은 BE 값 그대로다(1=monthlySavings, 6=semiannualSavings, 12=annualSavings). 곱하지 않는다(절대 원칙 2).
+  const periodSaving = months === 12 ? best.annualSavings : months === 6 ? best.semiannualSavings : best.monthlySavings;
+  const recData = fmtData(planViews.best?.dataMb) ?? (input.data ? `${input.data.label} 충족` : `${DEFAULT_GB}GB 기준 충족`);
 
   const rows = [
     ['요금제 (Plan)', cur ? cur.plan : input.carrier ? `${input.carrier} · 현재 요금제` : '현재 요금제', rec.plan, rec.plan],
-    ['데이터 (Data)', input.data ? input.data.label : '모름', dataLabel, dataLabel],
-    ['통화 (Calls)', '확인 필요', '확인 필요', '확인 필요'],
+    // 월 요금 = 요금제 기본료 줄(구독 제외). 현재 열 폴백은 사용자가 입력한 월 통신비다.
+    ['월 요금 (Monthly)', cur ? cur.fee : input.fee?.amount != null ? won(input.fee.amount) : '—', rec.fee, rec.fee],
+    ['데이터 (Data)',
+      planViews.current ? (fmtData(planViews.current.dataMb) ?? '확인 필요') : input.data ? input.data.label : '모름',
+      recData, recData],
+    ['통화 (Calls)', planViews.current ? fmtVoice(planViews.current.voiceMin) : '확인 필요',
+      fmtVoice(planViews.best?.voiceMin), fmtVoice(planViews.best?.voiceMin)],
     ['부가혜택 (Benefits)', cur ? (cur.benefits.length ? cur.benefits : ['포함된 구독 혜택 없음']) : '—',
       rec.benefits.length ? rec.benefits : ['포함된 구독 혜택 없음'], '정가 기준(혜택 미반영)'],
     ['할인/적립 (Discounts)', cur ? (cur.discounts.length ? cur.discounts : ['적용된 할인 없음']) : '—',
@@ -282,10 +300,17 @@ function CompareTable({ input, best, current, months }) {
             <th scope="col" className="border-b-2 border-line bg-bg-soft px-4.5 py-3.5 text-left align-top">
               <span className="text-[15px] font-semibold text-muted">상세 구분 항목</span>
             </th>
-            <ColHead tone="now" title="현재 상황" sub={current ? '지금 요금제 · 같은 계산기' : '현재 통신사 및 납부 요금'} total={curTotal} />
-            <ColHead tone="best" title="추천 · 최적값 🌟" sub="체감 환산 월 요금" total={won(best.monthlyTotal)}
-                     save={best.monthlySavings > 0 ? `정가 대비 ${months === 12 ? '연' : '월'} ${won(periodSaving)} 절감` : ''} />
-            <ColHead tone="base" title="정가 기준" sub="할인 전 정가 합계" total={won(best.baseline)} />
+            <ColHead tone="now" title="현재 상황" sub={current ? '지금 요금제 · 같은 계산기' : '현재 통신사 및 납부 요금'}>
+              {curTotal}
+            </ColHead>
+            <ColHead tone="best" title="추천 · 최적값 🌟" sub="체감 환산 월 요금" checked="brand"
+                     save={best.monthlySavings > 0 ? `정가 대비 ${months === 12 ? '연' : months === 6 ? '6개월' : '월'} ${won(periodSaving)} 절감` : ''}>
+              {won(best.monthlyTotal)}
+            </ColHead>
+            <ColHead tone="base" title="정가 기준" sub="기본 정상가 기준" checked="muted">
+              <s className="mr-2 text-base font-semibold text-muted">{won(best.baseline)}</s>
+              <span className="text-[#c77700]">{won(best.monthlyTotal)}</span>
+            </ColHead>
           </tr>
         </thead>
         <tbody>
@@ -305,19 +330,26 @@ function CompareTable({ input, best, current, months }) {
   );
 }
 
-/* 머리 셀 — 시안의 열 배지(현재/추천 BEST/정가)와 총액. 각 줄에 같은 최소 높이를 주어 총액이 한 선에 놓인다. */
+/* 머리 셀 — 시안의 열 배지(현재/추천 BEST/정가)·체크 표식·총액. 각 줄에 같은 최소 높이를 주어 총액이 한 선에 놓인다. */
 const PILL = { now: 'bg-[#edeef3] text-ink-soft', best: 'bg-brand-tint text-brand-ink', base: 'bg-warn-tint text-warn-ink' };
-function ColHead({ tone, title, sub, total, save }) {
+function ColHead({ tone, title, sub, children, save, checked }) {
   const best = tone === 'best';
   return (
     <th scope="col" className={`border-b-2 px-4.5 py-3.5 text-left align-top
       ${best ? 'border-brand bg-brand/[.06] shadow-[inset_2px_0_0_var(--color-brand),inset_-2px_0_0_var(--color-brand)]' : 'border-line'}`}>
-      <span className="flex min-h-6 items-center gap-1.5">
-        <span className={`rounded-md px-2 py-1 text-xs font-bold ${PILL[tone]}`}>{title}</span>
-        {best && <span className="rounded bg-brand-ink px-1.5 py-1 text-[10px] font-extrabold tracking-wide text-white">BEST</span>}
+      <span className="flex min-h-6 items-center justify-between gap-1.5">
+        <span className="flex items-center gap-1.5">
+          <span className={`rounded-md px-2 py-1 text-xs font-bold ${PILL[tone]}`}>{title}</span>
+          {best && <span className="rounded bg-brand-ink px-1.5 py-1 text-[10px] font-extrabold tracking-wide text-white">BEST</span>}
+        </span>
+        {/* 시안의 열 체크 표식 — 장식이다. 고를 수 있는 것처럼 읽히지 않게 버튼으로는 만들지 않는다. */}
+        {checked && (
+          <span aria-hidden="true" className={`grid size-5 place-items-center rounded-md text-[11px] font-extrabold text-white
+            ${checked === 'brand' ? 'bg-brand' : 'bg-[#c7c9d1]'}`}>✓</span>
+        )}
       </span>
       <span className="my-1.5 mb-2 block min-h-[2.9em] text-xs font-medium text-muted">{sub}</span>
-      <span className={`block text-[22px] font-extrabold tnum ${best ? 'text-brand-strong' : ''}`}>{total}</span>
+      <span className={`block text-[22px] font-extrabold tnum ${best ? 'text-brand-strong' : ''}`}>{children}</span>
       <span className="mt-1 block min-h-[1.5em] text-xs font-bold text-brand-strong">{save}</span>
     </th>
   );
@@ -418,13 +450,13 @@ function ReportWrong({ planId, planName }) {
 function Summary({ message }) {
   if (!message) {
     return (
-      <p className="mb-6 max-w-prose leading-relaxed text-muted">
+      <p className="mb-6 mt-6 max-w-prose leading-relaxed text-muted">
         절감액은 계산 서버가 준 <strong className="text-ink">정가 대비</strong> 값이에요. 월 기준으로 비교했어요.
       </p>
     );
   }
   return (
-    <p className="mb-6 max-w-prose leading-relaxed text-muted">
+    <p className="mb-6 mt-6 max-w-prose leading-relaxed text-muted">
       {splitLines(message).map((line, i) => (
         <span key={i} className="block [&+span]:mt-1">{line}</span>
       ))}
