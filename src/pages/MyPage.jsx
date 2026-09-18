@@ -61,6 +61,7 @@ export default function MyPage() {
       <main className="mx-auto max-w-[760px] px-6 py-8">
         <Profile member={member} onChange={setMember} />
         <CurrentPlan member={member} plans={plans} onSaved={id => { setMember(m => ({ ...m, currentPlanId: id })); reloadDetections(); }} />
+        <SavedResults />
         <Subscriptions services={services} rows={subscriptions} onChanged={() => { reloadSubs(); reloadDetections(); }} />
         <PaymentImport onImported={() => { reloadSubs(); reloadDetections(); }} />
         <Detections detection={findings} hasPlan={Boolean(member?.currentPlanId)} />
@@ -112,6 +113,49 @@ function DeleteAccount() {
             <button type="button" onClick={() => { setOpen(false); setTyped(''); setStatus(''); }}
                     className="btn btn-ghost">취소</button>
           </form>
+        )}
+      <Status>{status}</Status>
+    </Card>
+  );
+}
+
+/** 결과 화면 북마크로 저장한 추천 스냅숏(계약 제안 2026-09-18: GET·DELETE /api/v1/me/saved-results).
+    금액은 저장 시점에 BE 가 같은 계산기로 만든 값이다 — 화면은 그대로 보여만 준다(원칙 2·4).
+    BE 가 아직 이 경로를 안 열었으면(404) 섹션 자체를 그리지 않는다 — 준비 중 문구로 자리를 차지하지 않는다. */
+function SavedResults() {
+  const [rows, setRows] = useState(null);
+  const [status, setStatus] = useState('');
+  useEffect(() => {
+    request('/api/v1/me/saved-results', { member: true }).then(({ data }) => setRows(data)).catch(() => {});
+  }, []);
+  if (!Array.isArray(rows)) return null;
+
+  async function remove(id) {
+    setStatus('');
+    try {
+      await request(`/api/v1/me/saved-results/${id}`, { method: 'DELETE', member: true });
+      setRows(list => list.filter(r => r.id !== id));
+    } catch (e) { setStatus(message(e)); }
+  }
+
+  return (
+    <Card title="저장한 결과">
+      {rows.length === 0
+        ? <p className="text-sm text-ink-soft">결과 화면 오른쪽 위의 북마크를 누르면 여기에 쌓여요.</p>
+        : (
+          <ul className="grid list-none gap-2 p-0">
+            {rows.map(r => (
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 rounded-field border border-line px-4 py-3 text-sm">
+                <span className="font-semibold">{r.cost.carrier} {r.cost.planName}</span>
+                <span className="flex items-center gap-3">
+                  <strong className="tnum">{won(r.cost.monthlyTotal)}</strong>
+                  <span className="text-xs text-muted">{String(r.savedAt ?? '').slice(0, 10)}</span>
+                  <button type="button" onClick={() => remove(r.id)}
+                          className="btn-text min-h-8 text-danger hover:text-danger">삭제</button>
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       <Status>{status}</Status>
     </Card>

@@ -17,12 +17,22 @@ export const matches = (haystack, needle) => {
 /** 해외 결제 등급인가. 원화 확정 금액이 없어 계산에는 사용자가 확인한 금액이 필요하다. */
 export const isForeign = tier => Boolean(tier?.currency) && tier.currency !== 'KRW';
 
-/** 등급 금액 표시. 해외 결제는 표기 통화와 원화 환산(추정)을 함께 보여준다 — 환산값을 정가처럼 적지 않는다.
-    표기가가 세금 별도면(해외 사업자 관행) 그 사실을 적는다. 환산값에는 이미 부가세 10%가 들어 있다. */
+/** 표기 통화 금액. 세금 별도면(해외 사업자 관행) 그 사실을 함께 적는다 — 원화 환산값에는 이미 부가세 10%가 들어 있다. */
+const foreignAmount = tier =>
+  `${tier.currency === 'USD' ? '$' : tier.currency + ' '}${tier.price.toLocaleString('en-US')}`
+  + (tier.taxIncluded === false ? ' + 세금 10%' : '');
+
+/** 등급 금액 표시 — **목록에는 항상 원화로 적는다**(사용자 결정 2026-09-18). 해외 결제 등급은 원화 환산(추정)을
+    적고, 표기 통화·세금 같은 근거는 화면이 작은 ⓘ 로 따로 보여준다(foreignNote).
+    환산값이 없으면 원화를 지어내지 않고 표기 통화를 그대로 적는다 — 없는 숫자를 만들지 않는다(원칙 2·4). */
 export const tierPrice = tier => !isForeign(tier) ? won(tier.price)
-  : `${tier.currency === 'USD' ? '$' : tier.currency + ' '}${tier.price.toLocaleString('en-US')}`
-    + (tier.taxIncluded === false ? ' + 세금 10%' : '')
-    + (tier.krwEstimate ? ` · 약 ${won(tier.krwEstimate)}(추정)` : '');
+  : tier.krwEstimate ? `약 ${won(tier.krwEstimate)}(추정)`
+  : foreignAmount(tier);
+
+/** 원화 옆 ⓘ 에 띄울 근거 한 줄. 국내 결제이거나 이미 표기 통화를 적고 있으면 null — 같은 말을 두 번 하지 않는다. */
+export const foreignNote = tier => isForeign(tier) && tier.krwEstimate
+  ? `해외 결제 ${foreignAmount(tier)} 기준 · 환율에 따라 달라져요`
+  : null;
 
 /** 입력창에 채워 줄 기본 금액(원). 해외 결제는 환산 추정치를 넣고 사용자가 고치게 한다(원칙 5-②). */
 export const tierKrwGuess = tier => isForeign(tier) ? (tier.krwEstimate ?? null) : tier.price;
@@ -37,22 +47,43 @@ export function integer(value, label, min = 0, max = Number.MAX_SAFE_INTEGER) {
   return number;
 }
 
-export function optionalInputs(values) {
+/** 데이터 사용량을 건너뛴 경우의 계산 기준(GB). 숨기지 않고 화면에 적는다(원칙 5-①). */
+export const DEFAULT_GB = 10;
+
+/** 유지하기로 한 구독만 추천 대상이다(디테일 모드의 '해지'는 제외). */
+export const keptSubs = source => (source.subs || []).filter(s => !s.disposition || s.disposition === '유지');
+
+/** 세션에 담아 둔 입력(Light·Detail 의 setInput)으로 `POST /recommendations` 본문을 만든다.
+    **요청을 만드는 곳은 이 함수 하나다.** 전에는 같은 규칙이 화면(Results)과 이 파일에 따로 있어서,
+    계약 테스트는 아무도 부르지 않는 쪽(recommendationRequest·calculatorRequest)을 검사하고 있었다.
+    화면 쪽을 살리고 낡은 빌더를 지웠다(레거시 정리 2026-09-18). */
+export function buildRequest(source) {
   const optional = {};
-  if (values.currentCarrier) optional.currentCarrier = values.currentCarrier;
-  if (values.networkType) optional.networkType = values.networkType;
-  if (values.contractType) optional.contractType = values.contractType;
-  // 지금 쓰는 요금제 id(G-30). BE 가 '현재' 열을 같은 계산기로 내고, 그 요금제의 통신사를 현재 통신사로 확정한다.
-  { const plan = whole(values.currentPlanId); if (plan) optional.currentPlanId = plan; }
-  if (['true', 'false'].includes(values.hasFamilyBundle)) optional.hasFamilyBundle = values.hasFamilyBundle === 'true';
-  // 결합 중일 때만 회선 수·월 할인액을 보낸다(G-28). 빈 값·0 회선은 보내지 않는다 — missingInputs 안내가 그 자리를 채운다.
+  // 통신사 이름을 그대로 보낸다. BE 는 금액에 쓰지 않고, 카탈로그에 없는 이름이면 결손(catalog_candidate)으로
+  // 기록해 수집 우선순위를 만든다 — 그래서 '알뜰폰'으로 뭉뚱그리지 않는다(QA 2026-09-17).
+  if (source.carrier) optional.currentCarrier = source.carrier;
+  // 지금 쓰는 요금제(G-30). BE 가 '현재' 열을 같은 계산기로 내고 요금제의 통신사를 현재 통신사로 확정한다.
+  if (source.currentPlanId) optional.currentPlanId = source.currentPlanId;
+  // 모른다고 한 값은 빼서 missingInputs 안내가 그대로 남는다(원칙 5-①).
+  if (source.networkType) optional.networkType = source.networkType;
+  if (source.contractType) optional.contractType = source.contractType;
+  if (typeof source.hasFamilyBundle === 'boolean') optional.hasFamilyBundle = source.hasFamilyBundle;
+  // 결합 중일 때만 회선 수·월 할인액(G-28). 빈 값은 보내지 않는다 — 할인액이 없으면 BE 가 missingInputs 로 알려준다.
   // 할인액은 BE 가 사용자 입력(USER_PROVIDED)으로 그대로 빼고, 회선 수는 근거 문구에만 쓴다.
-  if (optional.hasFamilyBundle) {
-    const lines = whole(values.familyLineCount), discount = whole(values.familyBundleDiscountKrw);
-    if (lines !== null && lines >= 2 && lines <= 10) optional.familyLineCount = lines;   // 2~10회선만(사용자 결정)
-    if (discount !== null) optional.familyBundleDiscountKrw = discount;
+  if (source.hasFamilyBundle === true) {
+    const lines = Number(source.familyLineCount), discount = Number(source.familyBundleDiscountKrw);
+    if (source.familyLineCount !== '' && Number.isInteger(lines) && lines >= 2 && lines <= 10) optional.familyLineCount = lines;
+    if (source.familyBundleDiscountKrw !== '' && Number.isInteger(discount) && discount >= 0) optional.familyBundleDiscountKrw = discount;
   }
-  return optional;
+  return {
+    required: {
+      monthlyDataGb: source.data?.gb ?? DEFAULT_GB,
+      wantedServiceIds: keptSubs(source).map(s => s.id),
+      // 사용자가 고른 등급을 그대로 보낸다. 없으면 BE 가 대표 등급을 고른다.
+      wantedTierIds: keptSubs(source).map(s => s.tierId).filter(Boolean),
+    },
+    optional,
+  };
 }
 
 /** 숫자만 남기고 상한에서 자른다. type=number 의 max 는 타이핑을 막지 못하므로 onChange 에서 처리한다.
@@ -64,42 +95,3 @@ export const clampDigits = (text, max) => {
   const digits = String(text).replace(/\D/g, '');
   return digits && Number(digits) > max ? String(max) : digits;
 };
-
-/** 0 이상 정수 문자열이면 숫자로, 아니면 null. 입력창 값은 문자열이라 여기서 한 번만 거른다. */
-const whole = value => (/^\d+$/.test(String(value ?? '').trim()) ? Number(value) : null);
-
-export function recommendationRequest(values, subscriptions) {
-  if (subscriptions.some(s => s.wanted && s.unavailable)) throw new Error('목록에서 변경된 구독을 삭제하고 다시 선택해 주세요.');
-  const monthlyDataGb = integer(values.monthlyDataGb, '월 데이터 사용량', 1, 2147483647);
-  const wanted = subscriptions.filter(s => s.wanted);
-  const wantedServiceIds = wanted.map(s => s.id);
-  if (!wantedServiceIds.length) throw new Error('추천에 포함할 구독 서비스를 하나 이상 골라주세요.');
-  // 고른 등급을 함께 보낸다. 계산기(calculatorRequest)는 이미 tierIds 로 보내고 있었는데 추천만
-  // 서비스 id 로 보내, 같은 화면의 두 숫자가 다른 등급으로 계산되고 있었다(절대 원칙 3).
-  const wantedTierIds = wanted.map(s => s.tierId).filter(Boolean);
-  return {
-    required: { monthlyDataGb, wantedServiceIds, ...(wantedTierIds.length ? { wantedTierIds } : {}) },
-    optional: optionalInputs(values),
-  };
-}
-
-export function calculatorRequest(planId, optional, subscriptions) {
-  if (subscriptions.some(s => s.wanted && s.unavailable)) throw new Error('목록에서 변경된 구독을 삭제하고 다시 선택해 주세요.');
-  const tierIds = subscriptions.filter(s => s.wanted).map(s => integer(s.tierId, '구독 등급', 1));
-  if (!tierIds.length) throw new Error('계산할 구독 등급을 하나 이상 골라주세요.');
-  return { planId: integer(planId, '요금제', 1), tierIds, optional };
-}
-
-// CSV cells are quoted and formula-like text is neutralized for spreadsheet applications.
-export function comparisonCsv(results) {
-  const rows = [['요금제 ID', '통신사', '요금제', '월 총액 (계산값)', '정가 합계 (계산값)', '월 절감액 (계산값)', '연 절감액 (계산값)', '항목', '금액', '출처', '설명']];
-  for (const r of results) for (const line of r.breakdown) rows.push([
-    r.planId, r.carrier, r.planName, r.monthlyTotal, r.baseline, r.monthlySavings, r.annualSavings,
-    line.label, line.amount, line.provenance, line.note || ''
-  ]);
-  return '\uFEFF' + rows.map(row => row.map(value => {
-    let text = String(value);
-    if (typeof value === 'string' && /^[\s]*[=+@-]/.test(text)) text = "'" + text;
-    return '"' + text.replaceAll('"', '""') + '"';
-  }).join(',')).join('\r\n');
-}

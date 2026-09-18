@@ -1,66 +1,60 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header, Footer } from '../components/Layout.jsx';
+import { request } from '../lib/api.js';
 import AuthReturn from '../components/AuthReturn.jsx';
 
 const TRUST = ['카드·계좌 연결 없음', '금액마다 출처 표시', '안 쓰는 혜택은 0원으로 계산'];
 
+/** 표본 기준 코드 → 화면 문구. 서버는 코드로 주고 한국어는 화면이 정한다(model.js 의 provenance 와 같은 패턴).
+    BE 확정 2026-09-18: 표본은 '지금 쓰는 요금제 대비' 차액이고, 현재 요금제를 모르는 건은 표본에서 빠진다. */
+const BASIS = {
+  CURRENT_PLAN: '지금 쓰는 요금제 대비 월 절감액',
+  LIST_PRICE: '정가 대비 월 절감액',
+};
+
 export default function Landing() {
   const navigate = useNavigate();
+  // 이용자 절감액 표본(계정당 1건). 없거나 서버가 아직 이 경로를 안 열었으면 숫자 블록을 그리지 않는다 —
+  // 랜딩에 지어낸 금액을 두지 않는다(절대 원칙 2·4, 가상 인물 카피 삭제 2026-09-18).
+  const [stats, setStats] = useState(null);
+  useEffect(() => {
+    request('/api/v1/stats/savings').then(({ data }) => setStats(data)).catch(() => {});
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
       {/* Google 은 랜딩으로 복귀한다 — 게이트에서 출발했으면 그 화면으로 돌려보낸다. */}
       <AuthReturn />
       <main className="mx-auto flex w-full max-w-page flex-1 flex-col px-6">
-        <section className="grid flex-1 items-center gap-8 py-12 md:grid-cols-[1.35fr_.65fr] md:py-16">
-          <div>
-            {/* ⚠️ DUMMY: 아래 data-dummy 두 곳은 시안 값이다. 집계가 아직 없다.
-                서비스 후 대상이 추려지면 실제 사용자 기반 값으로 바꾼다(이름·금액·인원).
-                바꿀 때 `grep -rn data-dummy` 로 한 번에 찾는다. */}
-            <p className="mb-6 flex flex-wrap items-center gap-3">
-              <span className="rounded-full bg-brand-tint px-3 py-1.5 text-[13px] font-bold text-brand-ink">
-                통신비 · 구독료 최적화 진단
-              </span>
-              <span data-dummy="집계 전 시안 값" className="text-sm text-ink-soft">
-                평균 <b className="font-extrabold text-ink">월 31,200원</b> 절감 ·{' '}
-                <b className="font-extrabold text-ink">23,847명</b> 이용
-              </span>
-            </p>
+        <section className="flex flex-1 flex-col items-center justify-center gap-8 py-14 text-center md:py-20">
+          <span className="rounded-full bg-brand-tint px-3 py-1.5 text-[13px] font-bold text-brand-ink">
+            통신비 · 구독료 최적화 진단
+          </span>
 
-            <h1 data-dummy="집계 전 시안 값"
-                className="text-[34px] font-extrabold leading-[1.24] tracking-[-.03em] md:text-[52px]">
-              38세 곽두팔님,<br />
-              <span className="text-brand">얼마 전 월 38,000원</span> 아끼셨네요!
-            </h1>
+          <h1 className="max-w-[24ch] text-[34px] font-extrabold leading-[1.24] tracking-[-.03em] md:text-[52px]">
+            통신비와 구독료를 <span className="text-brand">최대한 줄여드려요</span>
+          </h1>
 
-            <p className="mb-8 mt-6 max-w-prose text-base leading-relaxed text-ink-soft md:text-lg">
-              몇 가지 질문에 답하다 보면 복잡한 내 통신비와 요금제가 정리되고,
-              내 상황에 딱 맞는 선택지가 만들어집니다.
-            </p>
+          {stats?.samples?.length > 0 && <SavingsTicker samples={stats.samples} count={stats.sampleCount} basis={stats.basis} />}
 
-            <button type="button" onClick={() => navigate('/modes')} className="btn btn-dark btn-lg">
-              내 요금제 진단받기
-            </button>
+          <p className="max-w-prose text-base leading-relaxed text-ink-soft md:text-lg">
+            질문 세 개면 내 통신비와 구독료가 정리되고, 지금보다 나은 조합이 나옵니다.
+          </p>
 
-            <ul className="mt-8 flex list-none flex-wrap gap-2.5 p-0">
-              {TRUST.map(text => (
-                <li key={text} className="chip">
-                  <span className="size-1.5 rounded-full bg-brand" aria-hidden="true" />
-                  {text}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <button type="button" onClick={() => navigate('/modes')} className="btn btn-dark btn-lg">
+            내 요금제 진단받기
+          </button>
 
-          {/* 장식용. 의미 없는 그림이라 aria-hidden 이고 좁은 화면에서는 뺀다. */}
-          <div aria-hidden="true" className="relative hidden min-h-[340px] md:block">
-            <Coin className="left-[-14%] top-[8%] size-[72px] text-3xl" />
-            <Coin className="right-[8%] top-[2%] size-10 text-[17px]" />
-            <Coin className="right-[-6%] top-[34%] size-14 text-2xl" />
-            <span className="absolute bottom-[6%] right-[4%] text-[150px] leading-none drop-shadow-[0_18px_30px_rgba(20,20,43,.18)]">
-              💰
-            </span>
-          </div>
+          <ul className="flex list-none flex-wrap justify-center gap-2.5 p-0">
+            {TRUST.map(text => (
+              <li key={text} className="chip">
+                <span className="size-1.5 rounded-full bg-brand" aria-hidden="true" />
+                {text}
+              </li>
+            ))}
+          </ul>
         </section>
         <Footer />
       </main>
@@ -68,9 +62,47 @@ export default function Landing() {
   );
 }
 
-function Coin({ className }) {
+/* 이용자들이 진단에서 확인한 절감액. 표본을 순환하며 보여준다 —
+   **모든 프레임이 BE 가 준 실제 표본**이고 중간값을 만들지 않는다(절대 원칙 2: 화면은 금액을 만들지 않는다).
+   그래서 카운트업(보간)이 아니라 표본 갈아치우기다. 빠르게 돌다 느려지고, 멈췄다가 다시 돈다. */
+function SavingsTicker({ samples, count, basis }) {
+  const amount = useRollingSample(samples);
   return (
-    <span className={`absolute grid place-items-center rounded-full bg-gradient-to-br from-[#ffd977] to-[#f5b93d]
-      font-extrabold text-[#9a6b00] shadow-[0_10px_20px_rgba(245,185,61,.35)] ${className}`}>₩</span>
+    <div className="grid gap-2">
+      <p className="text-sm font-semibold text-muted">요고비로 진단한 사람들이 확인한 절감액</p>
+      <p className="tnum text-[52px] font-extrabold leading-none tracking-[-.03em] text-ink md:text-[76px]">
+        {/* 5자리 기준으로 폭을 미리 잡아 숫자가 바뀌어도 줄이 흔들리지 않는다(자리수는 표본 그대로 보여준다). */}
+        <span key={amount} className="tick inline-block min-w-[6.4ch] text-right text-brand-strong">
+          {amount.toLocaleString('ko-KR')}
+        </span>
+        <span className="text-[.42em] font-bold text-ink-soft"> 원</span>
+      </p>
+      {/* 금액에는 기준을 붙인다(절대 원칙 4). 실제로 옮겼는지까지는 우리가 알 수 없으므로 '확인한'이라고 적는다. */}
+      <p className="text-[13px] text-muted">
+        {BASIS[basis] ?? '월 절감액'}
+        {count > 0 && ` · 이용자 ${count.toLocaleString('ko-KR')}명의 표본(계정당 1건)`}
+      </p>
+    </div>
   );
+}
+
+const SPINS = 8;   // 한 바퀴에 몇 번 빠르게 굴릴지
+
+/** 표본 배열을 돌려주는 훅. 인덱스만 바꾼다 — 금액을 계산하지 않는다. */
+function useRollingSample(samples) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    setIdx(0);
+    // 움직임을 줄여 달라는 설정이면 첫 표본에서 멈춘다 — index.css 의 전역 규칙은 CSS 애니메이션만 멈춘다.
+    if (samples.length < 2 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let timer;
+    const spin = n => {
+      setIdx(i => (i + 1) % samples.length);
+      const landed = n >= SPINS;
+      timer = setTimeout(() => spin(landed ? 0 : n + 1), landed ? 2200 : 70 + n * 30);
+    };
+    timer = setTimeout(() => spin(0), 1200);
+    return () => clearTimeout(timer);
+  }, [samples]);
+  return samples[idx] ?? samples[0];
 }

@@ -1,4 +1,12 @@
-import { tierPrice, matches } from '../lib/model.js';
+import { tierPrice, foreignNote, matches } from '../lib/model.js';
+
+/** 금액 옆의 작은 ⓘ — 마우스를 올리면 근거가 뜬다(사용자 결정 2026-09-18). 글자보다 작게 둔다.
+    목록이 overflow-y-auto 안이라 CSS 말풍선(.info)은 잘린다 — 브라우저 기본 툴팁을 쓴다.
+    title 을 못 읽는 스크린리더도 있으니 aria-label 을 함께 준다. */
+export const PriceNote = ({ note }) => note ? (
+  <span role="img" aria-label={note} title={note}
+        className="ml-1 cursor-help align-middle text-[11px] leading-none text-muted">ⓘ</span>
+) : null;
 
 /** 구독 목록. 검색 + 멀티셀렉트가 기본이고 나열은 그 결과다(ux-flow A3). */
 export default function SubscriptionPicker({ subs, query, onQuery, onToggle, onTier }) {
@@ -21,7 +29,10 @@ export default function SubscriptionPicker({ subs, query, onQuery, onToggle, onT
               <input type="checkbox" checked={sub.checked} onChange={() => onToggle(sub.id)}
                      className="size-[18px] accent-brand" />
               <span className="font-semibold">{sub.service.icon}  {sub.service.name}</span>
-              <span className="text-sm text-ink-soft">{tierPrice(tier)}</span>
+              <span className="whitespace-nowrap text-sm text-ink-soft">
+                {tierPrice(tier)}
+                <PriceNote note={foreignNote(tier)} />
+              </span>
               <select value={sub.tierId} aria-label={`${sub.service.name} 등급`}
                       disabled={sub.service.tiers.length < 2}
                       onClick={e => e.preventDefault()}

@@ -118,7 +118,7 @@ export default function Light() {
             <Summary subs={subs} fee={fee} dataLabel={dataSkipped ? '모름' : DATA_BUCKETS[dataIdx].label} />
             <div className="min-w-0">
               <Question kicker="구독 정보" sub="이용 중인 서비스를 고르고 등급을 선택해 주세요.">
-                현재 결제 중인 구독 서비스가 있나요?
+                구독 서비스 정보를 알려주세요
               </Question>
               <SubscriptionPicker
                 subs={subs} query={query} onQuery={setQuery}

@@ -1,4 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { forgetMember } from '../lib/useMember.js';
+import { won } from '../lib/model.js';
 import { Header } from './Layout.jsx';
 
 /* 비회원 화면. 리포트 대신 이것 하나만 그린다(ux-flow D-36, 사용자 결정 2026-09-17).
@@ -39,6 +41,46 @@ const GoogleMark = () => (
     <path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6A9 9 0 0 0 .9 5l3 2.3C4.6 5.2 6.6 3.6 9 3.6z" />
   </svg>
 );
+
+/* 결과 화면 전용 게이트(사용자 결정 2026-09-18, 시안). 계산까지 끝낸 뒤 **절감액 한 줄만** 보여주고 로그인을 청한다.
+   D-36 의 "금액은 한 줄도 비치지 않는다"를 티저 한 줄로 바꾼 것이다 — 그 정책이 "이탈이 높으면 꺼낼 카드"로
+   남겨 두었던 선택지다(UX_POLICY 1-10 개정, ux-flow A10).
+   뒤의 리포트는 흐려 두고, <dialog>.showModal() 이 나머지 화면을 inert 로 만든다 — 탭으로도 닿지 않는다.
+   ESC 로 닫히면 게이트가 아니므로 취소만 막는다(닫을 길은 '조건 다시 고르기' 하나다). */
+export function LoginTeaser({ amount, basis, onGoogle, onBack }) {
+  const ref = useRef(null);
+  useEffect(() => { ref.current?.showModal(); }, []);
+  return (
+    <dialog ref={ref} onCancel={e => e.preventDefault()} aria-labelledby="teaser-title"
+            className="m-auto w-[min(560px,92vw)] rounded-[20px] bg-ink px-6 py-10 text-center text-white
+                       backdrop:bg-ink/20 md:px-10">
+      <p className="mb-6 text-[44px] leading-none" aria-hidden="true">🧾💸</p>
+      <h2 id="teaser-title" className="text-[21px] font-extrabold leading-relaxed md:text-[23px]">
+        고객님의 분석이 끝났어요!
+        {/* 절감이 0 이면 숫자를 적지 않는다 — "최대 0원 절감"은 티저가 아니라 오해다. */}
+        {amount > 0 && (
+          <>
+            <br />
+            <mark className="rounded bg-brand px-2 py-0.5 text-ink">최대 {won(amount)}</mark> 절감 받을 수 있네요.
+          </>
+        )}
+        <br />
+        구체적인 내용과 일정플랜이 궁금하신가요?
+      </h2>
+      <button type="button" onClick={onGoogle} className="btn btn-brand btn-lg btn-block mt-7">
+        <GoogleMark />
+        로그인
+      </button>
+      <p className="mt-5 text-sm text-white/70">로그인해서 구체적인 내용을 확인해보세요!</p>
+      {/* 금액에는 기준을 붙인다(절대 원칙 4) — 무엇에 견준 절감인지 적지 않으면 숫자가 혼자 걸어다닌다. */}
+      {amount > 0 && <p className="mt-1 text-xs text-white/45">{basis} 월 절감액이에요</p>}
+      {/* 막다른 길을 만들지 않는다 — 로그인하지 않기로 한 사람도 나갈 곳이 있어야 한다. */}
+      <button type="button" onClick={onBack} className="btn-text mt-3 text-white/60 underline underline-offset-[3px] hover:text-white">
+        조건 다시 고르기
+      </button>
+    </dialog>
+  );
+}
 
 /** 로그인 여부 확인 실패(useMember → false) 화면. 게이트가 아니다 — 회원일 수도 있으니 로그인을 시키지 않고 다시 묻는다. */
 export function MemberCheckFailed() {

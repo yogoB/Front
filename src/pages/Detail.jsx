@@ -5,7 +5,8 @@ import { FlowHead, Question, ErrorLine, Actions, RangeCard } from '../components
 import { Choice, ChoiceGroup } from '../components/Choice.jsx';
 import Analyzing from '../components/Analyzing.jsx';
 import { loadCatalog, loadPlans, carriersOf, DATA_BUCKETS, FEE_BUCKETS } from '../lib/catalog-data.js';
-import { won, tierPrice, tierKrwGuess, isForeign, matches, searchKey, clampDigits, FEE_MAX } from '../lib/model.js';
+import { won, tierPrice, foreignNote, tierKrwGuess, isForeign, matches, searchKey, clampDigits, FEE_MAX } from '../lib/model.js';
+import { PriceNote } from '../components/SubscriptionPicker.jsx';
 import { setInput } from '../lib/session.js';
 
 const STEPS = ['기본', '요금제', '구독'];
@@ -234,6 +235,8 @@ export default function Detail() {
                             <option key={t.id} value={t.id}>{t.name} · {tierPrice(t)}</option>
                           ))}
                         </select>
+                        {/* 고른 등급이 해외 결제면 근거를 ⓘ 로 붙인다 — 목록의 금액은 원화 기준이다. */}
+                        <PriceNote note={foreignNote(w.service.tiers.find(t => t.id === w.tierId))} />
                       </div>
                     </div>
                   ))}
@@ -400,7 +403,10 @@ function AddModal({ catalog, chosen, onClose, onAdd }) {
                    checked={picked.includes(s.id)}
                    onChange={() => setPicked(p => p.includes(s.id) ? p.filter(x => x !== s.id) : [...p, s.id])} />
             <span className="font-semibold">{s.icon}  {s.name}</span>
-            <span className="text-sm text-ink-soft">{tierPrice(s.tiers[0])}</span>
+            <span className="whitespace-nowrap text-sm text-ink-soft">
+              {tierPrice(s.tiers[0])}
+              <PriceNote note={foreignNote(s.tiers[0])} />
+            </span>
           </label>
         ))}
         {!shown.length && <p className="p-4 text-sm text-muted">추가할 서비스가 없어요.</p>}
