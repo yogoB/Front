@@ -20,7 +20,18 @@ export default function Results() {
   const [input] = useState(getInput);
   const [data, setData] = useState(null);
   const [failure, setFailure] = useState('');
-  const [story, setStory] = useState(false);   // 설명(내레이션) 펼침 — 처음엔 표만 보인다
+  // 설명(내레이션)은 처음엔 접혀 있고, 펼칠 때 따로 받는다(사용자 결정 2026-09-18, 내레이션 분리).
+  // 첫 응답에 message 가 이미 실려 있으면(분리 전 BE) 호출 없이 그대로 쓴다.
+  const [story, setStory] = useState('closed');   // closed | loading | open | failed
+  const [told, setTold] = useState(null);         // narrate 응답 { message, notices, reasons? }
+
+  function openStory() {
+    if (data.message != null || told) { setStory('open'); return; }
+    setStory('loading');
+    request('/api/v1/recommendations/narrate', { method: 'POST', body: buildRequest(input) })
+      .then(({ data: d }) => { setTold(d); setStory('open'); })
+      .catch(() => setStory('failed'));
+  }
 
   useEffect(() => {
     // 비회원이면 **계산도 하지 않는다** — 금액이 한 줄도 비치지 않아야 하므로 아예 받아오지 않는다(D-36).
@@ -43,7 +54,9 @@ export default function Results() {
 
   const best = data.results[0];
   const current = data.current ?? null;   // currentPlanId 를 보냈고 카탈로그에 있을 때만. 없으면 입력값 합계 폴백
-  const notices = buildNotices(input, data, best);
+  const narrated = { ...data, ...(told ?? {}) };   // 설명 필드는 첫 응답 또는 narrate 응답에서
+  const notices = buildNotices(input, narrated, best);
+  const reasons = narrated.reasons ?? [];
 
   return (
     <>
@@ -57,7 +70,7 @@ export default function Results() {
         {/* 계산 결과(표)가 먼저다 — 사용자 결정 2026-09-18: 화면에 처음 보이는 것은 비교표뿐이고, 설명(내레이션)은 다음에 펼친다. */}
         {best && <CompareTable input={input} best={best} current={current} />}
         {best && <SaveResult input={input} best={best} current={current} />}
-        {data.reasons?.length > 0 && <Reasons reasons={data.reasons} />}
+        {reasons.length > 0 && <Reasons reasons={reasons} />}
 
         {input.mode === 'light' && (
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand-tint px-6 py-5">
@@ -69,12 +82,14 @@ export default function Results() {
           </div>
         )}
 
-        {!story ? (
-          <button type="button" onClick={() => setStory(true)} className="btn btn-ghost btn-block mt-6">이 결과 설명 보기 ↓</button>
+        {story !== 'open' ? (
+          <button type="button" onClick={openStory} disabled={story === 'loading'} className="btn btn-ghost btn-block mt-6">
+            {story === 'loading' ? '설명을 만드는 중…' : story === 'failed' ? '설명을 불러오지 못했어요 — 다시 시도' : '이 결과 설명 보기 ↓'}
+          </button>
         ) : (
           <section className="mt-6" aria-label="결과 설명">
             {best && <SaveHero best={best} current={current} />}
-            <Summary message={data.message} />
+            <Summary message={narrated.message} />
             <p className="my-6 max-w-prose rounded-xl bg-warn-tint px-4 py-3 text-sm leading-relaxed text-warn-ink">
               {current
                 ? <>‘현재’ 열도 추천과 <strong>같은 계산기</strong>로 냈어요 — 지금 쓰는 요금제로 같은 구독을 유지했을 때의 금액이에요.</>
