@@ -13,6 +13,7 @@
 | 직접 선택할 요금제 목록 | `GET /api/v1/catalog/plans` |
 | 추천 결과 상세의 혜택 | `GET /api/v1/catalog/plans/{id}/benefits` |
 | 조건으로 추천 | `POST /api/v1/recommendations` |
+| 카탈로그 결손 기록 | `POST /api/v1/catalog/gaps` — `{kind:'MOBILE_PLAN', queryText}` → 언제나 `{recorded:true}`. 있든 없든 응답이 같으므로 화면은 접수까지만 적는다. 429 는 발신지당 15분 60회 초과 |
 | 결과 설명(내레이션) | `POST /api/v1/recommendations/narrate` — 같은 본문, `{ message, notices }`. "이 결과 설명 보기"를 누를 때만 부른다(내레이션 분리, 사용자 승인 2026-09-18) |
 | 특정 요금제·등급 계산 | `POST /api/v1/calculator` |
 | 문장 추천 | `POST /api/v1/chat/messages` |
@@ -32,7 +33,7 @@
 
 공개 API는 인증 쿠키 없이 호출한다. 회원 요청은 `credentials: include`로 보내고 변경 요청마다 CSRF 토큰을 새로 받는다.
 
-**CSRF 면제 경로는 세 개뿐이다**(BE `SecurityConfig`): `POST /api/v1/recommendations`, `/api/v1/calculator`, `/api/v1/chat/messages`. 그 밖의 POST·DELETE 는 `permitAll` 이라도 토큰이 필요하다 — 정보 오류 제보(`/api/v1/catalog/reports`)가 여기 해당하며, 토큰 없이 보내면 `YGB-AUTH-403` 이다. 프론트에서는 `request(path, { member: true })` 로 보내야 토큰이 붙는다. `tests/contract.test.js` 가 이 규칙을 검사한다(면제 목록이 BE 에서 바뀌면 테스트의 `EXEMPT` 도 같이 고친다).
+**CSRF 면제 경로**(BE `SecurityConfig`): `POST /api/v1/recommendations`, `/api/v1/calculator`, `/api/v1/catalog/gaps`(결손 기록, D-56). 챗봇 경로는 D-44 로 사라졌다. 그 밖의 POST·DELETE 는 `permitAll` 이라도 토큰이 필요하다 — 정보 오류 제보(`/api/v1/catalog/reports`)가 여기 해당하며, 토큰 없이 보내면 `YGB-AUTH-403` 이다. 프론트에서는 `request(path, { member: true })` 로 보내야 토큰이 붙는다. `tests/contract.test.js` 가 이 규칙을 검사한다(면제 목록이 BE 에서 바뀌면 테스트의 `EXEMPT` 도 같이 고친다).
 
 브라우저에 JWT를 읽거나 저장하는 코드가 없다. 오류 메시지·코드·필드는 공통 클라이언트에서 보존하며 경고는 정상 결과와 함께 표시한다. 요청 시간 제한은 65초로, BE의 AI 파싱·설명 요청을 기다릴 수 있게 했다. 취소한 요청과 이전 혜택 조회 결과는 화면을 덮어쓰지 않는다.
 

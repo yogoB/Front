@@ -339,16 +339,19 @@ function PlanSearch({ plans, carrier, selected, onPick, onClear, status = 'ready
   // 낱말을 모두 포함하면 걸린다 — "SKT 청년"으로도 "0 청년 다이렉트 62"를 찾는다(통짜 비교로는 안 걸렸다).
   const found = query.trim() ? mine.filter(p => matchesAll(p.name, query, carrier)).slice(0, 8) : [];
 
-  /* 카탈로그에 없는 요금제는 사용자가 알려 줄 수 있다 — 그래야 수집 대상이 된다.
-     지금은 일반 제보 경로로 보낸다(백오피스 제보 게시판). BE 에 결손 기록 경로가 생기면 그쪽으로 옮긴다. */
+  /* 카탈로그에 없는 요금제는 사용자가 알려 줄 수 있다 — 그래야 수집 대상이 된다(결손 보드, D-56).
+     공개·CSRF 면제 경로라 토큰 왕복이 없다. 응답은 있든 없든 늘 같으므로(카탈로그를 훑는 통로가 되면 안 된다)
+     화면도 "접수했다"까지만 적고 존재 여부를 추측하지 않는다. 통신사 이름은 추천 경로가 이미 자동 기록한다. */
   async function reportMissing() {
-    const text = query.trim();
+    const text = `${carrier} ${query.trim()}`.trim().slice(0, 200);
     setReported('보내는 중…');
     try {
-      await request('/api/v1/reports', { method: 'POST', member: true,
-        body: { category: 'OTHER', description: `요금제 결손 제보 — ${carrier} "${text}" 가 목록에 없어요.`, pageUrl: '/detail' } });
+      await request('/api/v1/catalog/gaps', { method: 'POST', body: { kind: 'MOBILE_PLAN', queryText: text } });
       setReported('알려주셔서 고마워요. 수집 목록에 올릴게요.');
-    } catch (e) { setReported(e.message || '알리지 못했어요. 잠시 후 다시 시도해 주세요.'); }
+    } catch (e) {
+      setReported(e.status === 429 ? '요청이 많아요. 잠시 후 다시 시도해 주세요.'
+        : e.message || '알리지 못했어요. 잠시 후 다시 시도해 주세요.');
+    }
   }
   return (
     <div className="mt-5">

@@ -264,7 +264,8 @@ test('추천 호출은 세션 쿠키를 함께 보낸다 — 퍼널이 회원을
 // 나머지 변경 요청은 member:true 로 보내야 request() 가 토큰을 붙인다 — 빠지면 403 이다.
 // 2026-09-17: 제보(/catalog/reports)를 member 없이 보내 403 으로 죽던 것을 잡고 추가했다.
 test('CSRF 면제 경로가 아닌 POST/DELETE 는 member:true 로 보낸다', () => {
-  const EXEMPT = ['/api/v1/recommendations', '/api/v1/calculator'];
+  // 결손 기록(/catalog/gaps)도 추천과 같은 취급이다 — 공개·CSRF 면제(BE v50, D-56). 토큰 없이 200 인 것을 실측했다.
+  const EXEMPT = ['/api/v1/recommendations', '/api/v1/calculator', '/api/v1/catalog/gaps'];
   const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(e =>
     e.isDirectory() ? walk(`${dir}/${e.name}`) : /\.jsx?$/.test(e.name) ? [`${dir}/${e.name}`] : []);
   const calls = [];
