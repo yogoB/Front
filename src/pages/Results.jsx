@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toPng } from 'html-to-image';
 import { Header, Footer } from '../components/Layout.jsx';
 import { request, ApiError, backendUrl } from '../lib/api.js';
-import { won, provenance, splitLines } from '../lib/model.js';
+import { won, provenance, splitLines, searchKey } from '../lib/model.js';
 import { getInput, setResult, setNext } from '../lib/session.js';
 import { useMember } from '../lib/useMember.js';
 import GuestGate, { MemberCheckFailed } from '../components/GuestGate.jsx';
@@ -12,6 +12,13 @@ const DEFAULT_GB = 10;   // 데이터 사용량을 건너뛴 경우의 계산 �
 
 /** 유지하기로 한 구독만 추천 대상이다(디테일 모드의 '해지'는 제외). */
 const keptSubs = source => (source.subs || []).filter(s => !s.disposition || s.disposition === '유지');
+
+/** 변경이 가장 적은 조합 — 지금 통신사를 그대로 쓰는 첫 후보다. 그 통신사에 후보가 없으면 1순위를 민다.
+    BE 가 실질월비용 오름차순으로 정렬해 주므로(RecommendationService) 목록 순서를 그대로 쓴다 —
+    화면은 고르기만 하고 다시 정렬하거나 금액을 만들지 않는다(절대 원칙 2, integration.md 결과 해석).
+    통신사 비교 규칙도 BE 의 sameCarrier 와 같다(공백·대소문자 무시) — searchKey 가 그 정규화다. */
+const fewestChanges = (results, carrier) =>
+  (carrier && results.find(r => searchKey(r.carrier) === searchKey(carrier))) || results[0];
 
 /** 결과를 받은 시각. 시안의 "실시간 통신사 API 연동" 같은 과장 대신 계산 기준 시각만 적는다. */
 const stamp = d => `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -61,18 +68,26 @@ export default function Results() {
   if (failure) return <Empty message={failure} />;
   if (!data) return <><Header /><p className="p-10 text-center text-muted">계산하는 중…</p></>;
 
-  const best = data.results[0];
   const current = data.current ?? null;   // currentPlanId 를 보냈고 카탈로그에 있을 때만. 없으면 입력값 합계 폴백
+  // 3열의 두 조합(사용자 결정 2026-09-18). 둘 다 BE 가 계산해 순위까지 매긴 결과에서 고르기만 한다.
+  //   2열 = 변경이 가장 적은 추천(지금 통신사 유지) — 우리가 미는 1안이다(UX 정책 규칙 2).
+  //   3열 = 무조건 가장 싼 조합 = BE 정렬 1위. 통신사가 바뀔 수 있다.
+  // 지금 통신사는 BE 가 확정한 current 를 먼저 믿고, 없으면 사용자가 고른 이름을 쓴다.
+  const cheapest = data.results[0];
+  const currentCarrier = current?.cost.carrier ?? input.carrier ?? null;
+  const recommended = cheapest && fewestChanges(data.results, currentCarrier);
+  const sameAsCheapest = recommended?.planId === cheapest?.planId;
   const narrated = { ...data, ...(told ?? {}) };   // 설명 필드는 첫 응답 또는 narrate 응답에서
-  const notices = buildNotices(input, narrated, best);
+  const notices = buildNotices(input, narrated, recommended);
   const reasons = narrated.reasons ?? [];
   const planViews = {
-    best: best && plans.find(p => p.id === best.planId),
+    recommended: recommended && plans.find(p => p.id === recommended.planId),
+    cheapest: cheapest && plans.find(p => p.id === cheapest.planId),
     current: current && plans.find(p => p.id === current.cost.planId),
   };
   // 6개월 탭은 BE 가 semiannualSavings 를 주기 시작하면 저절로 나타난다(계약 확정 2026-09-18).
   // 월 절감 ×6 으로 채우지 않는다 — 프론트 기간 환산은 절대 원칙 2 위반이다(contract.test.js 가드).
-  const tabs = [1, 6, 12].filter(m => m !== 6 || best?.semiannualSavings != null);
+  const tabs = [1, 6, 12].filter(m => m !== 6 || recommended?.semiannualSavings != null);
 
   async function saveImage() {
     setSaveNote('');
@@ -94,7 +109,7 @@ export default function Results() {
       // 항상 tiers[0] 을 채우므로(Light·Detail) 유지 구독이 있는 한 비지 않는다. 50개 초과 409 는
       // 서버 문장을 그대로 보여준다(D-46) — 마이페이지에서 지우고 다시 저장하는 흐름이다.
       await request('/api/v1/me/saved-results', { method: 'POST', member: true,
-        body: { planId: best.planId, tierIds: keptSubs(input).map(s => s.tierId).filter(Boolean), optional: buildRequest(input).optional } });
+        body: { planId: recommended.planId, tierIds: keptSubs(input).map(s => s.tierId).filter(Boolean), optional: buildRequest(input).optional } });
       setSaveNote('마이페이지에 저장했어요.');
     } catch (e) {
       setSaveNote(e instanceof ApiError && [404, 405].includes(e.status)
@@ -108,14 +123,14 @@ export default function Results() {
       <Header />
       <main className="mx-auto max-w-page px-6 py-8">
         <span className="inline-block rounded-full bg-brand-tint px-3 py-1.5 text-[13px] font-bold text-brand-ink">
-          AI 최적화 분석 완료
+          최적화 완료
         </span>
         <h1 className="mb-1 mt-4 text-2xl font-extrabold tracking-[-.01em] md:text-[28px]">최적 요금 조합 비교 분석</h1>
         <p className="mb-6 text-sm text-muted">카탈로그 가격 기준 · {stamp(data.receivedAt)} 계산</p>
 
         {/* 계산 결과(표)가 먼저다 — 사용자 결정 2026-09-18: 처음 보이는 것은 비교표 카드뿐이고, 설명(내레이션)은 아래에서 펼친다.
             시안의 결과 카드 하나 — 기간 토글·저장 아이콘·3열 비교표·추천 사유를 한 판에 담는다. */}
-        {best && (
+        {recommended && (
           <section ref={cardRef} className="card overflow-hidden">
             <div data-nocapture className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-2.5">
               <div className="flex flex-wrap items-center gap-2 text-[13px] font-semibold text-ink-soft">
@@ -128,17 +143,23 @@ export default function Results() {
                   </button>
                 ))}
               </div>
-              <div className="flex items-center gap-1">
-                {saveNote && <span role="status" className="mr-2 text-[13px] font-semibold text-ink-soft">{saveNote}</span>}
-                <IconButton label="마이페이지에 저장" onClick={saveToMyPage}><BookmarkIcon /></IconButton>
-                <IconButton label="이미지로 저장" onClick={saveImage}><DownloadIcon /></IconButton>
-              </div>
+              {saveNote && <span role="status" className="text-[13px] font-semibold text-ink-soft">{saveNote}</span>}
             </div>
-            <CompareTable input={input} best={best} current={current} months={months} planViews={planViews} />
+            <CompareTable input={input} recommended={recommended} cheapest={cheapest} sameAsCheapest={sameAsCheapest}
+                          current={current} months={months} planViews={planViews}
+                          tools={
+                            /* 저장·내려받기는 세 번째 열 머리 오른쪽에 둔다(사용자 결정 2026-09-18).
+                               둘 다 리포트 전체를 다루므로 대상을 label 에 적는다 — 셋째 열만 저장한다고 읽히지 않게. */
+                            /* -my-2.5: 44px 누름면(접근성)을 유지하면서 머리 줄 높이는 그대로 둔다. */
+                            <span data-nocapture className="-my-2.5 flex items-center gap-0.5">
+                              <IconButton label="추천 조합을 마이페이지에 저장" onClick={saveToMyPage}><BookmarkIcon /></IconButton>
+                              <IconButton label="리포트 이미지로 내려받기" onClick={saveImage}><DownloadIcon /></IconButton>
+                            </span>
+                          } />
             {reasons.length > 0 && <Reasons reasons={reasons} />}
           </section>
         )}
-        {best && <SaveResult input={input} best={best} current={current} />}
+        {recommended && <SaveResult input={input} best={recommended} current={current} />}
 
         {input.mode === 'light' && (
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand-tint px-6 py-5">
@@ -156,7 +177,7 @@ export default function Results() {
           </button>
         ) : (
           <section className="mt-6" aria-label="결과 설명">
-            {best && <SaveHero best={best} current={current} />}
+            {recommended && <SaveHero best={recommended} current={current} />}
             <Summary message={narrated.message} />
             <p className="my-6 max-w-prose rounded-xl bg-warn-tint px-4 py-3 text-sm leading-relaxed text-warn-ink">
               {current
@@ -182,15 +203,13 @@ export default function Results() {
           ))}
         </ul>
 
-        {best && <Breakdown best={best} />}
-        {best && <ReportWrong planId={best.planId} planName={best.planName} />}
+        {recommended && <Breakdown best={recommended} />}
+        {recommended && <ReportWrong planId={recommended.planId} planName={recommended.planName} />}
 
+        {/* '다시 비교하기'는 뺐다(사용자 결정 2026-09-18) — 다음 행동은 하나다. 조건을 고치려면 헤더·뒤로가기로 간다. */}
         <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
           <p className="text-[13px] text-muted">ⓘ 상기 분석 결과는 통신사별 결합 형태에 따라 실제 고지 금액과 다를 수 있습니다.</p>
-          <div className="flex flex-wrap gap-3">
-            <button type="button" onClick={() => navigate('/modes')} className="btn btn-ghost">⟳ 다시 비교하기</button>
-            <button type="button" onClick={() => navigate('/calendar')} className="btn btn-dark">이렇게 진행해보세요! →</button>
-          </div>
+          <button type="button" onClick={() => navigate('/calendar')} className="btn btn-dark">이렇게 진행해보세요! →</button>
         </div>
       </main>
       <div className="mx-auto w-full max-w-page px-6"><Footer /></div>
@@ -333,31 +352,37 @@ function PlanChip({ carrier, name }) {
   );
 }
 
-function CompareTable({ input, best, current, months, planViews }) {
-  const rec = columnFacts(best);
+function CompareTable({ input, recommended, cheapest, sameAsCheapest, current, months, planViews, tools }) {
+  const rec = columnFacts(recommended);
+  const low = columnFacts(cheapest);
   // '현재' 열: BE 가 같은 계산기로 낸 current.cost 가 있으면 그것, 없으면 입력값 합계(폴백).
   const cur = current ? columnFacts(current.cost) : null;
   const curTotal = current ? won(current.cost.monthlyTotal) : (currentTotal(input) === null ? '—' : won(currentTotal(input)));
   // 기간 절감액은 BE 값 그대로다(1=monthlySavings, 6=semiannualSavings, 12=annualSavings). 곱하지 않는다(절대 원칙 2).
-  const periodSaving = months === 12 ? best.annualSavings : months === 6 ? best.semiannualSavings : best.monthlySavings;
-  const recData = fmtData(planViews.best?.dataMb) ?? (input.data ? `${input.data.label} 충족` : `${DEFAULT_GB}GB 기준 충족`);
+  const periodSaving = months === 12 ? recommended.annualSavings
+    : months === 6 ? recommended.semiannualSavings : recommended.monthlySavings;
+  const spec = (view, fallback) => fmtData(view?.dataMb) ?? fallback;
+  const guessed = input.data ? `${input.data.label} 충족` : `${DEFAULT_GB}GB 기준 충족`;
 
   const rows = [
-    ['요금제 (Plan)', cur ? cur.plan : input.carrier ? `${input.carrier} · 현재 요금제` : '현재 요금제', rec.plan, rec.plan],
+    ['요금제 (Plan)', cur ? cur.plan : input.carrier ? `${input.carrier} · 현재 요금제` : '현재 요금제', rec.plan, low.plan],
     // 월 요금 = 요금제 기본료 줄(구독 제외). 현재 열 폴백은 사용자가 입력한 월 통신비다.
-    ['월 요금 (Monthly)', cur ? cur.fee : input.fee?.amount != null ? won(input.fee.amount) : '—', rec.fee, rec.fee],
+    ['월 요금 (Monthly)', cur ? cur.fee : input.fee?.amount != null ? won(input.fee.amount) : '—', rec.fee, low.fee],
     ['데이터 (Data)',
       planViews.current ? (fmtData(planViews.current.dataMb) ?? '확인 필요') : input.data ? input.data.label : '모름',
-      recData, recData],
+      spec(planViews.recommended, guessed), spec(planViews.cheapest, guessed)],
     ['통화 (Calls)', planViews.current ? fmtVoice(planViews.current.voiceMin) : '확인 필요',
-      fmtVoice(planViews.best?.voiceMin), fmtVoice(planViews.best?.voiceMin)],
+      fmtVoice(planViews.recommended?.voiceMin), fmtVoice(planViews.cheapest?.voiceMin)],
     ['부가혜택 (Benefits)', cur ? (cur.benefits.length ? cur.benefits : ['포함된 구독 혜택 없음']) : '—',
-      rec.benefits.length ? rec.benefits : ['포함된 구독 혜택 없음'], '정가 기준(혜택 미반영)'],
+      rec.benefits.length ? rec.benefits : ['포함된 구독 혜택 없음'],
+      low.benefits.length ? low.benefits : ['포함된 구독 혜택 없음']],
     ['할인/적립 (Discounts)', cur ? (cur.discounts.length ? cur.discounts : ['적용된 할인 없음']) : '—',
-      rec.discounts.length ? rec.discounts : ['적용된 할인 없음'], '할인 미적용'],
+      rec.discounts.length ? rec.discounts : ['적용된 할인 없음'],
+      low.discounts.length ? low.discounts : ['적용된 할인 없음']],
     ['약정 기간 (Contract)',
       input.contract?.has ? ['약정 있음', input.contract.endDate && `종료 ${input.contract.endDate}`].filter(Boolean) : ['무약정'],
       '선택약정 미반영', '선택약정 미반영'],
+    // 통신사를 옮기는 조합은 지금 약정의 위약금이 남는다 — 금액은 BE 에 없으므로 '확인 필요'로 적는다.
     ['위약금 (Penalty)', input.contract?.has ? '확인 필요' : '없음', '확인 필요', '확인 필요'],
   ];
 
@@ -374,13 +399,20 @@ function CompareTable({ input, best, current, months, planViews }) {
             <ColHead tone="now" title="현재 상황" sub={current ? '지금 요금제 · 같은 계산기' : '현재 통신사 및 납부 요금'}>
               {curTotal}
             </ColHead>
-            <ColHead tone="best" title="추천 · 최적값 🌟" sub="체감 환산 월 요금" checked="brand"
-                     save={best.monthlySavings > 0 ? `정가 대비 ${months === 12 ? '연' : months === 6 ? '6개월' : '월'} ${won(periodSaving)} 절감` : ''}>
-              {won(best.monthlyTotal)}
+            <ColHead tone="best" title="추천 · 변경 최소 🌟" checked="brand"
+                     sub={sameAsCheapest ? '지금 조건에서 가장 나은 조합 · 체감 환산 월 요금'
+                       : `${recommended.carrier} 그대로 · 번호이동 없이 바꾸는 조합`}
+                     save={recommended.monthlySavings > 0
+                       ? `정가 대비 ${months === 12 ? '연' : months === 6 ? '6개월' : '월'} ${won(periodSaving)} 절감` : ''}>
+              {won(recommended.monthlyTotal)}
             </ColHead>
-            <ColHead tone="base" title="정가 기준" sub="기본 정상가 기준" checked="muted">
-              <s className="mr-2 text-base font-semibold text-muted">{won(best.baseline)}</s>
-              <span className="text-[#c77700]">{won(best.monthlyTotal)}</span>
+            <ColHead tone="base" title="최저가 조합" tools={tools}
+                     sub={sameAsCheapest ? '추천 조합이 가장 싼 조합이에요'
+                       : `월 총액이 가장 낮은 조합 · ${cheapest.carrier} 로 옮겨야 해요`}>
+              {/* 정가와 체감가가 같으면(할인 없음) 취소선을 긋지 않는다 — 같은 금액을 두 번 적는 꼴이다. */}
+              {cheapest.baseline !== cheapest.monthlyTotal &&
+                <s className="mr-2 text-base font-semibold text-muted">{won(cheapest.baseline)}</s>}
+              <span className="text-[#c77700]">{won(cheapest.monthlyTotal)}</span>
             </ColHead>
           </tr>
         </thead>
@@ -403,7 +435,7 @@ function CompareTable({ input, best, current, months, planViews }) {
 
 /* 머리 셀 — 시안의 열 배지(현재/추천 BEST/정가)·체크 표식·총액. 각 줄에 같은 최소 높이를 주어 총액이 한 선에 놓인다. */
 const PILL = { now: 'bg-[#edeef3] text-ink-soft', best: 'bg-brand-tint text-brand-ink', base: 'bg-warn-tint text-warn-ink' };
-function ColHead({ tone, title, sub, children, save, checked }) {
+function ColHead({ tone, title, sub, children, save, checked, tools }) {
   const best = tone === 'best';
   return (
     <th scope="col" className={`border-b-2 px-4.5 py-3.5 text-left align-top
@@ -413,7 +445,8 @@ function ColHead({ tone, title, sub, children, save, checked }) {
           <span className={`rounded-md px-2 py-1 text-xs font-bold ${PILL[tone]}`}>{title}</span>
           {best && <span className="rounded bg-brand-ink px-1.5 py-1 text-[10px] font-extrabold tracking-wide text-white">BEST</span>}
         </span>
-        {/* 시안의 열 체크 표식 — 장식이다. 고를 수 있는 것처럼 읽히지 않게 버튼으로는 만들지 않는다. */}
+        {/* 저장·내려받기(셋째 열) 또는 시안의 체크 표식. 체크는 장식이라 버튼으로 만들지 않는다. */}
+        {tools}
         {checked && (
           <span aria-hidden="true" className={`grid size-5 place-items-center rounded-md text-[11px] font-extrabold text-white
             ${checked === 'brand' ? 'bg-brand' : 'bg-[#c7c9d1]'}`}>✓</span>
