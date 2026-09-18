@@ -504,7 +504,8 @@ function QualityPage({ quality }) {
 
 /* ---------- 결손 게시판(D-52) ---------- */
 const GAP_STATUS = [['REQUESTED', '요청됨'], ['IN_PROGRESS', '진행 중'], ['PENDING', '보류'], ['VERIFIED', '확인됨'], ['REJECTED', '반려']];
-const GAP_KIND = { CARRIER: '통신사', PLAN: '요금제', SERVICE: '구독 서비스', TIER: '구독 등급' };
+// BE CatalogCandidateRecorder.Kind 와 같은 값이어야 한다 — 모르는 값은 원문 그대로 적는다(지어내지 않는다).
+const GAP_KIND = { MOBILE_PLAN: '요금제', SUBSCRIPTION_TIER: '구독 등급', SUBSCRIPTION_SERVICE: '구독 서비스', CARRIER: '통신사' };
 function GapsBoard({ say, onChanged }) {
   const [status, setStatus] = useState('');   // '' = 할 일(REQUESTED·IN_PROGRESS)
   const [rows, setRows] = useState(null);
