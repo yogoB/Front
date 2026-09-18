@@ -28,6 +28,22 @@
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --container-page: 1120px;
+
+  /* 백오피스 다크 테마(D-52, 레퍼런스 "Nexus"). 운영자 전용이라 다크 고정 — 회원 화면 토큰과 섞지 않는다. */
+  --color-adm-bg: #0b1220;
+  --color-adm-card: #111a2e;
+  --color-adm-raise: #16213a;
+  --color-adm-line: #1f2a44;
+  --color-adm-text: #e6edf7;
+  --color-adm-muted: #8a97b3;
+  --color-adm-cyan: #22d3ee;
+  --color-adm-mint: #3ed4af;
+  --color-adm-violet: #a78bfa;
+  --color-adm-amber: #fbbf24;
+  --color-adm-red: #f87171;
+
+  --animate-fade-in: fade-in .45s ease-out both;
+  @keyframes fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 }
 
 @layer base {
@@ -84,6 +100,16 @@
     border-bottom-color: #2b2d3a; opacity: 0; transition: opacity .12s; }
   .info:hover::after, .info:focus-visible::after, .info:hover::before, .info:focus-visible::before { opacity: 1; }
   .card  { @apply rounded-card border border-line bg-white shadow-card; }
+
+  /* 백오피스 다크 안에서는 공용 입력·버튼을 어둡게 뒤집는다. */
+  .adm { color-scheme: dark; }
+  .adm .field { @apply border-adm-line bg-adm-bg text-adm-text; }
+  .adm .field:focus { @apply border-adm-cyan; }
+  .adm .btn-ghost { @apply border-adm-line bg-adm-raise text-adm-text hover:bg-adm-line; }
+  .adm .btn-brand { @apply bg-adm-mint text-adm-bg hover:bg-[#5be0c0]; }
+  .adm table th { @apply border-adm-line text-adm-muted; }
+  .adm table td { @apply border-adm-line; }
+  .adm details summary { @apply text-adm-cyan; }
   .chip  { @apply inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5
            text-[13px] font-semibold text-ink-soft; }
 
