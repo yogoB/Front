@@ -16,8 +16,15 @@ export function backendUrl(path) {
   return API_BASE_URL + path;
 }
 
-// Public endpoints stay usable even when member authentication is not configured.
-export async function request(path, { method = 'GET', body, signal, member = false } = {}) {
+/**
+ * Public endpoints stay usable even when member authentication is not configured.
+ *
+ * `member: true`  — 쿠키를 보내고, 변경 요청이면 CSRF 토큰을 먼저 받아 붙인다.
+ * `session: true` — 쿠키만 보낸다(CSRF 토큰 왕복 없음). CSRF 면제 공개 경로에서 **로그인한 사람을
+ *   로그인한 사람으로 세게** 할 때 쓴다. 추천은 공개 경로지만 BE 가 principal 유무로
+ *   REPORT_SHOWN / GATE_SHOWN 을 가른다(D-36) — 쿠키를 빼고 보내면 회원도 전부 비회원으로 세진다.
+ */
+export async function request(path, { method = 'GET', body, signal, member = false, session = false } = {}) {
   const controller = new AbortController();
   const cancel = () => controller.abort(signal.reason);
   if (signal?.aborted) cancel();
@@ -33,14 +40,14 @@ export async function request(path, { method = 'GET', body, signal, member = fal
     }
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     const response = await fetch(backendUrl(path), {
-      method, headers, signal: controller.signal, credentials: member ? 'include' : 'omit',
+      method, headers, signal: controller.signal, credentials: member || session ? 'include' : 'omit',
       cache: 'no-store', ...(body === undefined ? {} : { body: JSON.stringify(body) })
     });
     let result;
     try { result = await response.json(); }
     catch { throw new ApiError('서버 응답을 읽지 못했어요. 잠시 후 다시 시도해 주세요.', response.status); }
     if (!response.ok) {
-      if (member && response.status === 401) unauthorized(path);
+      if (member && response.status === 401) unauthorized(path);   // session:true 는 비회원도 정상이라 세지 않는다
       const error = result.error || {};
       throw new ApiError(error.message || '요청을 처리하지 못했어요.', response.status, error.code, error.field);
     }

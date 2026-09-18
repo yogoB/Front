@@ -48,7 +48,9 @@ export default function Results() {
     // D-36 의 "계산도 하지 않는다"를 바꾼 것이다. 확인 중(undefined)·확인 실패(false)일 때만 기다린다.
     if (member === undefined || member === false || !input) return;
     if (!keptSubs(input).length) { setFailure('추천에 포함할 구독 서비스를 고르지 않았어요. 다시 선택해 주세요.'); return; }
-    request('/api/v1/recommendations', { method: 'POST', body: buildRequest(input) })
+    // session:true — 쿠키를 함께 보낸다. BE 가 principal 로 REPORT_SHOWN/GATE_SHOWN 을 가르므로(D-36)
+    // 쿠키를 빼면 회원이 본 리포트도 전부 '게이트를 만난 비회원'으로 집계된다(운영에서 REPORT_SHOWN 이 0 이었다).
+    request('/api/v1/recommendations', { method: 'POST', session: true, body: buildRequest(input) })
       .then(({ data }) => setData({ ...data, receivedAt: new Date() }))
       .catch(e => setFailure(e instanceof ApiError ? e.message : '추천을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'));
     request('/api/v1/catalog/plans').then(({ data }) => setPlans(data)).catch(() => {});

@@ -237,6 +237,15 @@ test('ICS UID 는 기준일이 바뀌어도 같다 — 다시 받으면 쌓이�
   assert.equal(new Set(a).size, a.length);                   // 한 파일 안에서는 서로 달라야 한다
 });
 
+// 추천은 공개 경로지만 쿠키는 보내야 한다 — BE 가 principal 유무로 REPORT_SHOWN/GATE_SHOWN 을 가른다(D-36).
+// 2026-09-18: 운영 백오피스에서 추천 호출 48 · 리포트 표시 0 이 찍혀 드러났다. credentials:'omit' 이라 회원이 전부 비회원으로 세지고 있었다.
+test('추천 호출은 세션 쿠키를 함께 보낸다 — 퍼널이 회원을 비회원으로 세지 않게', () => {
+  const code = readFileSync('src/pages/Results.jsx', 'utf8');
+  const call = code.match(/request\(\s*'\/api\/v1\/recommendations'[^)]*\)/);
+  assert.ok(call, '결과 화면이 추천을 부르지 않는다');
+  assert.match(call[0], /session:\s*true/, "추천 호출에 session:true 가 없다 — 쿠키가 빠지면 REPORT_SHOWN 이 0 이 된다");
+});
+
 // BE SecurityConfig 는 /recommendations·/calculator 만 CSRF 를 면제한다(챗봇 경로는 D-44 로 사라졌다).
 // 나머지 변경 요청은 member:true 로 보내야 request() 가 토큰을 붙인다 — 빠지면 403 이다.
 // 2026-09-17: 제보(/catalog/reports)를 member 없이 보내 403 으로 죽던 것을 잡고 추가했다.
