@@ -162,6 +162,19 @@ test('front never does arithmetic on server amounts', () => {
   }
 });
 
+// 구독 금액은 목록에서 **원화 기준**으로 적고, 해외 결제 근거는 ⓘ 툴팁으로만 보낸다(사용자 결정 2026-09-18).
+test('등급 금액은 원화 기준 · 해외 결제 근거는 따로 준다', async () => {
+  const { tierPrice, foreignNote } = await import('../src/lib/model.js');
+  assert.equal(tierPrice({ price: 7900 }), '7,900원');
+  const usd = { price: 4.99, currency: 'USD', taxIncluded: false, krwEstimate: 7300 };
+  assert.equal(tierPrice(usd), '약 7,300원(추정)');           // 해외 결제도 목록에는 원화로
+  assert.match(foreignNote(usd), /\$4\.99 \+ 세금 10%/);      // 달러·세금은 ⓘ 안에만 있다
+  assert.equal(foreignNote({ price: 7900 }), null);           // 국내 결제는 붙일 근거가 없다
+  // 환산값이 없으면 원화를 지어내지 않는다 — 표기 통화를 그대로 적고, 그때는 ⓘ 도 없다(같은 말 반복 금지).
+  assert.equal(tierPrice({ price: 4.99, currency: 'USD' }), '$4.99');
+  assert.equal(foreignNote({ price: 4.99, currency: 'USD' }), null);
+});
+
 // 검색: 공백·대소문자를 무시한다. "요고38"로 "KT 요고 38"을 못 찾던 문제(2026-09-16).
 test('matches — 띄어쓰기와 대소문자를 무시한다', async () => {
   const { matches } = await import('../src/lib/model.js');

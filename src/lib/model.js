@@ -17,12 +17,22 @@ export const matches = (haystack, needle) => {
 /** 해외 결제 등급인가. 원화 확정 금액이 없어 계산에는 사용자가 확인한 금액이 필요하다. */
 export const isForeign = tier => Boolean(tier?.currency) && tier.currency !== 'KRW';
 
-/** 등급 금액 표시. 해외 결제는 표기 통화와 원화 환산(추정)을 함께 보여준다 — 환산값을 정가처럼 적지 않는다.
-    표기가가 세금 별도면(해외 사업자 관행) 그 사실을 적는다. 환산값에는 이미 부가세 10%가 들어 있다. */
+/** 표기 통화 금액. 세금 별도면(해외 사업자 관행) 그 사실을 함께 적는다 — 원화 환산값에는 이미 부가세 10%가 들어 있다. */
+const foreignAmount = tier =>
+  `${tier.currency === 'USD' ? '$' : tier.currency + ' '}${tier.price.toLocaleString('en-US')}`
+  + (tier.taxIncluded === false ? ' + 세금 10%' : '');
+
+/** 등급 금액 표시 — **목록에는 항상 원화로 적는다**(사용자 결정 2026-09-18). 해외 결제 등급은 원화 환산(추정)을
+    적고, 표기 통화·세금 같은 근거는 화면이 작은 ⓘ 로 따로 보여준다(foreignNote).
+    환산값이 없으면 원화를 지어내지 않고 표기 통화를 그대로 적는다 — 없는 숫자를 만들지 않는다(원칙 2·4). */
 export const tierPrice = tier => !isForeign(tier) ? won(tier.price)
-  : `${tier.currency === 'USD' ? '$' : tier.currency + ' '}${tier.price.toLocaleString('en-US')}`
-    + (tier.taxIncluded === false ? ' + 세금 10%' : '')
-    + (tier.krwEstimate ? ` · 약 ${won(tier.krwEstimate)}(추정)` : '');
+  : tier.krwEstimate ? `약 ${won(tier.krwEstimate)}(추정)`
+  : foreignAmount(tier);
+
+/** 원화 옆 ⓘ 에 띄울 근거 한 줄. 국내 결제이거나 이미 표기 통화를 적고 있으면 null — 같은 말을 두 번 하지 않는다. */
+export const foreignNote = tier => isForeign(tier) && tier.krwEstimate
+  ? `해외 결제 ${foreignAmount(tier)} 기준 · 환율에 따라 달라져요`
+  : null;
 
 /** 입력창에 채워 줄 기본 금액(원). 해외 결제는 환산 추정치를 넣고 사용자가 고치게 한다(원칙 5-②). */
 export const tierKrwGuess = tier => isForeign(tier) ? (tier.krwEstimate ?? null) : tier.price;
