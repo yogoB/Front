@@ -11,6 +11,8 @@ const call = (path, opts = {}) => request(path, { member: true, ...opts }).then(
 /** -1 은 "알 수 없음"이다(표가 없거나 조회 실패). 0 으로 적으면 거짓말이 된다. */
 const show = value => (typeof value === 'number' && value >= 0 ? value.toLocaleString('ko-KR') : '—');
 const pick = (data, path) => path.split('.').reduce((value, key) => (value ?? {})[key], data);
+/** 금액. 서버가 준 값만 적는다 — 화면에서 더하거나 나누지 않는다(절대 원칙 2). */
+const krw = value => (typeof value === 'number' ? `${value.toLocaleString('ko-KR')}원` : '—');
 /** 서버가 준 시각을 그대로 보여준다. 파싱에 실패하면 원문을 남긴다 — 기록은 지어내지 않는다. */
 const when = (iso, style = 'short') => {
   const at = new Date(iso);
@@ -93,9 +95,11 @@ const danger = `${small} border-adm-red/40 bg-transparent text-adm-red hover:bg-
 /* ---------- 차트(SVG 직접) ---------- */
 /** 면적 차트. rows 는 날짜 오름차순, series 는 [{key,label,color}]. dimUntil 이전 날짜는 회색 띠로 표시한다. */
 function AreaChart({ rows, series, dimUntil, note }) {
-  const W = 640, H = 220, L = 36, R = 12, T = 16, B = 28;
+  const W = 640, H = 220, R = 12, T = 16, B = 28;
   if (!rows.length) return <p className="text-sm text-adm-muted">집계가 없어요.</p>;
   const max = Math.max(1, ...rows.flatMap(r => series.map(s => Number(r[s.key]) || 0)));
+  // 눈금 글자가 잘리지 않게 왼쪽 여백을 최댓값 길이에 맞춘다(금액은 여섯 자리가 넘는다).
+  const L = 14 + max.toLocaleString('ko-KR').length * 6;
   const x = i => L + (rows.length > 1 ? (i * (W - L - R)) / (rows.length - 1) : 0);
   const y = v => H - B - (v / max) * (H - T - B);
   const line = s => rows.map((r, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(Number(r[s.key]) || 0).toFixed(1)}`).join(' ');
@@ -113,7 +117,7 @@ function AreaChart({ rows, series, dimUntil, note }) {
         {[0, 0.5, 1].map(f => (
           <g key={f}>
             <line x1={L} x2={W - R} y1={y(max * f)} y2={y(max * f)} stroke="#1f2a44" strokeDasharray="3 4" />
-            <text x={L - 6} y={y(max * f) + 4} textAnchor="end" fontSize="10" fill="#8a97b3">{f === 0 ? 0 : f === 1 ? max : ''}</text>
+            <text x={L - 6} y={y(max * f) + 4} textAnchor="end" fontSize="10" fill="#8a97b3">{f === 0 ? 0 : f === 1 ? max.toLocaleString('ko-KR') : ''}</text>
           </g>
         ))}
         {dimCount > 0 && (
@@ -158,6 +162,83 @@ function BarChart({ items, color = '#22d3ee', empty = '집계가 없어요.' }) 
         );
       })}
     </svg>
+  );
+}
+
+/** 가로 막대. items 는 [{label, value}]. 길이는 최댓값 대비이고 숫자는 항상 오른쪽에 적는다. */
+function HBars({ items, color = '#3ed4af', unit = '' }) {
+  const max = Math.max(1, ...items.map(i => Number(i.value) || 0));
+  return (
+    <ul className="m-0 grid list-none gap-1.5 p-0 text-sm">
+      {items.map(it => {
+        const v = Number(it.value) || 0;
+        return (
+          <li key={it.label} className="grid grid-cols-[5.5rem_1fr_auto] items-center gap-2">
+            <span className="text-xs text-adm-muted">{it.label}</span>
+            <span className="relative block h-5 overflow-hidden rounded-md bg-adm-bg/60">
+              <i className="absolute inset-y-0 left-0 rounded-md" style={{ width: `${(v / max) * 100}%`, background: color, opacity: v ? 0.55 : 0 }} />
+            </span>
+            <b className="tnum">{show(v)}{unit}</b>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/* 절감액 트래킹(D-54). 모든 숫자는 BE 의 savings 블록 그대로다 — 화면은 합계도 평균도 만들지 않는다.
+   기준을 문구로 함께 적는다: 진단에서 확인한 금액이고, 실제로 옮겼는지는 우리가 모른다. */
+const SAVINGS_BASIS = { CURRENT_PLAN: '지금 쓰는 요금제 대비', BASELINE: '정가 대비' };
+const SAVINGS_BUCKETS = ['1만 미만', '1~3만', '3~5만', '5~10만', '10만 이상'];
+
+function Savings({ savings }) {
+  if (!savings) return null;
+  const counts = new Map((savings.histogram ?? []).map(h => [h.bucket, Number(h.count) || 0]));
+  const daily = [...(savings.daily ?? [])].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const notImproved = typeof savings.members === 'number' && typeof savings.improved === 'number'
+    ? savings.members - savings.improved : null;
+  return (
+    <Card title="우리가 찾아 준 절감액"
+          sub={`${SAVINGS_BASIS[savings.basis] ?? savings.basis ?? '기준 미상'} · 진단에서 확인한 절감액이고, 실제로 옮겼는지는 확인하지 않는다.`}>
+      <div className="grid gap-4 lg:grid-cols-[repeat(3,minmax(0,1fr))]">
+        <div className="rounded-xl border border-adm-line bg-adm-bg/60 p-4">
+          <span className="text-xs text-adm-muted">1인당 월 절감액 · 중앙값</span>
+          <b className="mt-1 block text-[26px] font-extrabold leading-tight tracking-[-.02em] text-adm-mint tnum">{krw(savings.monthlyMedian)}</b>
+          <span className="mt-1 block text-xs text-adm-muted">평균 {krw(savings.monthlyAverage)} · 최대 {krw(savings.monthlyMax)}</span>
+        </div>
+        <div className="rounded-xl border border-adm-line bg-adm-bg/60 p-4">
+          <span className="text-xs text-adm-muted">월 합계</span>
+          <b className="mt-1 block text-[26px] font-extrabold leading-tight tracking-[-.02em] tnum">{krw(savings.monthlyTotal)}</b>
+          <span className="mt-1 block text-xs text-adm-muted">
+            {show(savings.members)}명 기준 · 그중 {show(savings.improved)}명이 절감
+            {notImproved > 0 && ` · ${show(notImproved)}명은 지금이 더 싸다`}
+          </span>
+        </div>
+        <div className="rounded-xl border border-adm-line bg-adm-bg/60 p-4">
+          <span className="text-xs text-adm-muted">연 환산 · 월 × 12 환산</span>
+          <b className="mt-1 block text-xl font-extrabold leading-tight tnum">{krw(savings.annualTotalEstimate)}</b>
+          <span className="mt-1 block text-xs text-adm-muted">1년치 실측이 아니다. 이번 달 값을 12배 한 수다.</span>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-5 xl:grid-cols-2">
+        <div>
+          <h3 className="mb-2 text-[13px] font-bold text-adm-muted">1인당 월 절감액 분포</h3>
+          <HBars unit="명" items={SAVINGS_BUCKETS.map(b => ({ label: b, value: counts.get(b) ?? 0 }))} />
+        </div>
+        <div>
+          <h3 className="mb-2 text-[13px] font-bold text-adm-muted">날짜별 저장 건수와 절감 합계</h3>
+          {daily.length
+            ? <>
+                <BarChart color="#3ed4af" items={daily.map(d => ({ label: String(d.date).slice(5).replace('-', '/'), value: Number(d.savedCount) || 0 }))} />
+                <p className="mt-1 text-xs text-adm-muted">막대는 저장 건수(건). 아래 선은 그날 저장분의 월 절감 합계(원).</p>
+                <AreaChart rows={daily.map(d => ({ date: String(d.date), monthlySum: Number(d.monthlySum) || 0 }))}
+                           series={[{ key: 'monthlySum', label: '절감 합계(원)', color: '#a78bfa' }]} />
+              </>
+            : <p className="text-sm text-adm-muted">아직 저장된 결과가 없어요.</p>}
+        </div>
+      </div>
+    </Card>
   );
 }
 
@@ -387,6 +468,8 @@ function DashboardPage({ data, audit }) {
           사람 수는 그대로인데 호출만 몇 배로 뛰면 결과 화면 반복 호출을 의심한다(2026-09-17 사고의 모양).
         </p>
       </Card>
+
+      <Savings savings={data.savings} />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card title="퍼널 · 최근 14일 (사람 수)" sub="같은 사람은 하루 단계당 한 번만 센다. 횟수가 아니라 사람 수다.">
