@@ -343,7 +343,9 @@ function PlanSearch({ plans, carrier, selected, onPick, onClear, status = 'ready
      공개·CSRF 면제 경로라 토큰 왕복이 없다. 응답은 있든 없든 늘 같으므로(카탈로그를 훑는 통로가 되면 안 된다)
      화면도 "접수했다"까지만 적고 존재 여부를 추측하지 않는다. 통신사 이름은 추천 경로가 이미 자동 기록한다. */
   async function reportMissing() {
-    const text = `${carrier} ${query.trim()}`.trim().slice(0, 200);
+    // 통신사 이름을 이미 쳤으면 덧붙이지 않는다 — "SKT SKT 청년 59" 로 쌓이면 같은 결손이 두 줄로 갈린다.
+    const typed = query.trim();
+    const text = (matchesAll(typed, carrier) ? typed : `${carrier} ${typed}`).slice(0, 200);
     setReported('보내는 중…');
     try {
       await request('/api/v1/catalog/gaps', { method: 'POST', body: { kind: 'MOBILE_PLAN', queryText: text } });
