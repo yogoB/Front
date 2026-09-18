@@ -49,7 +49,15 @@
   }
 }
 
+/* 랜딩 절감액 표본이 갈릴 때 한 칸 올라오며 바뀐다. 움직임 줄이기 설정은 위 base 의 전역 규칙이 끈다. */
+@keyframes tick-up {
+  from { opacity: 0; transform: translateY(.3em); }
+  to   { opacity: 1; transform: none; }
+}
+
 @layer components {
+  .tick { animation: tick-up .18s ease-out; }
+
   /* v4 의 @apply 는 유틸리티만 받는다 — 컴포넌트 클래스를 다시 @apply 할 수 없다.
      그래서 .btn 을 상속하지 않고, 마크업에서 "btn btn-brand" 처럼 두 개를 함께 쓴다. */
   /* 눌리는 것은 전부 44px 이상(touch-target-size). 여백은 4px 단위 스케일만 쓴다. */

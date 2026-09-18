@@ -1,9 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Header } from '../components/Layout.jsx';
 
+/* 라이트를 "정확도가 떨어진다"고 적지 않는다 — 디테일 미선택자를 불완전으로 표현하지 않는 것이 정책이다
+   (UX_POLICY §2 두 수준 진단). 대신 각 모드가 **무엇을 받아 무엇을 더 해주는지**와 걸리는 품을 적는다(규칙 9). */
 const MODES = [
-  { to: '/light', title: '라이트모드', desc: ['3개의 질문으로 분석해드려요!', '단 정확도는 조금 떨어질 수 있어요'] },
-  { to: '/detail', title: '디테일모드', desc: ['통신사·약정·희망 조건까지 넣어', '더 정확한 조합을 찾아드려요'] },
+  { to: '/light', title: '라이트모드', badge: '질문 3개',
+    desc: ['데이터·통신비·구독만 답하면', '바로 절감액과 조합이 나와요'] },
+  { to: '/detail', title: '디테일모드', badge: '질문 6개',
+    desc: ['통신사·약정·가족결합까지 넣어', '위약금과 갈아탈 시점까지 챙겨요'] },
 ];
 
 /* 시안: 민트 바탕을 화면 끝까지, 유리 카드 두 장. 동전·돋보기는 장식이라 aria-hidden 이고 좁은 화면에서는 뺀다. */
@@ -31,10 +35,11 @@ export default function Modes() {
           <div className="mt-14 grid gap-6 md:grid-cols-2">
             {MODES.map(m => (
               <Link key={m.to} to={m.to}
-                    className="group relative flex min-h-80 flex-col justify-center rounded-xl bg-white/55 px-7 pb-24 pt-12
-                               text-center text-ink backdrop-blur-[14px] transition duration-150 hover:-translate-y-[3px] hover:bg-white/70 md:min-h-[480px]">
+                    className="group relative flex min-h-64 flex-col justify-center rounded-xl bg-white/55 px-7 pb-20 pt-10
+                               text-center text-ink backdrop-blur-[14px] transition duration-150 hover:-translate-y-[3px] hover:bg-white/70 md:min-h-80">
+                <span className="mx-auto mb-3 rounded-full bg-ink/85 px-3 py-1 text-xs font-bold text-white">{m.badge}</span>
                 <h2 className="text-[26px] font-extrabold tracking-[-.02em] md:text-[32px]">{m.title}</h2>
-                <p className="mt-6 text-base leading-relaxed md:mt-11 md:text-xl">{m.desc[0]}<br />{m.desc[1]}</p>
+                <p className="mt-4 text-base leading-relaxed md:mt-6 md:text-lg">{m.desc[0]}<br />{m.desc[1]}</p>
                 <span aria-hidden="true"
                       className="absolute bottom-7 right-7 grid size-16 place-items-center rounded-full bg-white text-[26px]
                                  transition-colors duration-150 group-hover:bg-ink group-hover:text-white">
