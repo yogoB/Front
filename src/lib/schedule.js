@@ -63,6 +63,8 @@ export function relativeDay(date, today = startOfToday()) {
 
 const pad = n => String(n).padStart(2, '0');
 /** 종일 일정용 날짜. Google·ICS 모두 시작일과 '다음 날'(끝은 배타적)을 쓴다. */
+/** `YYYY-MM-DD`. 서버에 날짜를 보낼 때 쓴다 — toISOString 은 UTC 로 밀려 하루가 어긋난다. */
+export const isoDay = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 export const dayStamp = date => `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
 const nextDay = date => { const d = new Date(date); d.setDate(d.getDate() + 1); return d; };
 

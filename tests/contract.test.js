@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { request, ApiError, onUnauthorized } from '../src/lib/api.js';
 import { DATA_BUCKETS, FEE_BUCKETS, loadCarriers } from '../src/lib/catalog-data.js';
-import { parseDay, icsEscape, icsText, monthGrid, relativeDay, EVENTS_FROM_EXPIRY, EVENTS_FROM_TODAY, googleUrl, startOfToday } from '../src/lib/schedule.js';
+import { parseDay, icsEscape, icsText, monthGrid, relativeDay, EVENTS_FROM_EXPIRY, EVENTS_FROM_TODAY, googleUrl, startOfToday, isoDay } from '../src/lib/schedule.js';
 import { integer, optionalInputs, recommendationRequest, calculatorRequest, comparisonCsv, splitLines, matches, clampDigits } from '../src/lib/model.js';
 
 const values = { monthlyDataGb: '20', currentCarrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: 'false', fee: '55000', budget: '70000', contractEnd: '2027-01-01' };
@@ -281,4 +281,10 @@ test('화면은 세션 입력(getInput/getResult)을 렌더 본문에서 읽지 
     const src = readFileSync(`src/pages/${file}`, 'utf8');
     assert.ok(!/^\s*const \w+ = get(Input|Result)\(\);/m.test(src), `${file}: 세션 값을 렌더마다 읽고 있다`);
   }
+});
+
+test('isoDay 는 UTC 로 밀리지 않는다 — 서버에 보내는 날짜가 하루 어긋나면 안 된다', () => {
+  const local = new Date(2026, 11, 3);            // 2026-12-03 00:00 KST
+  assert.equal(isoDay(local), '2026-12-03');
+  assert.notEqual(isoDay(local), local.toISOString().slice(0, 10));
 });

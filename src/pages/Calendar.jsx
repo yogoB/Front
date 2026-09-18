@@ -8,7 +8,7 @@ import GuestGate, { MemberCheckFailed } from '../components/GuestGate.jsx';
 import { backendUrl } from '../lib/api.js';
 import {
   WEEKDAYS, STEPS, GUIDES, STEP_COLORS, EVENTS_FROM_TODAY, EVENTS_FROM_EXPIRY,
-  parseDay, startOfToday, dateOf, dayText, relativeDay, googleUrl, icsText, monthGrid,
+  parseDay, startOfToday, dateOf, dayText, isoDay, relativeDay, googleUrl, icsText, monthGrid,
 } from '../lib/schedule.js';
 
 /* 전환 액션 캘린더. 요금제명·금액은 결과 화면이 BE 응답에서 넘긴 값을 그대로 쓴다(같은 숫자는 같은 출처).
@@ -56,18 +56,17 @@ export default function Calendar() {
     // 약정 잔여 개월은 사용자가 넣은 만료일에서 센다. 서버는 이 날짜를 모른다.
     const months = futureExpiry ? Math.max(0, Math.round((futureExpiry - today) / (1000 * 60 * 60 * 24 * 30.4375))) : 0;
     const query = new URLSearchParams({ targetPlanId: String(result.planId), currentPlanId: String(currentPlanId), remainingContractMonths: String(months) });
+    // 만료일은 사용자가 여기 적은 값이라 서버가 모른다. 문구에 쓰라고 함께 보낸다(D-47).
+    if (futureExpiry) query.set('expiryDate', isoDay(futureExpiry));
     request(`/api/v1/me/switch-timing?${query}`, { member: true })
       .then(({ data }) => {
-        if (data.status === 'SWITCH_NOW') {
-          setServer({ status: data.status, date: today, events: EVENTS_FROM_TODAY });
-          setNote(`지금 옮기는 게 이득이라 오늘 기준으로 잡았어요 (전환비용 회수 ${data.paybackMonths}개월, 약정 잔여 ${months}개월).`);
-        } else if (data.status === 'WAIT_UNTIL_EXPIRY' && futureExpiry) {
-          setServer({ status: data.status, date: futureExpiry, events: EVENTS_FROM_EXPIRY });
-          setNote(`약정 만료일 ${dayText(futureExpiry)}까지 기다리는 게 이득이에요. 그 날에 맞춰 일정을 잡았어요.`);
-        } else if (data.status === 'NO_BENEFIT') {
-          setServer({ status: data.status });
-          setNote('지금 조건에서는 옮겨도 절감이 없어요. 아래 일정은 참고용이에요.');
-        }
+        // 판정별 문장은 서버가 만든다(D-47). 화면은 기준일과 일정만 고른다.
+        const status = data.timing?.status;
+        if (status === 'SWITCH_NOW') setServer({ status, date: today, events: EVENTS_FROM_TODAY, headline: data.headline });
+        else if (status === 'WAIT_UNTIL_EXPIRY' && futureExpiry) setServer({ status, date: futureExpiry, events: EVENTS_FROM_EXPIRY, headline: data.headline });
+        else if (status === 'NO_BENEFIT') setServer({ status, headline: data.headline });
+        else return;
+        if (data.note) setNote(data.note);
       })
       .catch(() => { /* 현재 요금제 미저장·서버 오류 — 입력 기반 기준일을 유지한다 */ });
   }, [currentPlanId, result?.planId, futureExpiry, today]);
@@ -111,7 +110,8 @@ export default function Calendar() {
     const d = dateOf(anchor, first.offset), day = d.getDate();
     return `${d.getMonth() + 1}월${day <= 10 ? ' 초' : day >= 21 ? ' 말' : ''}`;
   };
-  const timing = server?.status === 'SWITCH_NOW' ? '지금이 최적 실행 시점'
+  const timing = server?.headline ? server.headline
+    : server?.status === 'SWITCH_NOW' ? '지금이 최적 실행 시점'
     : server?.status === 'NO_BENEFIT' ? '절감 없음 · 참고용 일정'
     : anchor === futureExpiry ? `약정 만료일 ${anchor.getMonth() + 1}월 ${anchor.getDate()}일이 실행 시점`
     : '오늘 기준 일정';
