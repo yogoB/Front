@@ -343,8 +343,6 @@ function DashboardPage({ data, audit }) {
     { label: '결손 대기', value: data.gaps, icon: 'gaps', color: 'violet', delta: '요청됐지만 카탈로그에 없는 것' },
   ];
   const unique = [...(pick(data, 'funnel.uniqueDaily') ?? [])].reverse();   // 서버는 최신순 — 차트는 시간순
-  // ponytail: 반복 호출 경고는 "횟수가 사람 수의 2배 초과" 단순 기준. BE 가 판정값을 주면 그걸로 바꾼다.
-  const loop = health.reportViewersToday > 0 && health.recommendationsToday > health.reportViewersToday * 2;
   const kinds = Object.entries(health.narrationFailuresByKind ?? {});
   const palette = ['#f87171', '#fbbf24', '#a78bfa', '#22d3ee', '#3ed4af'];
   return (
@@ -369,8 +367,8 @@ function DashboardPage({ data, audit }) {
       <Card title="운영 상태" sub="어제 같은 사고(설명 경로 실패·결과 화면 반복 호출)는 여기서 먼저 드러난다. 켜진 뒤 누적값이며 재시작하면 0부터.">
         <dl className="m-0 grid grid-cols-2 gap-3 text-sm md:grid-cols-3 xl:grid-cols-6">
           {[
-            ['추천 호출 · 오늘', health.recommendationsToday, loop ? 'text-adm-red' : ''],
-            ['리포트 표시 · 오늘', health.reportShownToday, loop ? 'text-adm-red' : ''],
+            ['추천 호출 · 오늘', health.recommendationsToday],
+            ['리포트 표시 · 오늘', health.reportShownToday],
             ['본 사람 · 오늘', health.reportViewersToday],
             ['내레이터 호출', health.narrationCalls],
             ['내레이터 평균 / 최대', health.narrationAvgMs == null ? null : `${show(health.narrationAvgMs)} / ${show(health.narrationMaxMs)} ms`],
@@ -382,7 +380,12 @@ function DashboardPage({ data, audit }) {
             </div>
           ))}
         </dl>
-        {loop && <p className="mt-3 text-sm font-semibold text-adm-red">추천 호출 횟수가 본 사람 수보다 훨씬 많아요 — 결과 화면이 반복 호출하고 있다는 신호예요.</p>}
+        {/* 판정은 적지 않는다. 호출 수를 '본 사람'(회원)과만 견주면 비회원 계산까지 반복 호출로 몰려 오탐이 난다 —
+            2026-09-18 운영에서 실제로 그렇게 떴다. 숫자를 나란히 두고 사람이 읽는다. 판정이 필요하면 BE 가 값으로 준다. */}
+        <p className="mt-3 text-xs text-adm-muted">
+          추천 호출은 회원·비회원을 합한 횟수고, ‘본 사람’은 회원만 하루 한 번 센 수다.
+          사람 수는 그대로인데 호출만 몇 배로 뛰면 결과 화면 반복 호출을 의심한다(2026-09-17 사고의 모양).
+        </p>
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-2">
