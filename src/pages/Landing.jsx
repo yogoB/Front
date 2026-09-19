@@ -81,7 +81,7 @@ function SavingsAverage({ average, median, count, basis }) {
       {/* 금액에는 기준을 붙인다(절대 원칙 4). 진단에서 확인한 금액이고 실제로 옮겼는지는 우리가 모른다. */}
       <p className="text-[13px] leading-relaxed text-muted">
         {BASIS[basis] ?? '월 절감액'} · 진단에서 확인한 절감액
-        {count > 0 && ` · 이용자 ${count.toLocaleString('ko-KR')}명 기준(계정당 1건)`}
+        {count > 0 && ` · 로그인하고 결과를 확인한 이용자 ${count.toLocaleString('ko-KR')}명 기준(계정당 1건)`}
         {median != null && median !== average && <><br />중앙값은 월 {median.toLocaleString('ko-KR')}원이에요.</>}
       </p>
     </div>
@@ -103,7 +103,7 @@ function SavingsTicker({ samples, count, basis }) {
       {/* 금액에는 기준을 붙인다(절대 원칙 4). 실제로 옮겼는지까지는 우리가 알 수 없으므로 '확인한'이라고 적는다. */}
       <p className="text-[13px] text-muted">
         {BASIS[basis] ?? '월 절감액'}
-        {count > 0 && ` · 이용자 ${count.toLocaleString('ko-KR')}명의 표본(계정당 1건)`}
+        {count > 0 && ` · 로그인하고 결과를 확인한 이용자 ${count.toLocaleString('ko-KR')}명의 표본(계정당 1건)`}
       </p>
     </div>
   );

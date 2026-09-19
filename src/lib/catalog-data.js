@@ -6,13 +6,16 @@ import { request } from './api.js';
 const ICONS = {
   '넷플릭스': '🎬', '유튜브 프리미엄': '▶️', '티빙': '📺', '웨이브': '🌊', '왓챠': '🎞️',
   '쿠팡플레이': '🛒', '디즈니+': '✨', '애플TV+': '🍎',
+  '아마존 프라임 비디오': '📼', '라프텔': '🍥',
   '멜론': '🍈', '지니뮤직': '🧞', 'FLO': '🌊', '벅스': '🐞',
   'Spotify': '🟢', 'Apple Music': '🎧', 'YouTube Music': '🎶',
   'Gemini': '♊', 'ChatGPT': '🤖', 'Claude': '🧠', 'Perplexity': '🔎',
   '리디셀렉트': '📖', '윌라': '🎧', '크레마클럽': '📚', '교보 sam': '📕',
   'iCloud+': '☁️', 'Microsoft 365': '🗂️', 'Dropbox': '📦',
+  'Notion': '📝', 'PlayStation Plus': '🎮', 'Xbox Game Pass': '🕹️',
 };
-const CATEGORY_ICONS = { OTT: '📺', VIDEO_MUSIC: '▶️', MUSIC: '🎵', AI: '🤖', EBOOK: '📚', CLOUD: '☁️' };
+const CATEGORY_ICONS = { OTT: '📺', VIDEO_MUSIC: '▶️', MUSIC: '🎵', AI: '🤖', EBOOK: '📚', CLOUD: '☁️',
+  GAME: '🎮', PRODUCTIVITY: '🗒️' };
 
 /** GET /api/v1/catalog/services → 화면이 쓰는 {id, name, icon, tiers[]}. 등급이 없는 서비스는 고를 수 없으므로 뺀다. */
 export async function loadCatalog(signal) {
