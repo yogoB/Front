@@ -564,7 +564,8 @@ const QUALITY = [
   ['samePriceTiers', '같은 가격 등급', '한 서비스 안에 가격이 같은 등급 — 이름만 다른 중복일 수 있다'],
   ['placeholderPlans', '출처 없는 더미 요금제', '가격 0 이거나 출처가 진짜 URL 이 아닌 행'],
   ['plansWithoutSource', '출처 미기재 요금제', '출처 칸이 빈 활성 요금제'],
-  ['mnoNetworkGaps', 'MNO 망 결손', '통신 3사인데 5G 나 LTE 요금제가 하나도 없다'],
+  // 기준은 계산 서버가 정한다(BE v53, 2026-09-20): 0건이 아니라 3건 미만을 얇다고 센다.
+  ['mnoNetworkGaps', 'MNO 망 결손', '통신 3사인데 5G 나 LTE 요금제가 3건 미만이다. 0건과 1건은 사용자에게 같다 — 고를 게 없다. 통합요금제(5G/LTE)는 양쪽을 덮는 것으로 센다'],
 ];
 function QualityPage({ quality }) {
   if (!quality) return <p className="text-sm text-adm-muted">품질 검사 결과를 읽는 중…</p>;
