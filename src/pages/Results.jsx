@@ -359,7 +359,12 @@ function columnFacts(cost) {
     plan: <PlanChip carrier={cost.carrier} name={cost.planName} />,
     fee: baseFee(cost) ? won(baseFee(cost).amount) : '—',
     benefits: cost.breakdown.filter(l => l.note === '제휴 혜택 적용').map(l => `${l.label} ${won(l.amount)}`),
-    discounts: cost.breakdown.filter(l => l.amount < 0).map(l => `${l.label} ${won(l.amount)}`),
+    // 깎인 금액은 음수 줄로 온다. 그런데 묶음 상품(Apple One·티빙x웨이브)은 여러 등급을 한 줄로 바꿔 넣는 방식이라
+    // 음수 줄이 없다 — 그때도 정가와 체감가가 다르다. "적용된 할인 없음"으로 적으면 실제로 깎인 걸 없다고 말하게 된다.
+    // 무엇이 깎았는지는 BE 가 줄에 표시해 주기 전까지 단정하지 않고, 계산 과정을 보라고만 적는다(2026-09-20).
+    discounts: cost.breakdown.some(l => l.amount < 0)
+      ? cost.breakdown.filter(l => l.amount < 0).map(l => `${l.label} ${won(l.amount)}`)
+      : cost.baseline !== cost.monthlyTotal ? ['정가보다 싸요 — 아래 “계산 과정과 출처 보기”에 내역이 있어요'] : [],
   };
 }
 
