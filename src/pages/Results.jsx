@@ -329,6 +329,25 @@ const baseFee = cost => cost.breakdown.find(l => l.label.endsWith('기본료'));
 
 /** 카탈로그 제원 표기(금액이 아니라 데이터·통화 수량 — 표기 변환만 한다). null 은 미확인이다. */
 const fmtData = mb => mb == null ? null : `${mb % 1024 ? (mb / 1024).toFixed(1) : mb / 1024}GB`;
+
+/* 요금제 망 표기. LTE_5G 는 통합요금제라 5G·LTE 양쪽에 걸린다(BE NETWORK_MATCHES 와 같은 규칙). */
+const NETWORK_LABEL = { FIVE_G: '5G', LTE: 'LTE', LTE_5G: '5G/LTE 통합', THREE_G: '3G' };
+const networkFits = (planNetwork, wanted) => !wanted || !planNetwork || planNetwork === 'LTE_5G'
+  || (wanted === '5G' ? planNetwork === 'FIVE_G' : wanted === 'LTE' ? planNetwork === 'LTE' : true);
+
+/* '변경 최소'가 지금보다 비싸면 지금 요금제가 후보 조건을 통과하지 못한 것이다(G-51).
+   못 통과한 절은 넷인데(데이터·망·가입 자격·판매 여부) 화면이 카탈로그에서 볼 수 있는 것은 앞의 둘뿐이다.
+   **실제로 모자란 절만** 적고, 못 고르면 이유를 말하지 않는다 — 데이터가 넉넉한데 "데이터가 모자라요"라고
+   적힌 사례가 운영에서 나왔다(LG헬로모바일 5G 유심 6GB, 진짜 이유는 5G 전용인데 LTE 를 고른 것, 2026-09-20). */
+function missingCondition(spec, input) {
+  if (!spec) return null;
+  const wantMb = (input.data?.gb ?? DEFAULT_GB) * 1024;
+  if (spec.dataMb != null && spec.dataMb < wantMb)
+    return `지금 요금제의 데이터는 ${fmtData(spec.dataMb)}, 원하시는 건 ${input.data ? input.data.label : `${DEFAULT_GB}GB`}예요.`;
+  if (!networkFits(spec.networkType, input.networkType))
+    return `지금 요금제는 ${NETWORK_LABEL[spec.networkType] ?? spec.networkType} 전용인데 ${input.networkType} 로 찾으셨어요.`;
+  return null;
+}
 const fmtVoice = min => min == null ? '확인 필요' : min === 0 ? '미제공' : `${min.toLocaleString('ko-KR')}분`;
 
 /** 결과 한 건(results[]·current.cost 모두 같은 모양)에서 비교표 열에 적을 사실을 뽑는다.
@@ -407,10 +426,8 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
       {/* 조건을 맞추는 가장 싼 안이 지금보다 비쌀 수 있다. 숫자 둘만 두면 "더 비싼 걸 추천했다"로 읽힌다(2026-09-20). */}
       {minimalCostsMore && (
         <p className="bg-warn-tint px-4.5 py-2.5 text-[13px] leading-relaxed text-warn-ink">
-          <strong>지금 요금제가 더 싸요.</strong> 다만 지금 요금제로는 원하시는 조건을 맞출 수 없어요
-          {planViews.current && fmtData(planViews.current.dataMb)
-            ? ` — 지금 요금제의 데이터는 ${fmtData(planViews.current.dataMb)}, 원하시는 건 ${input.data ? input.data.label : `${DEFAULT_GB}GB`}예요.`
-            : `(원하시는 데이터 ${input.data ? input.data.label : `${DEFAULT_GB}GB`}).`}
+          <strong>지금 요금제가 더 싸요.</strong> 다만 지금 요금제로는 원하시는 조건을 맞출 수 없어요.
+          {missingCondition(planViews.current, input) && ` ${missingCondition(planViews.current, input)}`}
           {' '}가운데 열은 {currentCarrier ? `${currentCarrier} 안에서 ` : ''}그 조건을 맞추는 가장 싼 조합이에요.
           조건이 지금으로 충분하면 그대로 두셔도 괜찮아요.
         </p>

@@ -245,6 +245,17 @@ test('요금제 검색은 띄어쓴 낱말을 모두 포함하면 걸린다', ()
   assert.ok(!matchesAll('0 청년 다이렉트 62', 'SKT 청년 59', 'SKT')); // 진짜 없는 것은 없다고 나와야 한다
 });
 
+// '변경 최소'가 더 비쌀 때 이유를 적는데, 실제로 모자란 절만 골라야 한다.
+// 운영 사례: LG헬로모바일 5G 유심 6GB(데이터는 넉넉) — 진짜 이유는 5G 전용인데 LTE 로 찾은 것(2026-09-20).
+test('모자란 조건은 데이터·망 중 실제로 어긋난 것만 적는다', () => {
+  const code = readFileSync('src/pages/Results.jsx', 'utf8');
+  assert.match(code, /function missingCondition/, '조건 판정 함수가 없다');
+  // 통합요금제(LTE_5G)는 5G·LTE 양쪽에 걸린다 — BE NETWORK_MATCHES 와 같은 규칙이어야 한다.
+  assert.match(code, /LTE_5G'\s*\|\|/, '통합요금제를 양쪽에 걸리게 두지 않았다');
+  // 데이터가 넉넉하면 데이터 문장을 만들지 않는다: 비교가 dataMb < 요구량 이어야 한다.
+  assert.match(code, /spec\.dataMb\s*<\s*wantMb/, '데이터 비교가 "모자랄 때만"이 아니다');
+});
+
 // '변경 최소' 열은 BE 의 minimalChange 다(D-55). 화면이 통신사로 고르면 SKT 사용자에게 알뜰폰이 '변경 최소'로 나왔다.
 test('결과 화면은 변경 최소 조합을 BE minimalChange 로 받는다', () => {
   const code = readFileSync('src/pages/Results.jsx', 'utf8');
