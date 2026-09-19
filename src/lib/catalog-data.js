@@ -8,10 +8,10 @@ const ICONS = {
   '쿠팡플레이': '🛒', '디즈니+': '✨', '애플TV+': '🍎',
   '아마존 프라임 비디오': '📼', '라프텔': '🍥',
   '멜론': '🍈', '지니뮤직': '🧞', 'FLO': '🌊', '벅스': '🐞',
-  'Spotify': '🟢', 'Apple Music': '🎧', 'YouTube Music': '🎶',
+  'Spotify': '🟢', 'Apple Music': '🎧', 'YouTube Music': '🎶', 'VIBE': '🎼', '바이브': '🎼',
   'Gemini': '♊', 'ChatGPT': '🤖', 'Claude': '🧠', 'Perplexity': '🔎',
-  '리디셀렉트': '📖', '윌라': '🎧', '크레마클럽': '📚', '교보 sam': '📕',
-  'iCloud+': '☁️', 'Microsoft 365': '🗂️', 'Dropbox': '📦',
+  '리디셀렉트': '📖', '윌라': '🎧', '크레마클럽': '📚', '교보 sam': '📕', '밀리의서재': '📗', '스토리텔': '🎙️', '예스24 북클럽': '📓',
+  'iCloud+': '☁️', 'Microsoft 365': '🗂️', 'Dropbox': '📦', 'Google One': '🗄️',
   'Notion': '📝', 'PlayStation Plus': '🎮', 'Xbox Game Pass': '🕹️',
 };
 const CATEGORY_ICONS = { OTT: '📺', VIDEO_MUSIC: '▶️', MUSIC: '🎵', AI: '🤖', EBOOK: '📚', CLOUD: '☁️',
