@@ -43,6 +43,7 @@ const ICON = {
   alert: 'M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01',
   up: 'M23 6l-9.5 9.5-5-5L1 18M17 6h6v6',
   home: 'M3 10l9-7 9 7v11h-6v-7H9v7H3z',
+  members: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8',
 };
 const Icon = ({ name, size = 18, className = '' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
@@ -272,7 +273,7 @@ function Donut({ parts, zero = '없음' }) {
 
 /* ---------- 라우팅(페이지) ---------- */
 const PAGES = [
-  ['dashboard', '대시보드'], ['quality', '데이터 품질'], ['gaps', '결손 · 제보'], ['stats', '통계'], ['audit', '감사 로그'],
+  ['dashboard', '대시보드'], ['quality', '데이터 품질'], ['gaps', '결손 · 제보'], ['members', '회원'], ['stats', '통계'], ['audit', '감사 로그'],
   ['catalog', '카탈로그 검수'], ['jobs', '정기 작업'],
 ];
 const ACTION = {
@@ -280,6 +281,7 @@ const ACTION = {
   REPORT_RESOLVED: '제보 처리', REPORT_REJECTED: '제보 반려', REPORT_PENDING: '제보 대기로',
   GAP_REQUESTED: '결손 요청', GAP_IN_PROGRESS: '결손 진행', GAP_PENDING: '결손 보류', GAP_VERIFIED: '결손 확인', GAP_REJECTED: '결손 반려',
   JOB_HARVEST: '수집 실행', JOB_PURGE: '파기 실행', JOB_SWEEP: '시세 수집', JOB_FX: '환율 갱신',
+  MEMBER_SESSIONS_REVOKED: '회원 세션 끊기',
 };
 
 export default function Admin() {
@@ -392,6 +394,7 @@ export default function Admin() {
         {page === 'dashboard' && <DashboardPage data={dashboard} audit={audit} />}
         {page === 'quality' && <QualityPage quality={dashboard?.quality} />}
         {page === 'gaps' && <><GapsBoard say={say} onChanged={refresh} /><ReportsBoard say={say} onChanged={refresh} /></>}
+        {page === 'members' && <MembersPage say={say} />}
         {page === 'stats' && <StatsPage data={dashboard} />}
         {page === 'audit' && <AuditPage rows={audit} />}
         {page === 'catalog' && <CatalogPage say={say} onChanged={refresh} />}
@@ -720,6 +723,68 @@ function ReportsBoard({ onChanged, say }) {
               </tr>
             );
           }) : <Empty cols={7} text="해당하는 제보가 없어요." />}
+      </Table>
+    </Card>
+  );
+}
+
+/* ---------- 회원 운영 ----------
+   이메일이 보이는 유일한 면이다. 할 수 있는 일은 찾기와 세션 끊기(기기 분실 문의) 둘뿐이고,
+   삭제 버튼은 두지 않는다 — 탈퇴는 본인만 한다(개인정보처리방침). 내보내기도 없다. */
+function MembersPage({ say }) {
+  const [query, setQuery] = useState('');
+  const [rows, setRows] = useState(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(0);
+
+  const load = useCallback(() => {
+    const params = new URLSearchParams({ limit: '100' });
+    if (query.trim()) params.set('q', query.trim());
+    return call(`/api/v1/admin/members?${params}`).then(list => { setRows(list); setError(''); })
+      .catch(e => { setRows([]); setError(e.message); });
+  }, [query]);
+  // 입력할 때마다 부르지 않는다 — 이메일 목록을 한 글자마다 서버에서 끌어오는 화면은 만들지 않는다.
+  useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t); }, [load]);
+
+  async function revoke(member) {
+    const label = member.nickname || member.email;
+    if (!window.confirm(`${label} 님의 로그인 세션을 모두 끊습니다.\n그 기기들에서 즉시 로그아웃돼요. 계정과 저장한 결과는 그대로예요.\n계속할까요?`)) return;
+    setBusy(member.id);
+    try {
+      await call(`/api/v1/admin/members/${member.id}/sessions`, { method: 'DELETE' });
+      say(`${label} 님의 세션을 끊었어요. 감사 로그에 남습니다.`);
+      await load();
+    } catch (e) { say(e.message); } finally { setBusy(0); }
+  }
+
+  return (
+    <Card title="회원" sub="기기 분실 문의에 답하는 자리다. 찾기와 세션 끊기만 한다 — 탈퇴는 본인만 할 수 있어 삭제 버튼은 없다."
+          action={
+            <input value={query} onChange={e => setQuery(e.target.value)} aria-label="회원 검색"
+                   placeholder="이메일 · 닉네임 검색" className="field min-h-9 w-56 py-1.5 text-sm" />
+          }>
+      {error && <p className="text-sm text-adm-red">{error}</p>}
+      <Table head={['회원', '가입', '활성 세션', '저장한 결과', '구독', '현재 요금제', '']}>
+        {rows === null ? <Empty cols={7} text="불러오는 중…" />
+          : rows.length ? rows.map(m => (
+            <tr key={m.id}>
+              <Td>
+                <b className="block">{m.nickname || '—'}</b>
+                <span className="text-xs text-adm-muted">{m.email}</span>
+              </Td>
+              <Td className="whitespace-nowrap text-xs text-adm-muted tnum">{when(m.createdAt)}</Td>
+              <Td className="tnum">{show(m.activeSessions)}</Td>
+              <Td className="tnum">{show(m.savedResults)}</Td>
+              <Td className="tnum">{show(m.subscriptions)}</Td>
+              <Td className="text-xs">{m.currentPlan ?? <span className="text-adm-muted">저장 안 함</span>}</Td>
+              <Td className="whitespace-nowrap">
+                <button type="button" onClick={() => revoke(m)} disabled={!m.activeSessions || busy === m.id}
+                        className={`${danger} disabled:cursor-not-allowed disabled:opacity-40`}>
+                  {busy === m.id ? '끊는 중…' : '세션 끊기'}
+                </button>
+              </Td>
+            </tr>
+          )) : <Empty cols={7} text={query.trim() ? '찾는 회원이 없어요.' : '아직 회원이 없어요.'} />}
       </Table>
     </Card>
   );

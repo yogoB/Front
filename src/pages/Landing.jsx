@@ -37,7 +37,11 @@ export default function Landing() {
             통신비와 구독료를 <span className="text-brand">최대한 줄여드려요</span>
           </h1>
 
-          {stats?.samples?.length > 0 && <SavingsTicker samples={stats.samples} count={stats.sampleCount} basis={stats.basis} />}
+          {/* 1인당 평균이 있으면 그것이 히어로 숫자다(사용자 지시 2026-09-19). 표본이 적으면 BE 가 null 로 주므로 저절로 숨는다 —
+              한두 명의 금액을 "1인당 평균"이라는 이름으로 랜딩에 띄우지 않는다. 평균이 없을 때만 예전 표본 굴리기를 쓴다. */}
+          {stats?.monthlyAverage != null
+            ? <SavingsAverage average={stats.monthlyAverage} median={stats.monthlyMedian} count={stats.sampleCount} basis={stats.basis} />
+            : stats?.samples?.length > 0 && <SavingsTicker samples={stats.samples} count={stats.sampleCount} basis={stats.basis} />}
 
           <p className="max-w-prose text-base leading-relaxed text-ink-soft md:text-lg">
             질문 세 개면 내 통신비와 구독료가 정리되고, 지금보다 나은 조합이 나옵니다.
@@ -65,6 +69,25 @@ export default function Landing() {
 /* 이용자들이 진단에서 확인한 절감액. 표본을 순환하며 보여준다 —
    **모든 프레임이 BE 가 준 실제 표본**이고 중간값을 만들지 않는다(절대 원칙 2: 화면은 금액을 만들지 않는다).
    그래서 카운트업(보간)이 아니라 표본 갈아치우기다. 빠르게 돌다 느려지고, 멈췄다가 다시 돈다. */
+/* 이용자 1인당 평균 절감액. 평균·중앙값·표본 수 전부 BE 값이다 — 화면은 나누지도 더하지도 않는다(절대 원칙 2). */
+function SavingsAverage({ average, median, count, basis }) {
+  return (
+    <div className="grid gap-2">
+      <p className="text-sm font-semibold text-muted">이용자 1인당 평균 월 절감액</p>
+      <p className="tnum text-[52px] font-extrabold leading-none tracking-[-.03em] text-ink md:text-[76px]">
+        <span className="text-brand-strong">{average.toLocaleString('ko-KR')}</span>
+        <span className="text-[.42em] font-bold text-ink-soft"> 원</span>
+      </p>
+      {/* 금액에는 기준을 붙인다(절대 원칙 4). 진단에서 확인한 금액이고 실제로 옮겼는지는 우리가 모른다. */}
+      <p className="text-[13px] leading-relaxed text-muted">
+        {BASIS[basis] ?? '월 절감액'} · 진단에서 확인한 절감액
+        {count > 0 && ` · 이용자 ${count.toLocaleString('ko-KR')}명 기준(계정당 1건)`}
+        {median != null && median !== average && <><br />중앙값은 월 {median.toLocaleString('ko-KR')}원이에요.</>}
+      </p>
+    </div>
+  );
+}
+
 function SavingsTicker({ samples, count, basis }) {
   const amount = useRollingSample(samples);
   return (
