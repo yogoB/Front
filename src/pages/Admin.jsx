@@ -568,6 +568,8 @@ const QUALITY = [
   ['plansWithoutSource', '출처 미기재 요금제', '출처 칸이 빈 활성 요금제'],
   // 기준은 계산 서버가 정한다(BE v53, 2026-09-20): 0건이 아니라 3건 미만을 얇다고 센다.
   ['mnoNetworkGaps', 'MNO 망 결손', '통신 3사인데 5G 나 LTE 요금제가 3건 미만이다. 0건과 1건은 사용자에게 같다 — 고를 게 없다. 통합요금제(5G/LTE)는 양쪽을 덮는 것으로 센다'],
+  // 계산기는 등급 가격을 전부 월 단가로 더한다 — 연간·선불 금액이 섞이면 그 사람의 월 총액이 통째로 틀린다(G-54).
+  ['nonMonthlyTiers', '월 단가가 아닌 등급', '이름·비고에 기간 표기(개월·연간·N년)가 있거나, 같은 서비스 중앙값의 10배가 넘는 등급. 큰 값이 다 틀린 건 아니다 — iCloud+ 12TB 처럼 진짜 비싼 월 상품도 걸린다'],
 ];
 function QualityPage({ quality }) {
   if (!quality) return <p className="text-sm text-adm-muted">품질 검사 결과를 읽는 중…</p>;
