@@ -78,6 +78,8 @@ export default function Results() {
   const recommended = minimal ?? cheapest;
   const sameAsCheapest = recommended?.planId === cheapest?.planId;
   const minimalKnown = Boolean(minimal);   // 현재 통신사 안에서 고른 것인가
+  // 왜 없는지는 둘 중 하나다 — 통신사를 모르거나, 알지만 그 통신사에 다른 후보가 없거나(예: SKT·LTE 는 카탈로그에 1건뿐).
+  // 둘을 같은 문장으로 적으면 이미 통신사를 알려준 사람에게 또 알려달라고 하게 된다.
   const narrated = { ...data, ...(told ?? {}) };   // 설명 필드는 첫 응답 또는 narrate 응답에서
   const notices = buildNotices(input, narrated, recommended);
   const reasons = narrated.reasons ?? [];
@@ -149,7 +151,8 @@ export default function Results() {
               </div>
               {saveNote && <span role="status" className="text-[13px] font-semibold text-ink-soft">{saveNote}</span>}
             </div>
-            <CompareTable input={input} recommended={recommended} cheapest={cheapest} sameAsCheapest={sameAsCheapest} minimalKnown={minimalKnown}
+            <CompareTable input={input} recommended={recommended} cheapest={cheapest} sameAsCheapest={sameAsCheapest}
+                          minimalKnown={minimalKnown} currentCarrier={currentCarrier}
                           current={current} months={months} planViews={planViews}
                           tools={
                             /* 저장·내려받기는 세 번째 열 머리 오른쪽에 둔다(사용자 결정 2026-09-18).
@@ -344,7 +347,7 @@ function PlanChip({ carrier, name }) {
   );
 }
 
-function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKnown = true, current, months, planViews, tools }) {
+function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKnown = true, currentCarrier, current, months, planViews, tools }) {
   const rec = columnFacts(recommended);
   const low = columnFacts(cheapest);
   // '현재' 열: BE 가 같은 계산기로 낸 current.cost 가 있으면 그것, 없으면 입력값 합계(폴백).
@@ -381,7 +384,7 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
   const columns = [
     { tone: 'now', title: '현재 상황', sub: current ? '지금 요금제 · 같은 계산기' : '현재 통신사 및 납부 요금', total: curTotal },
     { tone: 'best', best: true, title: '추천 · 변경 최소 🌟',
-      sub: !minimalKnown ? '지금 조건에서 가장 나은 조합 · 체감 환산 월 요금'
+      sub: !minimalKnown ? (currentCarrier ? `${currentCarrier} 안에서는 다른 후보가 없어 전체 1순위를 적었어요` : '지금 조건에서 가장 나은 조합 · 체감 환산 월 요금')
         : sameAsCheapest ? `${recommended.carrier} 그대로가 가장 싼 조합이에요`
         : `${recommended.carrier} 그대로 · 번호이동 없이 바꾸는 조합`,
       total: won(recommended.monthlyTotal),
@@ -395,8 +398,11 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
     <div className="border-t border-line">
       {!minimalKnown && (
         <p className="bg-bg-soft px-4.5 py-2.5 text-[13px] leading-relaxed text-muted">
-          현재 통신사를 알려주시면 <strong className="text-ink-soft">번호이동 없이 바꾸는 안</strong>도 따로 찾아드려요.
-          지금 두 열은 같은 조합이에요.
+          {currentCarrier
+            ? <><strong className="text-ink-soft">{currentCarrier}</strong> 안에서는 조건에 맞는 다른 요금제를 찾지 못했어요.
+                지금 두 열은 같은 조합이고, 옮기려면 통신사를 바꿔야 해요.</>
+            : <>현재 통신사를 알려주시면 <strong className="text-ink-soft">번호이동 없이 바꾸는 안</strong>도 따로 찾아드려요.
+                지금 두 열은 같은 조합이에요.</>}
         </p>
       )}
       <CompareCards rows={rows} columns={columns} tools={tools} />
@@ -413,7 +419,7 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
               {curTotal}
             </ColHead>
             <ColHead tone="best" title="추천 · 변경 최소 🌟" checked="brand"
-                     sub={!minimalKnown ? '지금 조건에서 가장 나은 조합 · 체감 환산 월 요금'
+                     sub={!minimalKnown ? (currentCarrier ? `${currentCarrier} 안에서는 다른 후보가 없어 전체 1순위를 적었어요` : '지금 조건에서 가장 나은 조합 · 체감 환산 월 요금')
                        : sameAsCheapest ? `${recommended.carrier} 그대로가 가장 싼 조합이에요`
                        : `${recommended.carrier} 그대로 · 번호이동 없이 바꾸는 조합`}
                      save={recommended.monthlySavings > 0
