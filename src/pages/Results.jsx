@@ -159,6 +159,7 @@ export default function Results() {
             </div>
             <CompareTable input={input} recommended={recommended} cheapest={cheapest} sameAsCheapest={sameAsCheapest}
                           minimalKnown={minimalKnown} currentCarrier={currentCarrier} minimalCostsMore={minimalCostsMore}
+                          excluded={current?.excluded ?? null}
                           current={current} months={months} planViews={planViews}
                           tools={
                             /* 저장·내려받기는 세 번째 열 머리 오른쪽에 둔다(사용자 결정 2026-09-18).
@@ -330,22 +331,23 @@ const baseFee = cost => cost.breakdown.find(l => l.label.endsWith('기본료'));
 /** 카탈로그 제원 표기(금액이 아니라 데이터·통화 수량 — 표기 변환만 한다). null 은 미확인이다. */
 const fmtData = mb => mb == null ? null : `${mb % 1024 ? (mb / 1024).toFixed(1) : mb / 1024}GB`;
 
-/* 요금제 망 표기. LTE_5G 는 통합요금제라 5G·LTE 양쪽에 걸린다(BE NETWORK_MATCHES 와 같은 규칙). */
+/* 요금제 망 표기. LTE_5G 는 통합요금제(5G·LTE 양쪽)다. */
 const NETWORK_LABEL = { FIVE_G: '5G', LTE: 'LTE', LTE_5G: '5G/LTE 통합', THREE_G: '3G' };
-const networkFits = (planNetwork, wanted) => !wanted || !planNetwork || planNetwork === 'LTE_5G'
-  || (wanted === '5G' ? planNetwork === 'FIVE_G' : wanted === 'LTE' ? planNetwork === 'LTE' : true);
 
-/* '변경 최소'가 지금보다 비싸면 지금 요금제가 후보 조건을 통과하지 못한 것이다(G-51).
-   못 통과한 절은 넷인데(데이터·망·가입 자격·판매 여부) 화면이 카탈로그에서 볼 수 있는 것은 앞의 둘뿐이다.
-   **실제로 모자란 절만** 적고, 못 고르면 이유를 말하지 않는다 — 데이터가 넉넉한데 "데이터가 모자라요"라고
-   적힌 사례가 운영에서 나왔다(LG헬로모바일 5G 유심 6GB, 진짜 이유는 5G 전용인데 LTE 를 고른 것, 2026-09-20). */
-function missingCondition(spec, input) {
-  if (!spec) return null;
-  const wantMb = (input.data?.gb ?? DEFAULT_GB) * 1024;
-  if (spec.dataMb != null && spec.dataMb < wantMb)
-    return `지금 요금제의 데이터는 ${fmtData(spec.dataMb)}, 원하시는 건 ${input.data ? input.data.label : `${DEFAULT_GB}GB`}예요.`;
-  if (!networkFits(spec.networkType, input.networkType))
-    return `지금 요금제는 ${NETWORK_LABEL[spec.networkType] ?? spec.networkType} 전용인데 ${input.networkType} 로 찾으셨어요.`;
+/* 지금 요금제가 후보에서 빠진 사유. **판정은 BE 가 한다**(current.excluded, G-52) —
+   후보 질의의 절을 그대로 한 행에 적용한 결과다. 화면이 규칙을 베껴 두면 거울이 하나 더 생기고,
+   실제로 그 거울이 틀렸다(데이터가 넉넉한데 "데이터가 모자라요", 2026-09-20). 화면은 문장만 만든다.
+   ageLimit 은 카탈로그 원문이라 제한 없는 요금제도 'ALL' 이 온다 — ELIGIBILITY 일 때만 쓴다. */
+function excludedSentence(excluded) {
+  if (!excluded) return null;
+  const { reason, planDataMb, requiredDataMb, planNetwork, requiredNetwork, ageLimit } = excluded;
+  if (reason === 'DATA')
+    return `지금 요금제의 데이터는 ${fmtData(planDataMb) ?? '확인 필요'}, 원하시는 건 ${fmtData(requiredDataMb) ?? '그보다 많아요'}예요.`;
+  if (reason === 'NETWORK')
+    return `지금 요금제는 ${NETWORK_LABEL[planNetwork] ?? planNetwork} 전용인데 ${requiredNetwork} 로 찾으셨어요.`;
+  if (reason === 'ELIGIBILITY')
+    return `지금 요금제는 ${ageLimit ? `${ageLimit} 자격` : '가입 자격'}이 있어야 해서 후보에서 뺐어요.`;
+  if (reason === 'INACTIVE') return '지금 요금제는 더 이상 판매하지 않아요.';
   return null;
 }
 const fmtVoice = min => min == null ? '확인 필요' : min === 0 ? '미제공' : `${min.toLocaleString('ko-KR')}분`;
@@ -374,7 +376,7 @@ function PlanChip({ carrier, name }) {
   );
 }
 
-function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKnown = true, currentCarrier, minimalCostsMore = false, current, months, planViews, tools }) {
+function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKnown = true, currentCarrier, minimalCostsMore = false, excluded = null, current, months, planViews, tools }) {
   const rec = columnFacts(recommended);
   const low = columnFacts(cheapest);
   // '현재' 열: BE 가 같은 계산기로 낸 current.cost 가 있으면 그것, 없으면 입력값 합계(폴백).
@@ -427,7 +429,7 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
       {minimalCostsMore && (
         <p className="bg-warn-tint px-4.5 py-2.5 text-[13px] leading-relaxed text-warn-ink">
           <strong>지금 요금제가 더 싸요.</strong> 다만 지금 요금제로는 원하시는 조건을 맞출 수 없어요.
-          {missingCondition(planViews.current, input) && ` ${missingCondition(planViews.current, input)}`}
+          {excludedSentence(excluded) && ` ${excludedSentence(excluded)}`}
           {' '}가운데 열은 {currentCarrier ? `${currentCarrier} 안에서 ` : ''}그 조건을 맞추는 가장 싼 조합이에요.
           조건이 지금으로 충분하면 그대로 두셔도 괜찮아요.
         </p>
