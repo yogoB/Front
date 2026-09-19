@@ -220,8 +220,8 @@ export default function Detail() {
 
             {step === 3 && (
               <>
-                <Question kicker="구독 정보" sub="유지할 서비스와 해지할 서비스를 정해주세요.">
-                  희망하는 구독서비스를 말해주세요!
+                <Question kicker="구독 정보">
+                  구독서비스 정보를 입력해주세요!
                 </Question>
                 <div className="mb-4 flex flex-col gap-2.5">
                   {wish.map(w => (
