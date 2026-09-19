@@ -78,6 +78,9 @@ export default function Results() {
   const recommended = minimal ?? cheapest;
   const sameAsCheapest = recommended?.planId === cheapest?.planId;
   const minimalKnown = Boolean(minimal);   // 현재 통신사 안에서 고른 것인가
+  // '변경 최소'가 지금보다 비쌀 수 있다 — 지금 요금제가 조건(데이터 등)을 못 맞추거나 후보에서 빠질 때다.
+  // 두 금액을 견주기만 한다(차액은 적지 않는다). 이유는 응답에 없으므로 단정하지 않는다.
+  const minimalCostsMore = Boolean(current && minimalKnown && recommended.monthlyTotal > current.cost.monthlyTotal);
   // 왜 없는지는 둘 중 하나다 — 통신사를 모르거나, 알지만 그 통신사에 다른 후보가 없거나(예: SKT·LTE 는 카탈로그에 1건뿐).
   // 둘을 같은 문장으로 적으면 이미 통신사를 알려준 사람에게 또 알려달라고 하게 된다.
   const narrated = { ...data, ...(told ?? {}) };   // 설명 필드는 첫 응답 또는 narrate 응답에서
@@ -152,7 +155,7 @@ export default function Results() {
               {saveNote && <span role="status" className="text-[13px] font-semibold text-ink-soft">{saveNote}</span>}
             </div>
             <CompareTable input={input} recommended={recommended} cheapest={cheapest} sameAsCheapest={sameAsCheapest}
-                          minimalKnown={minimalKnown} currentCarrier={currentCarrier}
+                          minimalKnown={minimalKnown} currentCarrier={currentCarrier} minimalCostsMore={minimalCostsMore}
                           current={current} months={months} planViews={planViews}
                           tools={
                             /* 저장·내려받기는 세 번째 열 머리 오른쪽에 둔다(사용자 결정 2026-09-18).
@@ -184,7 +187,7 @@ export default function Results() {
           </button>
         ) : (
           <section className="mt-6" aria-label="결과 설명">
-            {recommended && <SaveHero best={recommended} current={current} />}
+            {recommended && <SaveHero best={recommended} current={current} sameAsCheapest={sameAsCheapest} />}
             <Summary message={narrated.message} />
             <p className="my-6 max-w-prose rounded-xl bg-warn-tint px-4 py-3 text-sm leading-relaxed text-warn-ink">
               {current
@@ -259,14 +262,16 @@ const DownloadIcon = () => (
 /* 결론 먼저(원칙 5-③) — 다만 금액을 하나도 만들지 않는다(원칙 2). 설명 펼침 안에서만 보인다.
    월·연 절감은 BE 의 monthlySavings·annualSavings 를 그대로 쓴다. 기준은 정가(baseline)이며
    사용자의 현재 청구액이 아니다(integration.md 결과 해석). */
-function SaveHero({ best, current }) {
+function SaveHero({ best, current, sameAsCheapest = true }) {
   // current 가 있으면 "지금보다" 가 기준이다(G-30). 차액은 BE 가 뺀 값(current.monthlySavings)을 그대로 쓴다 —
   // 화면에서 current − best 를 다시 계산하지 않는다. 음수(지금이 더 쌈)도 숨기지 않는다.
   let head, amount, foot;
   if (current) {
     const diff = current.monthlySavings;
-    if (diff > 0) { head = '지금보다 매달'; amount = won(diff); foot = `1년이면 ${won(current.annualSavings)}`; }
-    else if (diff < 0) { head = '지금 요금제가 더 싸요 — 매달'; amount = won(-diff); foot = '추천 조합으로 옮기면 그만큼 더 내요'; }
+    // 이 차액은 BE 가 1순위(최저가 조합)와 견준 값이다 — 가운데 열이 그것과 다르면 그렇게 적는다.
+    const basis = sameAsCheapest ? '' : ' · 최저가 조합 기준';
+    if (diff > 0) { head = '지금보다 매달'; amount = won(diff); foot = `1년이면 ${won(current.annualSavings)}${basis}`; }
+    else if (diff < 0) { head = '지금 요금제가 더 싸요 — 매달'; amount = won(-diff); foot = `추천 조합으로 옮기면 그만큼 더 내요${basis}`; }
     else { head = '지금과 같은 금액이에요'; amount = won(best.monthlyTotal); foot = '옮겨도 월 요금은 그대로예요'; }
   } else {
     const saving = best.monthlySavings > 0;
@@ -347,7 +352,7 @@ function PlanChip({ carrier, name }) {
   );
 }
 
-function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKnown = true, currentCarrier, current, months, planViews, tools }) {
+function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKnown = true, currentCarrier, minimalCostsMore = false, current, months, planViews, tools }) {
   const rec = columnFacts(recommended);
   const low = columnFacts(cheapest);
   // '현재' 열: BE 가 같은 계산기로 낸 current.cost 가 있으면 그것, 없으면 입력값 합계(폴백).
@@ -396,6 +401,15 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
 
   return (
     <div className="border-t border-line">
+      {/* 조건을 맞추는 가장 싼 안이 지금보다 비쌀 수 있다. 숫자 둘만 두면 "더 비싼 걸 추천했다"로 읽힌다(2026-09-20). */}
+      {minimalCostsMore && (
+        <p className="bg-warn-tint px-4.5 py-2.5 text-[13px] leading-relaxed text-warn-ink">
+          <strong>지금 요금제가 더 싸요.</strong> 가운데 열은 {currentCarrier ? `${currentCarrier} 안에서 ` : ''}
+          원하시는 조건({input.data ? input.data.label : `${DEFAULT_GB}GB`})을 맞추는 가장 싼 조합이라 지금보다 비쌀 수 있어요.
+          {planViews.current && fmtData(planViews.current.dataMb) && ` 지금 요금제의 데이터는 ${fmtData(planViews.current.dataMb)}예요.`}
+          {' '}조건이 지금으로 충분하면 그대로 두셔도 괜찮아요.
+        </p>
+      )}
       {!minimalKnown && (
         <p className="bg-bg-soft px-4.5 py-2.5 text-[13px] leading-relaxed text-muted">
           {currentCarrier
