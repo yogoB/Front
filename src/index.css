@@ -54,6 +54,8 @@
     word-break: keep-all;
   }
   :focus-visible { @apply outline-2 outline-brand-strong outline-offset-2 rounded-md; }
+  /* 폰에서는 오른쪽 아래 오류 제보 버튼이 화면 맨 아래 버튼을 덮는다 — 본문이 그만큼 더 스크롤되게 둔다. */
+  @media (max-width: 640px) { main { padding-bottom: 5.5rem; } }
   /* 숫자는 자릿수가 바뀌어도 흔들리지 않게 */
   .tnum { font-variant-numeric: tabular-nums; }
   /* 제목은 줄 길이를 고르게, 본문은 고아 단어가 남지 않게(ui-ux-pro-max heading-line-balance) */

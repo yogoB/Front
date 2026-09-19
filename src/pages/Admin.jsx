@@ -65,8 +65,10 @@ const Tag = ({ value, tone }) => (
     {value || '—'}
   </span>
 );
+/* min-w-0: 격자 칸 안에서 줄어들 수 있어야 한다. 없으면 카드 안의 min-w 표(최근 7일 활동 480px)가
+   칸의 최소 너비가 되어 폰에서 대시보드 전체가 가로로 밀린다 — 표는 자기 스크롤 안에서 넘치면 된다. */
 const Card = ({ title, sub, action, children, className = '' }) => (
-  <section className={`animate-fade-in rounded-2xl border border-adm-line bg-adm-card p-5 ${className}`}>
+  <section className={`animate-fade-in min-w-0 rounded-2xl border border-adm-line bg-adm-card p-5 ${className}`}>
     {(title || action) && (
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div>

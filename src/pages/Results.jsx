@@ -378,6 +378,19 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
     ['위약금 (Penalty)', input.contract?.has ? '확인 필요' : '없음', '확인 필요', '확인 필요'],
   ];
 
+  const columns = [
+    { tone: 'now', title: '현재 상황', sub: current ? '지금 요금제 · 같은 계산기' : '현재 통신사 및 납부 요금', total: curTotal },
+    { tone: 'best', best: true, title: '추천 · 변경 최소 🌟',
+      sub: !minimalKnown ? '지금 조건에서 가장 나은 조합 · 체감 환산 월 요금'
+        : sameAsCheapest ? `${recommended.carrier} 그대로가 가장 싼 조합이에요`
+        : `${recommended.carrier} 그대로 · 번호이동 없이 바꾸는 조합`,
+      total: won(recommended.monthlyTotal),
+      save: recommended.monthlySavings > 0 ? `정가 대비 ${months === 12 ? '연' : months === 6 ? '6개월' : '월'} ${won(periodSaving)} 절감` : '' },
+    { tone: 'base', title: '최저가 조합',
+      sub: sameAsCheapest ? '추천 조합과 같은 조합이에요' : `월 총액이 가장 낮은 조합 · ${cheapest.carrier} 로 옮겨야 해요`,
+      total: won(cheapest.monthlyTotal) },
+  ];
+
   return (
     <div className="border-t border-line">
       {!minimalKnown && (
@@ -386,7 +399,8 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
           지금 두 열은 같은 조합이에요.
         </p>
       )}
-      <div className="overflow-x-auto">
+      <CompareCards rows={rows} columns={columns} tools={tools} />
+      <div className="hidden overflow-x-auto md:block">
       {/* fixed: 내용 길이와 무관하게 비교 3열의 가로 폭을 똑같이 준다. */}
       <table className="w-full min-w-[760px] table-fixed border-collapse text-sm">
         <colgroup><col className="w-[19%]" /><col className="w-[27%]" /><col className="w-[27%]" /><col className="w-[27%]" /></colgroup>
@@ -461,13 +475,46 @@ function ColHead({ tone, title, sub, children, save, checked, tools }) {
 }
 
 /** 항목마다 한 줄. 쉼표로 이어 붙이면 줄 중간에서 끊긴다. */
+/** 값 한 칸. 배열이면 줄로 나눠 적는다 — 표와 폰 카드가 같은 렌더러를 쓴다. */
+const Lines = ({ value }) => (Array.isArray(value) ? value : [value])
+  .map((line, i) => <span key={i} className="block first:mt-0 [&+span]:mt-[3px]">{line}</span>);
+
 function Cell({ value, best }) {
-  const lines = Array.isArray(value) ? value : [value];
   return (
     <td className={`border-b border-line px-4.5 py-3.5 align-top
       ${best ? 'bg-brand/[.06] shadow-[inset_2px_0_0_var(--color-brand),inset_-2px_0_0_var(--color-brand)]' : ''}`}>
-      {lines.map((line, i) => <span key={i} className="block first:mt-0 [&+span]:mt-[3px]">{line}</span>)}
+      <Lines value={value} />
     </td>
+  );
+}
+
+/* 폰(≤md)에서는 열을 카드로 쌓는다. 3열 표는 760px 이라 360px 화면에서는 가로로 밀려
+   라벨 칸과 '현재' 열 반쪽만 보였다(사용자 제보 2026-09-20). 표와 같은 rows 를 그대로 쓴다. */
+function CompareCards({ rows, columns, tools }) {
+  return (
+    <div className="grid gap-3 border-t border-line p-4 md:hidden">
+      {tools && <div className="flex justify-end">{tools}</div>}
+      {columns.map((col, index) => (
+        <section key={col.title} className={`rounded-xl border p-4 ${col.best ? 'border-brand bg-brand/[.06]' : 'border-line bg-white'}`}>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className={`rounded-md px-2 py-1 text-xs font-bold ${PILL[col.tone]}`}>{col.title}</span>
+            {col.best && <span className="rounded bg-brand-ink px-1.5 py-1 text-[10px] font-extrabold tracking-wide text-white">BEST</span>}
+          </div>
+          <p className="mt-1.5 text-xs font-medium leading-relaxed text-muted">{col.sub}</p>
+          <p className={`mt-1 whitespace-nowrap text-[22px] font-extrabold tnum ${col.best ? 'text-brand-strong' : ''}`}>{col.total}</p>
+          {col.save && <p className="mt-0.5 text-xs font-bold text-brand-strong">{col.save}</p>}
+          <dl className="m-0 mt-3 grid grid-cols-[6.5rem_1fr] gap-x-3 gap-y-2 border-t border-line pt-3 text-sm">
+            {rows.map(row => (
+              <div key={row[0]} className="contents">
+                {/* 영문 괄호는 폰에서 접어 둔다 — "부가혜택 (Benefits)"가 두 줄로 밀리던 자리다. */}
+                <dt className="text-xs leading-relaxed text-muted">{String(row[0]).replace(/\s*\(.+\)$/, '')}</dt>
+                <dd className="m-0 leading-relaxed"><Lines value={row[index + 1]} /></dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ))}
+    </div>
   );
 }
 

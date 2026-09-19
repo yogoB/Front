@@ -28,7 +28,10 @@ export default function Calendar() {
   const [expiryText, setExpiryText] = useState(input?.contract?.endDate ?? '');
   const [note, setNote] = useState('');
   const [view, setView] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
-  const [mode, setMode] = useState('month');       // month | list
+  // 폰에서는 리스트로 연다. 7열 격자는 360px 에서 칸이 40px 남짓이라 일정 이름이 통째로 눌려 사라진다
+  // (사용자 제보 2026-09-20). 토글은 그대로 두어 격자도 볼 수 있다.
+  const [mode, setMode] = useState(() =>
+    (typeof matchMedia === 'function' && matchMedia('(max-width: 640px)').matches ? 'list' : 'month'));
   const [showExport, setShowExport] = useState(false);
 
   // 일정의 기준일. 기본은 오늘이며, 약정 만료일이 앞으로 남아 있으면 그 날로 옮긴다.
@@ -297,9 +300,10 @@ function Grid({ view, anchor, events, today, result }) {
                     <a key={e.label} href={googleUrl(e, anchor, result)} target="_blank" rel="noopener noreferrer" title={`${e.label} — Google 캘린더에 추가`}
                        className="flex items-start gap-1.5 rounded-md px-1.5 py-1 text-[11px] font-semibold leading-snug hover:opacity-80"
                        style={{ background: past ? '#eef0f3' : c + '1f', color: past ? '#6e6f85' : c }}>
-                      <span className="mt-px grid size-3 shrink-0 place-items-center rounded-full border-[1.5px] border-current text-[7px]">{past ? '✓' : '●'}</span>
-                      <span className="line-clamp-3">{e.label}</span>
-                      {!past && <span className="ml-auto shrink-0"><Ext /></span>}
+                      {/* 좁은 화면에서는 점과 ↗ 를 접는다 — 그 둘이 자리를 먹어 이름이 0폭으로 눌렸다. */}
+                      <span className="mt-px hidden size-3 shrink-0 place-items-center rounded-full border-[1.5px] border-current text-[7px] sm:grid">{past ? '✓' : '●'}</span>
+                      <span className="line-clamp-3 min-w-0 flex-1">{e.label}</span>
+                      {!past && <span className="ml-auto hidden shrink-0 sm:block"><Ext /></span>}
                     </a>
                   );
                 })}
