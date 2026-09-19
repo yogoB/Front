@@ -8,7 +8,8 @@ import { useMember, forgetMember } from '../lib/useMember.js';
 import { MemberCheckFailed } from '../components/GuestGate.jsx';
 
 /** BE 카탈로그의 통신망 코드 → 화면 표기. 모르는 값은 그대로 보여준다. */
-const NETWORKS = { FIVE_G: '5G', LTE: 'LTE', THREE_G: '3G' };
+// KT 현재 라인업은 5G/LTE 구분 없이 팔린다 — BE 가 LTE_5G 로 적고(2026-09-20) 후보 필터는 양쪽에서 잡는다.
+const NETWORKS = { FIVE_G: '5G', LTE: 'LTE', LTE_5G: '5G/LTE 통합', THREE_G: '3G' };
 
 const message = e => (e instanceof ApiError ? e.message : '요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.');
 
