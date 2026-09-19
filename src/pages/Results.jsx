@@ -78,8 +78,11 @@ export default function Results() {
   const recommended = minimal ?? cheapest;
   const sameAsCheapest = recommended?.planId === cheapest?.planId;
   const minimalKnown = Boolean(minimal);   // 현재 통신사 안에서 고른 것인가
-  // '변경 최소'가 지금보다 비쌀 수 있다 — 지금 요금제가 조건(데이터 등)을 못 맞추거나 후보에서 빠질 때다.
-  // 두 금액을 견주기만 한다(차액은 적지 않는다). 이유는 응답에 없으므로 단정하지 않는다.
+  /* '변경 최소'가 지금보다 비싸면 **지금 요금제가 조건을 통과하지 못한 것**이다(G-51).
+     BE 후보 질의(CatalogReader.findCandidatePlans)는 판매중·데이터·망·가입자격 넷만 보고 현재 요금제를
+     빼지 않는다. 통과했다면 후보에 들어가 있고, 같은 통신사에서 가장 싼 것을 고르는 minimalChange 가
+     그보다 비쌀 수 없다. BE 가 이 성질을 테스트로 고정해 두었다(RecommendationApiTest).
+     두 금액을 견주기만 한다 — 차액은 적지 않는다(절대 원칙 2). */
   const minimalCostsMore = Boolean(current && minimalKnown && recommended.monthlyTotal > current.cost.monthlyTotal);
   // 왜 없는지는 둘 중 하나다 — 통신사를 모르거나, 알지만 그 통신사에 다른 후보가 없거나(예: SKT·LTE 는 카탈로그에 1건뿐).
   // 둘을 같은 문장으로 적으면 이미 통신사를 알려준 사람에게 또 알려달라고 하게 된다.
@@ -389,7 +392,7 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
   const columns = [
     { tone: 'now', title: '현재 상황', sub: current ? '지금 요금제 · 같은 계산기' : '현재 통신사 및 납부 요금', total: curTotal },
     { tone: 'best', best: true, title: '추천 · 변경 최소 🌟',
-      sub: !minimalKnown ? (currentCarrier ? `${currentCarrier} 안에서는 다른 후보가 없어 전체 1순위를 적었어요` : '지금 조건에서 가장 나은 조합 · 체감 환산 월 요금')
+      sub: !minimalKnown ? (currentCarrier ? `${currentCarrier} 안에는 조건을 맞추는 요금제가 없어 전체 1순위를 적었어요` : '지금 조건에서 가장 나은 조합 · 체감 환산 월 요금')
         : sameAsCheapest ? `${recommended.carrier} 그대로가 가장 싼 조합이에요`
         : `${recommended.carrier} 그대로 · 번호이동 없이 바꾸는 조합`,
       total: won(recommended.monthlyTotal),
@@ -404,16 +407,18 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
       {/* 조건을 맞추는 가장 싼 안이 지금보다 비쌀 수 있다. 숫자 둘만 두면 "더 비싼 걸 추천했다"로 읽힌다(2026-09-20). */}
       {minimalCostsMore && (
         <p className="bg-warn-tint px-4.5 py-2.5 text-[13px] leading-relaxed text-warn-ink">
-          <strong>지금 요금제가 더 싸요.</strong> 가운데 열은 {currentCarrier ? `${currentCarrier} 안에서 ` : ''}
-          원하시는 조건({input.data ? input.data.label : `${DEFAULT_GB}GB`})을 맞추는 가장 싼 조합이라 지금보다 비쌀 수 있어요.
-          {planViews.current && fmtData(planViews.current.dataMb) && ` 지금 요금제의 데이터는 ${fmtData(planViews.current.dataMb)}예요.`}
-          {' '}조건이 지금으로 충분하면 그대로 두셔도 괜찮아요.
+          <strong>지금 요금제가 더 싸요.</strong> 다만 지금 요금제로는 원하시는 조건을 맞출 수 없어요
+          {planViews.current && fmtData(planViews.current.dataMb)
+            ? ` — 지금 요금제의 데이터는 ${fmtData(planViews.current.dataMb)}, 원하시는 건 ${input.data ? input.data.label : `${DEFAULT_GB}GB`}예요.`
+            : `(원하시는 데이터 ${input.data ? input.data.label : `${DEFAULT_GB}GB`}).`}
+          {' '}가운데 열은 {currentCarrier ? `${currentCarrier} 안에서 ` : ''}그 조건을 맞추는 가장 싼 조합이에요.
+          조건이 지금으로 충분하면 그대로 두셔도 괜찮아요.
         </p>
       )}
       {!minimalKnown && (
         <p className="bg-bg-soft px-4.5 py-2.5 text-[13px] leading-relaxed text-muted">
           {currentCarrier
-            ? <><strong className="text-ink-soft">{currentCarrier}</strong> 안에서는 조건에 맞는 다른 요금제를 찾지 못했어요.
+            ? <><strong className="text-ink-soft">{currentCarrier}</strong> 안에는 원하시는 조건을 맞추는 요금제가 없어요.
                 지금 두 열은 같은 조합이고, 옮기려면 통신사를 바꿔야 해요.</>
             : <>현재 통신사를 알려주시면 <strong className="text-ink-soft">번호이동 없이 바꾸는 안</strong>도 따로 찾아드려요.
                 지금 두 열은 같은 조합이에요.</>}
@@ -433,7 +438,7 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
               {curTotal}
             </ColHead>
             <ColHead tone="best" title="추천 · 변경 최소 🌟" checked="brand"
-                     sub={!minimalKnown ? (currentCarrier ? `${currentCarrier} 안에서는 다른 후보가 없어 전체 1순위를 적었어요` : '지금 조건에서 가장 나은 조합 · 체감 환산 월 요금')
+                     sub={!minimalKnown ? (currentCarrier ? `${currentCarrier} 안에는 조건을 맞추는 요금제가 없어 전체 1순위를 적었어요` : '지금 조건에서 가장 나은 조합 · 체감 환산 월 요금')
                        : sameAsCheapest ? `${recommended.carrier} 그대로가 가장 싼 조합이에요`
                        : `${recommended.carrier} 그대로 · 번호이동 없이 바꾸는 조합`}
                      save={recommended.monthlySavings > 0
