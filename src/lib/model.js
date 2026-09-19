@@ -63,7 +63,7 @@ export const DEFAULT_GB = 10;
 
 /** 유지하기로 한 구독만 추천 대상이다(디테일 모드의 '해지'는 제외). */
 /* 추천에 넣을 구독. 디테일이 '유지/해지'를 묻던 시절의 값(disposition)이 세션에 남아 있을 수 있어
-   그때 '해지'로 찍힌 것만 걸러낸다 — 지금 화면은 쓰는 것만 받으므로 새 입력에는 이 값이 없다(2026-09-21). */
+   그때 '해지'로 찍힌 것만 걸러낸다 — 지금 화면은 쓰는 것만 받으므로 새 입력에는 이 값이 없다(2026-09-20). */
 export const keptSubs = source => (source.subs || []).filter(s => !s.disposition || s.disposition === '유지');
 
 /** 세션에 담아 둔 입력(Light·Detail 의 setInput)으로 `POST /recommendations` 본문을 만든다.

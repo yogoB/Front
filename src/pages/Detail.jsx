@@ -226,7 +226,7 @@ export default function Detail() {
                 <div className="mb-4 flex flex-col gap-2.5">
                   {wish.map(w => (
                     <div key={w.id} className="rounded-xl border border-line bg-white py-2 pl-4 pr-1">
-                      {/* 지금 쓰는 것만 받는다 — 유지/해지를 여기서 묻지 않는다(사용자 결정 2026-09-21).
+                      {/* 지금 쓰는 것만 받는다 — 유지/해지를 여기서 묻지 않는다(사용자 결정 2026-09-20).
                           무엇을 정리할지는 결과가 말한다. 이 화면은 입력만 한다. */}
                       <div className="grid grid-cols-[1fr_auto] items-center gap-3">
                         <span className="font-semibold">{w.service.icon}  {w.service.name}</span>
