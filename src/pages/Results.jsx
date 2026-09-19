@@ -354,17 +354,24 @@ const fmtVoice = min => min == null ? '확인 필요' : min === 0 ? '미제공' 
 
 /** 결과 한 건(results[]·current.cost 모두 같은 모양)에서 비교표 열에 적을 사실을 뽑는다.
     내역 줄의 금액은 '비용'이다. 제휴 혜택은 note 로 표시되므로 그 줄만 혜택으로 센다. */
+/** 할인/적립 칸. 음수 줄과 묶음 줄을 함께 적는다 — 금액은 BE 값을 그대로 옮긴다. */
+function discountLines(cost) {
+  const cut = cost.breakdown.filter(l => l.amount < 0).map(l => `${l.label} ${won(l.amount)}`);
+  const bundled = cost.breakdown.filter(l => l.note === '번들 적용')
+    .map(l => `${l.label}으로 묶어서 따로 살 때보다 싸요`);
+  if (cut.length || bundled.length) return [...cut, ...bundled];
+  return cost.baseline !== cost.monthlyTotal ? ['정가보다 싸요 — 아래 “계산 과정과 출처 보기”에 내역이 있어요'] : [];
+}
+
 function columnFacts(cost) {
   return {
     plan: <PlanChip carrier={cost.carrier} name={cost.planName} />,
     fee: baseFee(cost) ? won(baseFee(cost).amount) : '—',
     benefits: cost.breakdown.filter(l => l.note === '제휴 혜택 적용').map(l => `${l.label} ${won(l.amount)}`),
-    // 깎인 금액은 음수 줄로 온다. 그런데 묶음 상품(Apple One·티빙x웨이브)은 여러 등급을 한 줄로 바꿔 넣는 방식이라
-    // 음수 줄이 없다 — 그때도 정가와 체감가가 다르다. "적용된 할인 없음"으로 적으면 실제로 깎인 걸 없다고 말하게 된다.
-    // 무엇이 깎았는지는 BE 가 줄에 표시해 주기 전까지 단정하지 않고, 계산 과정을 보라고만 적는다(2026-09-20).
-    discounts: cost.breakdown.some(l => l.amount < 0)
-      ? cost.breakdown.filter(l => l.amount < 0).map(l => `${l.label} ${won(l.amount)}`)
-      : cost.baseline !== cost.monthlyTotal ? ['정가보다 싸요 — 아래 “계산 과정과 출처 보기”에 내역이 있어요'] : [],
+    // 깎인 금액은 음수 줄로 온다. 묶음 상품(Apple One·티빙x웨이브)은 다르다 — 여러 등급을 한 줄로 바꿔 넣어
+    // 음수 줄이 없는데도 정가보다 싸다. BE 가 그 줄에 "번들 적용"을 달아 주므로 이름을 그대로 적는다(2026-09-20).
+    // 둘 다 없는데 정가와 체감가가 다르면 이유를 모르는 것이라 계산 과정을 보라고만 한다 — 지어내지 않는다.
+    discounts: discountLines(cost),
   };
 }
 
