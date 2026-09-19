@@ -10,7 +10,7 @@ const ICONS = {
   '멜론': '🍈', '지니뮤직': '🧞', 'FLO': '🌊', '벅스': '🐞',
   'Spotify': '🟢', 'Apple Music': '🎧', 'YouTube Music': '🎶', 'VIBE': '🎼', '바이브': '🎼',
   'Gemini': '♊', 'ChatGPT': '🤖', 'Claude': '🧠', 'Perplexity': '🔎',
-  '리디셀렉트': '📖', '윌라': '🎧', '크레마클럽': '📚', '교보 sam': '📕', '밀리의서재': '📗', '스토리텔': '🎙️', '예스24 북클럽': '📓',
+  '리디셀렉트': '📖', '윌라': '🎧', '크레마클럽': '📚', '교보 sam': '📕', '밀리의서재': '📗', '스토리텔': '🎙️',   // 예스24 북클럽은 크레마클럽과 같은 서비스다(cremaclub.yes24.com) — 따로 두지 않는다
   'iCloud+': '☁️', 'Microsoft 365': '🗂️', 'Dropbox': '📦', 'Google One': '🗄️',
   'Notion': '📝', 'PlayStation Plus': '🎮', 'Xbox Game Pass': '🕹️',
 };
