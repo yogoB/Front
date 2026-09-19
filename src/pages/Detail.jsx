@@ -52,7 +52,7 @@ export default function Detail() {
         setCatalogState('ready');
         // 기본 선택을 채운다. 카탈로그에 없는 서비스는 조용히 건너뛴다.
         setWish(DEFAULT_WISH.map(id => list.find(s => s.id === id)).filter(Boolean)
-          .map(service => ({ id: service.id, service, tierId: service.tiers[0].id, disposition: '유지' })));
+          .map(service => ({ id: service.id, service, tierId: service.tiers[0].id })));
       })
       .catch(e => { setCatalogState('failed'); setError(e.message || '구독 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'); });
   }, []);
@@ -75,7 +75,7 @@ export default function Detail() {
 
   function analyze() {
     if (!carrier) { setError('통신사를 먼저 선택해 주세요.'); go(1); return; }
-    if (!wish.some(w => w.disposition === '유지')) { setError('유지할 구독 서비스를 하나 이상 골라주세요.'); return; }
+    if (!wish.length) { setError('지금 쓰는 구독 서비스를 하나 이상 넣어주세요.'); return; }
     const b = DATA_BUCKETS[dataIdx];
     setInput({
       mode: 'detail',
@@ -93,7 +93,7 @@ export default function Detail() {
       subs: wish.map(w => {
         const t = w.service.tiers.find(t => t.id === w.tierId);
         return { id: w.id, name: w.service.name, tierId: t.id, tierName: t.name,
-                 price: tierKrwGuess(t) ?? 0, estimated: isForeign(t), disposition: w.disposition };
+                 price: tierKrwGuess(t) ?? 0, estimated: isForeign(t) };
       }),
     });
     setAnalyzing(true);
@@ -226,14 +226,10 @@ export default function Detail() {
                 <div className="mb-4 flex flex-col gap-2.5">
                   {wish.map(w => (
                     <div key={w.id} className="rounded-xl border border-line bg-white py-2 pl-4 pr-1">
-                      <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3">
+                      {/* 지금 쓰는 것만 받는다 — 유지/해지를 여기서 묻지 않는다(사용자 결정 2026-09-21).
+                          무엇을 정리할지는 결과가 말한다. 이 화면은 입력만 한다. */}
+                      <div className="grid grid-cols-[1fr_auto] items-center gap-3">
                         <span className="font-semibold">{w.service.icon}  {w.service.name}</span>
-                        <select value={w.disposition} aria-label={`${w.service.name} 유지 여부`}
-                                onChange={e => setWish(list => list.map(x => x.id === w.id ? { ...x, disposition: e.target.value } : x))}
-                                className="min-h-10 rounded-lg border border-line bg-white px-2.5 py-1.5">
-                          <option value="유지">유지</option>
-                          <option value="해지">해지</option>
-                        </select>
                         <button type="button" aria-label={`${w.service.name} 제거`}
                                 onClick={() => setWish(list => list.filter(x => x.id !== w.id))}
                                 className="grid size-10 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-[15px] text-muted hover:bg-bg-soft hover:text-ink-soft">✕</button>
@@ -269,7 +265,7 @@ export default function Detail() {
                     onAdd={ids => {
                       setWish(list => [...list, ...ids.map(id => {
                         const s = catalog.find(x => x.id === id);
-                        return { id: s.id, service: s, tierId: s.tiers[0].id, disposition: '유지' };
+                        return { id: s.id, service: s, tierId: s.tiers[0].id };
                       })]);
                       setModalOpen(false);
                     }} />
