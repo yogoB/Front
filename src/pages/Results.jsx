@@ -92,7 +92,6 @@ export default function Results() {
      '이 결과 설명 보기'를 누르지 않은 사람은 통신 규격을 좁혀 더 싼 요금제를 잃은 사실을 영영 몰랐다.
      나머지 missingInputs(약정·결합·통신사 등)는 "더 알려주면 정확해진다"는 권유라 지금 자리에 둔다. */
   const losses = (data.missingInputs ?? []).filter(m => LOSS_FIELDS.has(m.field));
-  const promo = losses.find(m => m.field === 'promotionPeriod');
   const notices = buildNotices(input, narrated, recommended, losses);
   const reasons = narrated.reasons ?? [];
   const planViews = {
@@ -173,11 +172,6 @@ export default function Results() {
                     {m}개월
                   </button>
                 ))}
-                {/* 특가 기간이 끝난 뒤 금액을 모르면 6·12개월 값은 그 기간이 계속된다고 가정한 수다.
-                    토글 옆에 붙여, 숫자를 크게 읽기 전에 눈에 들어오게 한다(BE 요청 2026-09-21). */}
-                {promo && months !== 1 && (
-                  <span className="text-[13px] font-semibold text-warn-ink">· {months}개월 값은 특가가 계속된다고 본 수예요</span>
-                )}
               </div>
               {saveNote && <span role="status" className="text-[13px] font-semibold text-ink-soft">{saveNote}</span>}
             </div>
