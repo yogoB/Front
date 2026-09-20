@@ -611,7 +611,16 @@ function daysAgo(date) {
   return Math.round((today - then) / 86400000);
 }
 
-function LastSeen({ lastSeen }) {
+/* 퍼널 날짜를 어느 시간대로 끊었는지. BE 가 funnel.dateBasis 로 알려 주면 그 값을 쓰고,
+   아직 안 주면 옮기는 중이라고 적는다 — 어느 쪽이든 한 표에 두 기준이 섞인 구간이 있다. */
+const basisNote = basis =>
+  basis === 'Asia/Seoul'
+    ? '날짜는 한국 시간 기준이다 — 2026-09-21 이전에 쌓인 행은 UTC 로 끊겨 있어 새벽(0~9시) 활동이 전날로 적혀 있다.'
+    : basis === 'UTC'
+      ? '날짜는 UTC 기준이다 — 한국 시간 새벽(0~9시)에 한 일은 전날 날짜로 적힌다.'
+      : '날짜 기준을 한국 시간으로 옮기는 중이다 — 그 전에 쌓인 행은 UTC 로 끊겨 있어 새벽(0~9시) 활동이 전날로 적혀 있다.';
+
+function LastSeen({ lastSeen, basis }) {
   if (!lastSeen) return null;
   const entries = Object.entries(lastSeen);
   if (!entries.length) return null;
@@ -634,10 +643,11 @@ function LastSeen({ lastSeen }) {
         "기록 없음"은 아무도 안 했다는 뜻일 수도, 세지 못하고 있다는 뜻일 수도 있다 — 둘을 가르려면 그 단계를 한 번 직접 밟아 보면 된다.
         며칠부터 이상인지는 단계마다 달라 기준을 두지 않았다.
       </p>
-      {/* 서버가 UTC 로 날짜를 끊는다(BE 확인 2026-09-21). 한국 시간 새벽 0~9시 활동은 전날로 적힌다 —
-          화면은 서버가 준 날짜를 그대로 쓰고, 기준만 밝힌다. 경계를 옮기면 9시간짜리 이음매가 생겨 발표 뒤로 미뤘다. */}
+      {/* 날짜 경계를 한국 시간으로 옮긴다(사용자 결정 2026-09-21). 그 전에 쌓인 행은 UTC 로 끊겨 있어
+          두 기준이 한 표에 섞인다 — 화면은 서버가 준 날짜를 그대로 쓰되, 그 이음매를 적어 둔다.
+          BE 가 기준을 실어 주면(funnel.dateBasis) 이 문구 대신 그 값을 쓴다. */}
       <p className="mt-1 text-xs text-adm-muted">
-        날짜는 UTC 기준이다 — 한국 시간 새벽(0~9시)에 한 일은 전날 날짜로 적힌다.
+        {basisNote(basis)}
       </p>
     </div>
   );
@@ -741,7 +751,7 @@ function UserMetrics({ data, unique }) {
         </div>
       </div>
 
-      <LastSeen lastSeen={pick(data, 'funnel.lastSeen')} />
+      <LastSeen lastSeen={pick(data, 'funnel.lastSeen')} basis={pick(data, 'funnel.dateBasis')} />
     </Card>
   );
 }
