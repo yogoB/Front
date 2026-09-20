@@ -5,11 +5,23 @@ import { request, ApiError, onUnauthorized } from '../src/lib/api.js';
 import { DATA_BUCKETS, FEE_BUCKETS, UNLIMITED_DATA_MB, loadCarriers } from '../src/lib/catalog-data.js';
 import { parseDay, icsEscape, icsText, monthGrid, relativeDay, EVENTS_FROM_EXPIRY, EVENTS_FROM_TODAY, googleUrl, startOfToday, isoDay } from '../src/lib/schedule.js';
 import { integer, buildRequest, DEFAULT_GB, splitLines, matches, matchesAll, findPlans, clampDigits } from '../src/lib/model.js';
+import { nextSampleIndex } from '../src/lib/roulette.js';
 
 // 추천 요청은 화면이 세션에 담아 둔 입력으로 만든다(model.buildRequest). 요청을 만드는 곳은 그 함수 하나다 —
 // 전에는 이 테스트가 아무 화면도 부르지 않는 낡은 빌더를 검사하고 있었다(레거시 정리 2026-09-18).
 const base = { data: { gb: 20 }, subs: [{ id: 1, tierId: 2 }] };
 const optionalOf = extra => buildRequest({ ...base, ...extra }).optional;
+
+test('랜딩 절감액 룰렛은 같은 표본에 머물지 않고 범위 안에서 고른다', () => {
+  assert.equal(nextSampleIndex(0, 1, () => 0.5), 0);
+  for (const current of [0, 1, 2]) {
+    for (const random of [0, 0.49, 0.999, 1]) {
+      const next = nextSampleIndex(current, 3, () => random);
+      assert.ok(next >= 0 && next < 3);
+      assert.notEqual(next, current);
+    }
+  }
+});
 
 test('추천 요청은 서버 ID·enum·지원 필드만 담는다', () => {
   assert.deepEqual(buildRequest({ ...base, carrier: 'LGU+', networkType: '5G', contractType: 'SELECTIVE_25', hasFamilyBundle: false }), {

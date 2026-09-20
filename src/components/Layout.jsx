@@ -31,28 +31,28 @@ export function Header() {
   );
 }
 
-export function Footer() {
+export function Footer({ compact = false }) {
   return (
-    <footer className="mt-10 border-t border-line py-7">
-      <div className="flex flex-wrap justify-between gap-6">
+    <footer className={compact ? 'border-t border-ink/10 py-3' : 'mt-10 border-t border-line py-7'}>
+      <div className={`flex flex-wrap justify-between ${compact ? 'flex-col items-center gap-2 sm:flex-row sm:gap-3' : 'gap-6'}`}>
         <div>
-          <strong className="font-bold">요고비</strong>
-          <p className="mt-1.5 max-w-[34em] text-[13px] text-muted">
+          <strong className={compact ? 'text-xs font-bold text-ink/70' : 'font-bold'}>요고비</strong>
+          {!compact && <p className="mt-1.5 max-w-[34em] text-[13px] text-muted">
             통신비·구독료 최적화 서비스 · 정보 제공 목적으로만 운영됩니다.
-          </p>
+          </p>}
         </div>
-        <div className="flex items-center gap-[18px] text-[13px] text-muted">
+        <div className={`flex flex-wrap items-center ${compact ? 'justify-center gap-x-3 gap-y-1 text-[11px] text-ink/70 sm:text-xs' : 'gap-[18px] text-[13px] text-muted'}`}>
           <Link to="/terms">이용약관</Link>
           <Link to="/privacy">개인정보처리방침</Link>
           <Link to="/data-sources">데이터 출처</Link>
         </div>
       </div>
       {/* 운영자용. 누구나 열 수 있는 정적 페이지지만 데이터는 전부 인증이 필요하다(backoffice.md §2). */}
-      <div className="mt-[18px]">
+      {!compact && <div className="mt-[18px]">
         <Link to="/admin" rel="nofollow" className="text-xs text-muted hover:text-ink-soft hover:underline">
           관리자 로그인
         </Link>
-      </div>
+      </div>}
     </footer>
   );
 }

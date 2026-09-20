@@ -48,7 +48,7 @@ export default function App() {
     </Routes>
     {/* 사용자 화면에 뜨는 오류 제보 버튼(D-41). 라우트 밖에 두어 화면이 바뀌어도 그대로 있다.
         백오피스에는 띄우지 않는다 — 운영자는 제보를 받는 쪽이고, 다크 화면 위에 민트 버튼이 떠 있으면 남의 화면처럼 보인다. */}
-    {pathname !== '/admin' && <ReportFab />}
+    {pathname !== '/admin' && pathname !== '/' && <ReportFab />}
     </>
   );
 }
