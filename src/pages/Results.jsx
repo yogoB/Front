@@ -353,7 +353,11 @@ function buildNotices(source, data, best, shown = []) {
   if (!source.data) notices.push(`데이터 사용량을 건너뛰어 ${DEFAULT_GB}GB 기준으로 계산했어요. 실제 사용량을 넣으면 결과가 정확해져요.`);
   // 위에 이미 띄운 것은 여기서 뺀다 — 같은 말을 한 화면에 두 번 적지 않는다.
   // 내레이터는 `impact — howToFind` 로 이어 붙이므로 impact 로 시작하는지를 본다.
-  const dup = text => shown.some(m => m.impact && String(text).startsWith(m.impact));
+  // **양쪽 다 공백을 눌러서 비교한다.** 내레이터는 impact 의 줄바꿈·연속 공백을 한 칸으로 줄여서 싣는데
+  // (안 줄이면 응답이 깨져 설명이 통째로 사라진 사고가 있었다), 화면이 원본 그대로 비교하면
+  // BE 가 안내 문구에 줄바꿈을 넣는 날 중복 제거가 조용히 실패해 같은 말이 두 번 뜬다(내레이터 지적 2026-09-21).
+  const flat = text => String(text ?? '').replace(/\s+/g, ' ').trim();
+  const dup = text => shown.some(m => m.impact && flat(text).startsWith(flat(m.impact)));
   notices.push(...(data.notices || []).filter(text => !dup(text)));
   if (!best) notices.push('조건에 맞는 요금제를 아직 찾지 못했어요. 조건을 바꾸거나 잠시 후 다시 시도해 주세요.');
   return notices;

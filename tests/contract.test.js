@@ -408,3 +408,20 @@ test("기간 절감액이 null 이면 숫자로 메우지 않는다 — won(null
   // 6개월 탭은 값이 아니라 필드 유무로 정해야 한다 — 값으로 정하면 "모른다"가 "없다"로 둔갑한다.
   assert.match(src, /'semiannualSavings' in recommended/, 'Results.jsx: 6개월 탭을 값으로 판정하고 있다');
 });
+
+test("안내 중복 제거는 공백을 눌러서 비교한다", () => {
+  // 내레이터는 impact 의 줄바꿈·연속 공백을 한 칸으로 줄여 notices 에 싣는다(응답이 깨지는 걸 막으려고).
+  // 화면이 원본 그대로 startsWith 를 걸면, BE 가 문구에 줄바꿈을 넣는 날 중복 제거가 조용히 실패한다.
+  const src = readFileSync('src/pages/Results.jsx', 'utf8');
+  assert.match(src, /const flat = text => String\(text \?\? ''\)\.replace\(\/\\s\+\/g, ' '\)\.trim\(\);/,
+    'Results.jsx: 공백을 누르는 함수가 없다');
+  assert.match(src, /flat\(text\)\.startsWith\(flat\(m\.impact\)\)/,
+    'Results.jsx: 한쪽만 공백을 누르거나 원본으로 비교하고 있다');
+
+  // 같은 규칙을 여기서 실제로 돌려 본다 — 정규식이 바뀌면 이 단언이 먼저 깨진다.
+  const flat = text => String(text ?? '').replace(/\s+/g, ' ').trim();
+  const impact = '통신망을 5G 로 좁혀서\n요금제 22건을  뺐어요';
+  const notice = '통신망을 5G 로 좁혀서 요금제 22건을 뺐어요 — 통신 규격을 상관없어요로 두면 같이 봐요';
+  assert.ok(!notice.startsWith(impact), '전제가 깨졌다 — 원본 비교가 이미 성공하면 이 가드는 의미가 없다');
+  assert.ok(flat(notice).startsWith(flat(impact)), '공백을 눌러도 중복을 못 잡는다');
+});
