@@ -591,6 +591,51 @@ function ReportKpis({ data }) {
   );
 }
 
+/* 종류별 마지막 기록일(funnel.lastSeen). 2026-09-18~21 에 캘린더·저장이 한 건도 안 쌓였는데
+   화면에는 "아직 아무도 안 했다"로 보였다 — 없음과 못 셈이 같아 보이던 자리다.
+   임계값은 두지 않는다: 단계마다 정상 빈도가 달라(저장은 원래 드물고 게이트는 매일 온다) 한 숫자로 못 자른다.
+   **한 번도 없음(null)만** 경고색으로 두고, 나머지는 날짜와 며칠 전인지를 적어 사람이 읽는다. */
+const FUNNEL_KIND = {
+  INPUT_STARTED: '입력 시작', INPUT_COMPLETED: '입력 완료', GATE_SHOWN: '게이트',
+  MEMBER_LOGIN: '로그인', REPORT_SHOWN: '리포트', CALENDAR_SHOWN: '캘린더', RESULT_SAVED: '저장',
+};
+
+/** 'YYYY-MM-DD' 가 며칠 전인지. 날짜 문자열끼리 비교하므로 시간대에 밀리지 않는다. */
+function daysAgo(date) {
+  const [y, m, d] = String(date).split('-').map(Number);
+  if (!y) return null;
+  const then = Date.UTC(y, m - 1, d), now = new Date();
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((today - then) / 86400000);
+}
+
+function LastSeen({ lastSeen }) {
+  if (!lastSeen) return null;
+  const entries = Object.entries(lastSeen);
+  if (!entries.length) return null;
+  return (
+    <div className="mt-5">
+      <h3 className="mb-1.5 text-[13px] font-bold text-adm-muted">집계 상태 · 종류별 마지막 기록</h3>
+      <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+        {entries.map(([kind, date]) => {
+          const gap = date ? daysAgo(date) : null;
+          return (
+            <li key={kind}
+                className={`rounded-lg border px-2.5 py-1.5 text-xs ${date ? 'border-adm-line bg-adm-bg/60 text-adm-text' : 'border-adm-amber/40 bg-adm-amber/10 text-adm-amber'}`}>
+              <b className="font-semibold">{FUNNEL_KIND[kind] ?? kind}</b>{' '}
+              {date ? <span className="text-adm-muted tnum">{date}{gap != null && ` · ${gap === 0 ? '오늘' : `${gap}일 전`}`}</span> : '기록 없음'}
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-2 text-xs text-adm-muted">
+        "기록 없음"은 아무도 안 했다는 뜻일 수도, 세지 못하고 있다는 뜻일 수도 있다 — 둘을 가르려면 그 단계를 한 번 직접 밟아 보면 된다.
+        며칠부터 이상인지는 단계마다 달라 기준을 두지 않았다.
+      </p>
+    </div>
+  );
+}
+
 /* 전환율. **BE 가 같은 행위자가 두 단계를 다 밟았는지로 낸 값**만 쓴다(G-56) — 화면은 나누지 않는다.
    null 은 0 이 아니다. 모수가 0이거나(아무도 안 왔다) 이을 수 없는 단계(비회원 ip: ↔ 회원 u:)라는 뜻이라
    막대를 그리지 않고 "집계 불가"로 비워 둔다. 0% 는 "와서 전부 나갔다"는 다른 사실이다. */
@@ -687,6 +732,8 @@ function UserMetrics({ data, unique }) {
           </dl>
         </div>
       </div>
+
+      <LastSeen lastSeen={pick(data, 'funnel.lastSeen')} />
     </Card>
   );
 }
