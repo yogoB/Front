@@ -101,9 +101,10 @@ export default function Results() {
   };
   // 6개월 탭은 BE 가 semiannualSavings 를 주기 시작하면 저절로 나타난다(계약 확정 2026-09-18).
   // 월 절감 ×6 으로 채우지 않는다 — 프론트 기간 환산은 절대 원칙 2 위반이다(contract.test.js 가드).
-  // **값이 아니라 필드가 왔는지**로 정한다. BE 가 이 값을 null 로 보내기 시작했는데(특가 뒤 금액을 모를 때)
-  // 값으로 판정하면 탭이 통째로 사라져, "모른다"가 "그런 기간은 없다"로 둔갑한다(2026-09-21).
-  const tabs = [1, 6, 12].filter(m => m !== 6 || (recommended != null && 'semiannualSavings' in recommended));
+  // 셋을 **늘** 보여 주고, 값이 없으면 셀에 모른다고 적는다. 값으로 탭을 켜면 null 이 오는 순간
+  // 탭이 통째로 사라져 "모른다"가 "그런 기간은 없다"로 둔갑하고, 키 유무로 켜면 BE 가 null 키를
+  // 생략하기 시작하는 날 같은 일이 난다. 어느 쪽이든 버티도록 판정 자체를 없앴다(2026-09-21).
+  const tabs = [1, 6, 12];
 
   async function saveImage() {
     setSaveNote('');
@@ -332,15 +333,25 @@ const Delta = ({ label, value }) => (
   </div>
 );
 
-/* 기간 한정 특가 한 줄. BE 의 promoMonths·regularPrice 를 그대로 읽는다(CostResult, 2026-09-21).
-   필드가 없으면 null 을 돌려 아무것도 그리지 않는다 — BE 가 싣기 시작하면 저절로 켜진다.
-   **특가 뒤 금액을 모르면 숫자를 지어내지 않고 모른다고 적는다**(절대 원칙 2·4). */
+/* 기간이 끝나면 금액이 바뀌는 요금제 한 줄. BE 의 promoMonths·regularPrice 를 그대로 읽는다.
+   필드가 없으면 null 을 돌려 아무것도 그리지 않는다.
+
+   **"특가"라고 적지 않는다.** 13건 중 5건은 기간이 끝나면 오히려 **싸진다**(장기할인·약정형).
+   전부 "특가가 끝나요"로 적으면 좋은 소식에 겁을 주는 셈이다(BE 확인 2026-09-21).
+   방향은 지금 기본료와 견줘서 정하고, 내려가는 쪽은 경고색을 쓰지 않는다.
+   바뀐 뒤 금액을 모르면 숫자를 지어내지 않는다(절대 원칙 2·4). */
 function promoLine(cost) {
   const months = cost?.promoMonths;
   if (months == null) return null;
-  return cost.regularPrice == null
-    ? `${months}개월 특가예요 · 그 뒤 금액은 확인하지 못했어요`
-    : `${months}개월 특가예요 · 그 뒤 월 ${won(cost.regularPrice)}`;
+  const after = cost.regularPrice;
+  if (after == null) return { text: `${months}개월 뒤 금액이 바뀌어요 · 바뀐 뒤 금액은 확인하지 못했어요`, warn: true };
+  const now = baseFee(cost)?.amount;
+  // 바뀐 뒤 금액이 지금과 같으면 바뀌는 게 없다 — 아무 말도 하지 않는다.
+  // 카탈로그에 그렇게 들어온 행이 실제로 있었다(이지모바일 7개월 특가, 2026-09-21). BE 에 알렸다.
+  if (now != null && after === now) return null;
+  // 기본료 줄을 못 찾으면 방향을 모른다 — 그때는 방향을 말하지 않고 바뀐다고만 적는다.
+  const verb = now == null ? '으로 바뀌어요' : after > now ? '으로 올라요' : '으로 내려요';
+  return { text: `${months}개월 뒤 월 ${won(after)}${verb}`, warn: now != null && after > now };
 }
 
 /* 이 두 가지는 "더 알려주세요"가 아니라 **이미 잃은 것·알 수 없는 것**을 알린다 — 그래서 먼저 보여 준다.
@@ -583,8 +594,13 @@ function Dashboard({ columns, subs, tools }) {
               : <p className="mt-2 text-[13px] text-muted">&nbsp;</p>}
             <div className="mt-4 border-t border-line pt-3 text-sm">
               <p className="font-semibold">{col.plan}</p>
-              {/* 특가는 지금 금액이 언제까지인지를 말한다 — 요금제 이름 바로 아래가 읽히는 자리다. */}
-              {col.promo && <p className="mt-1 text-xs font-semibold text-warn-ink">{col.promo}</p>}
+              {/* 지금 금액이 언제까지인지를 말한다 — 요금제 이름 바로 아래가 읽히는 자리다.
+                  내려가는 쪽은 좋은 소식이라 경고색을 쓰지 않는다. */}
+              {col.promo && (
+                <p className={`mt-1 text-xs font-semibold ${col.promo.warn ? 'text-warn-ink' : 'text-ink-soft'}`}>
+                  {col.promo.text}
+                </p>
+              )}
               {subs.length > 0 && (
                 <>
                   <p className="mt-3 text-xs font-semibold text-muted">함께 쓰는 구독</p>

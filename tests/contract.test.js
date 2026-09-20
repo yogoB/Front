@@ -405,8 +405,9 @@ test("기간 절감액이 null 이면 숫자로 메우지 않는다 — won(null
   for (const field of ['current.annualSavings', 'best.annualSavings']) {
     assert.ok(src.includes(`${field} == null`), `Results.jsx: ${field} 의 null 을 가르지 않는다`);
   }
-  // 6개월 탭은 값이 아니라 필드 유무로 정해야 한다 — 값으로 정하면 "모른다"가 "없다"로 둔갑한다.
-  assert.match(src, /'semiannualSavings' in recommended/, 'Results.jsx: 6개월 탭을 값으로 판정하고 있다');
+  // 기간 탭은 어떤 판정도 하지 않는다. 값으로 켜면 null 이 오는 날, 키로 켜면 BE 가 null 키를
+  // 생략하는 날 탭이 사라져 "모른다"가 "그런 기간은 없다"로 둔갑한다.
+  assert.match(src, /const tabs = \[1, 6, 12\];/, 'Results.jsx: 기간 탭을 조건부로 그리고 있다');
 });
 
 test("안내 중복 제거는 공백을 눌러서 비교한다", () => {
@@ -430,10 +431,18 @@ test("특가 뒤 금액을 모르면 숫자를 지어내지 않는다", () => {
   // BE CostResult: promoMonths=null 이면 특가가 아니고, regularPrice=null 이면 "확인하지 못했다"이다.
   // 추정값을 넣지 않는다(절대 원칙 2·4) — 모르면 모른다고 적는다.
   const src = readFileSync('src/pages/Results.jsx', 'utf8');
-  const body = src.slice(src.indexOf('function promoLine'), src.indexOf('function promoLine') + 500);
-  assert.match(body, /promoMonths;\s*\n\s*if \(months == null\) return null;/, 'Results.jsx: 특가가 아닐 때 null 을 돌려주지 않는다');
-  assert.match(body, /cost\.regularPrice == null/, 'Results.jsx: 특가 뒤 금액의 null 을 가르지 않는다');
-  // null 가지에는 won( 이 없어야 한다 — 있으면 숫자를 만들어 적고 있다는 뜻이다.
-  const unknownBranch = body.slice(body.indexOf('regularPrice == null'), body.indexOf(':', body.indexOf('regularPrice == null')));
-  assert.ok(!unknownBranch.includes('won('), 'Results.jsx: 모르는 금액 자리에 숫자를 적고 있다');
+  const start = src.indexOf('function promoLine');
+  const body = src.slice(start, src.indexOf('\n}', start));
+  assert.match(body, /if \(months == null\) return null;/, 'Results.jsx: 기간 제한이 없을 때 null 을 돌려주지 않는다');
+  // 바뀐 뒤 금액을 모르는 가지에는 won( 이 없어야 한다 — 있으면 숫자를 만들어 적고 있다는 뜻이다.
+  const unknown = body.split('\n').find(l => l.includes('after == null'));
+  assert.ok(unknown, 'Results.jsx: 바뀐 뒤 금액의 null 을 가르지 않는다');
+  assert.ok(!unknown.includes('won('), 'Results.jsx: 모르는 금액 자리에 숫자를 적고 있다');
+  // 기간이 끝나면 싸지는 요금제가 13건 중 5건이다 — 전부 "특가가 끝난다"로 적으면 겁을 준다.
+  // 주석은 사용자가 안 보므로 화면에 나가는 문자열만 본다.
+  const shown = body.split('\n').filter(l => !l.trimStart().startsWith('//')).join('\n');
+  assert.ok(!/특가/.test(shown), 'Results.jsx: 방향을 단정하는 "특가" 문구가 화면 문자열에 남아 있다');
+  assert.match(body, /after > now \? '으로 올라요' : '으로 내려요'/, 'Results.jsx: 오르내림을 가르지 않는다');
+  // 바뀐 뒤 금액이 지금과 같으면 바뀌는 게 없다 — 그런 행이 카탈로그에 실제로 있었다.
+  assert.match(body, /if \(now != null && after === now\) return null;/, 'Results.jsx: 안 바뀌는데 바뀐다고 적고 있다');
 });
