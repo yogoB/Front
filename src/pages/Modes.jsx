@@ -10,40 +10,51 @@ const MODES = [
     desc: '통신사·약정·가족결합까지 넣어 위약금과 갈아탈 시점까지 챙겨요.' },
 ];
 
+/* 입력받는 것을 두 덩어리로 적는다 — 데이터·통신비를 따로 세던 칩을 '통신요금정보'로 합쳤다(사용자 결정 2026-09-21).
+   화면이 받는 항목 수가 아니라 사람이 떠올리는 단위로 말하는 편이 읽힌다. */
+const INPUTS = ['통신요금정보', '구독서비스정보'];
+
 export default function Modes() {
   const navigate = useNavigate();
   return (
     <div className="min-h-dvh bg-bg-page">
       <Header />
-      <main className="mx-auto flex min-h-[calc(100dvh-68px)] max-w-[960px] items-center px-5 py-10 sm:px-6">
+      <main className="mx-auto flex min-h-[calc(100dvh-68px)] max-w-[1250px] items-center px-5 py-10 sm:px-6">
         <section className="w-full text-center">
-          <button type="button" onClick={() => navigate('/')} className="btn-text mb-5 text-ink-soft hover:text-ink">
-            ← 처음으로
-          </button>
           <h1 className="flex flex-wrap items-center justify-center gap-2 text-xl font-extrabold leading-snug tracking-[-.03em] sm:gap-3 sm:text-[30px] lg:flex-nowrap">
-            <Chip>데이터사용량</Chip>
-            <Chip>통신비</Chip>
-            <Chip>구독서비스</Chip>
+            {INPUTS.map(name => <Chip key={name}>{name}</Chip>)}
             <span>입력하고 분석합니다.</span>
           </h1>
-          <div className="mt-8 grid gap-3 text-left sm:grid-cols-2 sm:gap-4">
+
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 sm:gap-4">
             {MODES.map(m => (
               <Link key={m.to} to={m.to}
-                    className="group relative flex min-h-44 flex-col justify-between rounded-card border border-line bg-white p-6 shadow-card
-                               transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-ink sm:min-h-52 sm:p-7">
-                <span className="text-xs font-bold text-muted">{m.badge}</span>
-                <div className="mt-5 pr-14">
-                  <h2 className="text-[24px] font-extrabold tracking-[-.02em] sm:text-[28px]">{m.title}</h2>
-                  <p className="mt-2 text-sm leading-relaxed text-ink-soft sm:text-[15px]">{m.desc}</p>
+                    className="group relative flex min-h-48 flex-col items-center justify-center rounded-card border border-line bg-white px-6 py-10 text-center shadow-card
+                               transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-ink sm:min-h-64 sm:px-9">
+                <span className="absolute left-6 top-6 text-xs font-bold text-muted sm:left-7 sm:top-7">{m.badge}</span>
+                {/* 상세 설명은 호버로 띄운다(사용자 결정 2026-09-21). 손가락에는 호버가 없으므로
+                    hover 가 되는 기기에서만 숨기고, 그때는 흐름에서 빼 제목이 카드 정중앙에 오게 한다.
+                    숨기는 방식은 opacity 라 스크린리더는 그대로 읽는다 — .hover-reveal 은 index.css 에 있다. */}
+                <div className="relative flex flex-col items-center">
+                  <h2 className="text-[32px] font-extrabold tracking-[-.03em] sm:text-[42px]">{m.title}</h2>
+                  <p className="hover-reveal mt-3 max-w-[32ch] text-sm leading-relaxed text-ink-soft transition-opacity duration-150 sm:text-[15px]">
+                    {m.desc}
+                  </p>
                 </div>
+                {/* 호버가 되는 기기에서만 오른쪽 아래에 띄운다(card-arrow, index.css).
+                    손가락 기기에서는 설명이 흐름에 남아 있어 겹친다 — 320px 카드에서 실제로 겹쳤다. */}
                 <span aria-hidden="true"
-                      className="absolute bottom-6 right-6 grid size-11 place-items-center rounded-full bg-ink text-lg text-white
+                      className="card-arrow grid size-11 place-items-center rounded-full bg-ink text-lg text-white
                                  transition-transform duration-150 group-hover:translate-x-0.5">
                   →
                 </span>
               </Link>
             ))}
           </div>
+
+          <button type="button" onClick={() => navigate('/')} className="btn-text mt-6 text-ink-soft hover:text-ink">
+            ← 처음으로
+          </button>
         </section>
       </main>
     </div>

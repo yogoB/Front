@@ -76,6 +76,20 @@
 @layer components {
   .roulette-number { animation: roulette-in .24s cubic-bezier(.16, 1, .3, 1); }
 
+  /* 호버로만 보여 줄 보조 설명. **호버가 되는 기기에서만** 숨긴다 — 손가락에는 호버가 없어서
+     터치 화면에서 숨기면 그 글자를 읽을 방법이 사라진다. 키보드로 카드에 들어와도 보이게 둔다.
+     display 가 아니라 opacity 로 숨겨 자리를 지킨다(나타날 때 카드가 안 흔들린다). */
+  /* 카드 화살표. 손가락 기기에서는 설명이 흐름에 남으므로 화살표도 흐름에 두어 겹치지 않게 한다. */
+  .card-arrow { margin-top: 1rem; }
+
+  @media (hover: hover) and (pointer: fine) {
+    /* 흐름에서 빼야 제목이 카드 정중앙에 앉는다. 자리를 차지한 채 숨기면 제목이 그만큼 위로 밀린다. */
+    .hover-reveal { position: absolute; top: 100%; left: 50%; translate: -50% 0; width: max-content; max-width: 100%; opacity: 0; }
+    .card-arrow { position: absolute; right: 1.5rem; bottom: 1.5rem; margin-top: 0; }
+    .group:hover .hover-reveal,
+    .group:focus-visible .hover-reveal { opacity: 1; }
+  }
+
   /* v4 의 @apply 는 유틸리티만 받는다 — 컴포넌트 클래스를 다시 @apply 할 수 없다.
      그래서 .btn 을 상속하지 않고, 마크업에서 "btn btn-brand" 처럼 두 개를 함께 쓴다. */
   /* 눌리는 것은 전부 44px 이상(touch-target-size). 여백은 4px 단위 스케일만 쓴다. */

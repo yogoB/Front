@@ -12,7 +12,7 @@ const BASIS = {
   LIST_PRICE: '정가 대비 월 절감액',
 };
 
-const SOURCE = '로그인 후 결과를 확인한 이용자의 진단 절감액 표본입니다. 계정당 최신 1건만 사용하며 이름 등 식별 정보는 포함하지 않습니다. 실제 요금 변경 후 청구액은 아닙니다.';
+const SOURCE = '진단에서 확인한 금액입니다 — 로그인 후 결과를 확인한 이용자의 절감액 표본입니다. 계정당 최신 1건만 사용하며 이름 등 식별 정보는 포함하지 않습니다. 실제 요금 변경 후 청구액은 아닙니다.';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ export default function Landing() {
         <section className="flex min-h-0 flex-1 flex-col items-center justify-center py-5 text-center sm:py-7">
           <h1 className="text-[40px] font-extrabold leading-[1.08] tracking-[-.04em] text-ink sm:text-[56px] md:text-[68px]">
             <span className="block">통신요금+구독료</span>
-            <span className="block"><span className="text-brand">다이어트</span> 솔루션</span>
+            <span className="block"><span className="text-brand">절감</span> 솔루션</span>
           </h1>
 
           <div className="mt-7 sm:mt-9">
@@ -44,7 +44,7 @@ export default function Landing() {
           </div>
 
           <button type="button" onClick={() => navigate('/modes')} className="btn btn-dark btn-lg mt-7 min-w-44 active:translate-y-px">
-            다이어트 시작
+            시작
           </button>
         </section>
         <Footer compact />
@@ -59,7 +59,7 @@ function SavingsRoulette({ samples, basis }) {
   const source = `${BASIS[basis] ?? '월 절감액'}. ${SOURCE}`;
   return (
     <div>
-      <p className="text-sm font-semibold text-ink/60">진단에서 확인한 1인당 월 절감액</p>
+      <p className="text-sm font-semibold text-ink/60">실제 1인당 월 절감액</p>
       <div className="mt-2 h-[4.15rem] overflow-hidden sm:h-[5.25rem]">
         <p key={amount} className="roulette-number tnum whitespace-nowrap text-[54px] font-extrabold leading-none tracking-[-.04em] text-ink sm:text-[72px]">
           {amount.toLocaleString('ko-KR')}<span className="ml-1 text-[.38em] font-bold">원</span>
