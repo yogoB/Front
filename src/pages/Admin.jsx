@@ -547,7 +547,9 @@ function ReportKpis({ data }) {
     {
       name: '결과 도달률',
       formula: '결과 화면 도달 사용자 ÷ 입력 시작 사용자',
+      // 100% 가 표본 1명이라는 뜻일 수 있다 — 분모를 같이 적어야 비율만 보고 성과로 읽지 않는다.
       value: kpi.resultReachRate,
+      detail: typeof kpi.resultReachOf === 'number' ? `입력 시작 ${show(kpi.resultReachOf)}명 기준` : null,
       blocked: kpi.resultReachRateNote
         ?? '입력 시작(INPUT_STARTED)이 아직 쌓이지 않았다 — 분모가 없다. 입력 화면이 그 이벤트를 보내기 시작하면 값이 온다.',
     },
@@ -631,6 +633,11 @@ function LastSeen({ lastSeen }) {
       <p className="mt-2 text-xs text-adm-muted">
         "기록 없음"은 아무도 안 했다는 뜻일 수도, 세지 못하고 있다는 뜻일 수도 있다 — 둘을 가르려면 그 단계를 한 번 직접 밟아 보면 된다.
         며칠부터 이상인지는 단계마다 달라 기준을 두지 않았다.
+      </p>
+      {/* 서버가 UTC 로 날짜를 끊는다(BE 확인 2026-09-21). 한국 시간 새벽 0~9시 활동은 전날로 적힌다 —
+          화면은 서버가 준 날짜를 그대로 쓰고, 기준만 밝힌다. 경계를 옮기면 9시간짜리 이음매가 생겨 발표 뒤로 미뤘다. */}
+      <p className="mt-1 text-xs text-adm-muted">
+        날짜는 UTC 기준이다 — 한국 시간 새벽(0~9시)에 한 일은 전날 날짜로 적힌다.
       </p>
     </div>
   );

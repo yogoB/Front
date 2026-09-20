@@ -360,3 +360,16 @@ test('isoDay 는 UTC 로 밀리지 않는다 — 서버에 보내는 날짜가 �
   assert.equal(isoDay(local), '2026-12-03');
   assert.notEqual(isoDay(local), local.toISOString().slice(0, 10));
 });
+
+test("INPUT_COMPLETED 는 막는 검사를 통과한 뒤에만 보낸다 — 분자 부풀림 회귀 가드", () => {
+  // 라이트 화면이 analyze() 첫 줄에서 보내고 있어서, 구독을 하나도 안 고르고 눌러 되돌아간 사람까지
+  // '입력 완료'로 세고 있었다(2026-09-21). 보고서 §9.2 결과 도달률이 그 수를 쓰므로 자리가 중요하다.
+  for (const file of ['Light.jsx', 'Detail.jsx']) {
+    const src = readFileSync(`src/pages/${file}`, 'utf8');
+    const body = src.slice(src.indexOf('function analyze()'));
+    const sent = body.indexOf("track('INPUT_COMPLETED')");
+    const guard = body.indexOf('setError(');
+    assert.ok(sent > 0, `${file}: analyze() 가 INPUT_COMPLETED 를 안 보낸다`);
+    assert.ok(guard > 0 && sent > guard, `${file}: 검사보다 먼저 INPUT_COMPLETED 를 보내고 있다`);
+  }
+});
