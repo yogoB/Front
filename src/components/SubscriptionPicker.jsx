@@ -29,12 +29,12 @@ export default function SubscriptionPicker({ subs, query, onQuery, onToggle, onT
             <label key={sub.id}
                    className={`flex min-h-14 shrink-0 cursor-pointer items-center gap-3
                      border-b border-line px-4 py-2.5 last:border-b-0 transition-colors duration-150
-                     ${sub.checked ? 'bg-brand-tint' : 'hover:bg-bg-soft'}`}>
+                     ${sub.checked ? 'bg-ink text-white [&_[role=img]]:text-white/70' : 'hover:bg-bg-soft'}`}>
               <input type="checkbox" checked={sub.checked} onChange={() => onToggle(sub.id)}
                      className="size-[18px] shrink-0 accent-brand" />
               <span className="grid min-w-0 flex-1 grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 sm:grid-cols-[1fr_auto_auto]">
                 <span className="min-w-0 font-semibold">{sub.service.icon}  {sub.service.name}</span>
-                <span className="whitespace-nowrap justify-self-end text-sm text-ink-soft sm:justify-self-auto">
+                <span className={`whitespace-nowrap justify-self-end text-sm sm:justify-self-auto ${sub.checked ? 'text-white/75' : 'text-ink-soft'}`}>
                   {tierPrice(tier)}
                   <PriceNote note={foreignNote(tier)} />
                 </span>

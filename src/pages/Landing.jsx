@@ -90,23 +90,17 @@ function SavingsStatus({ children }) {
   );
 }
 
-const SPINS = 9;
+const ROULETTE_INTERVAL_MS = 1200;
 
-/** 무작위 순서로 빠르게 굴린 뒤 잠깐 멈추는 동작을 계속 반복한다. */
+/** 서버 표본을 1.2초마다 하나씩 무작위로 바꾼다. */
 function useRollingSample(samples) {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
     setIdx(0);
     // 움직임을 줄여 달라는 설정이면 첫 표본에서 멈춘다 — index.css 의 전역 규칙은 CSS 애니메이션만 멈춘다.
     if (samples.length < 2 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    let timer;
-    const spin = n => {
-      setIdx(i => nextSampleIndex(i, samples.length));
-      const landed = n >= SPINS;
-      timer = setTimeout(() => spin(landed ? 0 : n + 1), landed ? 1900 : 65 + n * 22);
-    };
-    timer = setTimeout(() => spin(0), 900);
-    return () => clearTimeout(timer);
+    const timer = setInterval(() => setIdx(i => nextSampleIndex(i, samples.length)), ROULETTE_INTERVAL_MS);
+    return () => clearInterval(timer);
   }, [samples]);
   return samples[idx] ?? samples[0];
 }

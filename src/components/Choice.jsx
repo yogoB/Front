@@ -3,7 +3,7 @@
 export function Choice({ label, active, onClick, wide }) {
   const base = 'min-h-11 cursor-pointer border text-sm font-semibold transition-colors duration-150';
   const tone = active
-    ? 'border-brand bg-brand-tint text-brand-ink'
+    ? 'border-ink bg-ink text-white'
     : 'border-line bg-white text-ink-soft hover:border-[#d9d9e2] hover:bg-bg-soft';
   return (
     <button type="button" onClick={onClick} aria-pressed={active}
