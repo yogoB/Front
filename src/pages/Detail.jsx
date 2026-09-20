@@ -217,9 +217,15 @@ export default function Detail() {
                 {/* "잘 모르겠어요" 칩은 뺐다. 안 고르면 null 그대로라 missingInputs 안내가 나간다(원칙 5-①). */}
                 <ChoiceGroup label="선택약정 25% 할인" stack value={contractType} onChange={setContractType}
                   options={[['SELECTIVE_25', '받고 있어요'], ['NONE', '받고 있지 않아요']]} />
-                {/* "기타"는 null — BE 가 망 필터를 걸지 않는다. 3G 를 보내는 경로는 화면에서만 사라졌고 BE enum 은 그대로다. */}
-                <ChoiceGroup label="사용 중인 통신망" value={networkType} onChange={setNetworkType}
-                  options={[['5G', '5G'], ['LTE', 'LTE'], [null, '기타']]} />
+                {/* 전에는 "사용 중인 통신망"을 묻고 그 답을 **후보 필터**로 썼다. 그런데 "지금 5G를 쓴다"와
+                    "5G만 쓰겠다"는 다른 말이다 — 알뜰폰 무제한은 대부분 LTE라, 사실대로 답한 사람이
+                    더 싼 요금제를 통째로 잃었다(운영 사례: 월 8,800원, 2026-09-21).
+                    그래서 **희망**을 묻고 선택지를 둘로 줄였다. LTE 단독은 고를 이유가 없어 없앴다 —
+                    LTE 를 원하는 사람은 '상관없어요'로 두면 LTE 가 후보에 들어온다.
+                    '상관없어요'는 null 이라 BE 가 망 필터를 걸지 않는다(기본값도 null 이다). */}
+                <ChoiceGroup label="희망하는 통신 규격" value={networkType} onChange={setNetworkType}
+                  hint="5G 로 좁히면 LTE 요금제가 후보에서 빠져요. 지금 5G를 쓰더라도 옮길 수 있는 망은 다를 수 있으니, 꼭 5G여야 하는 게 아니면 '상관없어요'를 권해요."
+                  options={[['5G', '5G만 쓸래요'], [null, '상관없어요']]} />
                 <ChoiceGroup label="가족 결합" stack value={hasFamilyBundle} onChange={setHasFamilyBundle}
                   options={[[true, '하고 있어요'], [false, '하고 있지 않아요']]} />
                 {hasFamilyBundle === true && (

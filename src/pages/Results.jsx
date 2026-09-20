@@ -88,7 +88,12 @@ export default function Results() {
   // 왜 없는지는 둘 중 하나다 — 통신사를 모르거나, 알지만 그 통신사에 다른 후보가 없거나(예: SKT·LTE 는 카탈로그에 1건뿐).
   // 둘을 같은 문장으로 적으면 이미 통신사를 알려준 사람에게 또 알려달라고 하게 된다.
   const narrated = { ...data, ...(told ?? {}) };   // 설명 필드는 첫 응답 또는 narrate 응답에서
-  const notices = buildNotices(input, narrated, recommended);
+  /* 손해를 알리는 두 가지는 **설명을 펼치기 전에** 보여 준다. 전에는 내레이션 안에만 있어서,
+     '이 결과 설명 보기'를 누르지 않은 사람은 통신 규격을 좁혀 더 싼 요금제를 잃은 사실을 영영 몰랐다.
+     나머지 missingInputs(약정·결합·통신사 등)는 "더 알려주면 정확해진다"는 권유라 지금 자리에 둔다. */
+  const losses = (data.missingInputs ?? []).filter(m => LOSS_FIELDS.has(m.field));
+  const promo = losses.find(m => m.field === 'promotionPeriod');
+  const notices = buildNotices(input, narrated, recommended, losses);
   const reasons = narrated.reasons ?? [];
   const planViews = {
     recommended: recommended && plans.find(p => p.id === recommended.planId),
@@ -141,6 +146,17 @@ export default function Results() {
         <h1 className="mb-1 mt-4 text-2xl font-extrabold tracking-[-.01em] md:text-[28px]">최적 요금 조합 비교 분석</h1>
         <p className="mb-6 text-sm text-muted">카탈로그 가격 기준 · {stamp(data.receivedAt)} 계산</p>
 
+        {losses.length > 0 && (
+          <ul className="mb-5 grid list-none gap-2 p-0">
+            {losses.map(m => (
+              <li key={m.field} className="rounded-xl border border-line bg-warn-tint px-4 py-3 text-sm leading-relaxed text-warn-ink">
+                <strong className="font-bold">{m.impact}</strong>
+                {m.howToFind && <span className="mt-1 block font-medium">{m.howToFind}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+
         {/* 계산 결과(표)가 먼저다 — 사용자 결정 2026-09-18: 처음 보이는 것은 비교표 카드뿐이고, 설명(내레이션)은 아래에서 펼친다.
             시안의 결과 카드 하나 — 기간 토글·저장 아이콘·3열 비교표·추천 사유를 한 판에 담는다. */}
         {recommended && (
@@ -155,6 +171,11 @@ export default function Results() {
                     {m}개월
                   </button>
                 ))}
+                {/* 특가 기간이 끝난 뒤 금액을 모르면 6·12개월 값은 그 기간이 계속된다고 가정한 수다.
+                    토글 옆에 붙여, 숫자를 크게 읽기 전에 눈에 들어오게 한다(BE 요청 2026-09-21). */}
+                {promo && months !== 1 && (
+                  <span className="text-[13px] font-semibold text-warn-ink">· {months}개월 값은 특가가 계속된다고 본 수예요</span>
+                )}
               </div>
               {saveNote && <span role="status" className="text-[13px] font-semibold text-ink-soft">{saveNote}</span>}
             </div>
@@ -308,14 +329,23 @@ const Delta = ({ label, value }) => (
   </div>
 );
 
+/* 이 두 가지는 "더 알려주세요"가 아니라 **이미 잃은 것·알 수 없는 것**을 알린다 — 그래서 먼저 보여 준다.
+   networkType: 규격을 좁혀 더 싼 요금제를 후보에서 뺐다(BE 는 더 싼 게 실제로 있을 때만 보낸다).
+   promotionPeriod: 요금제 이름에 특가 기간이 적혀 있는데 카탈로그에 그 기간을 담을 칸이 없다 —
+   기간이 끝난 뒤 금액을 모르므로 6·12개월 환산을 그대로 믿으면 안 된다. */
+const LOSS_FIELDS = new Set(['networkType', 'promotionPeriod']);
+
 /* 모르면 막히지 않는다(원칙 5-①): 빠진 입력과 카탈로그 결손을 그대로 안내한다. */
 /* ⓘ 안내. missingInputs 문장은 서버(notices)가 만든다 — 같은 값으로 두 곳에서 문장을
    만들면 표현이 갈라진다(D-46). 여기 남는 둘은 서버가 알 수 없는 것뿐이다:
    데이터 입력을 건너뛴 화면 상태와, 결과가 없어 서버가 내레이터를 부르지 않은 경우. */
-function buildNotices(source, data, best) {
+function buildNotices(source, data, best, shown = []) {
   const notices = [];
   if (!source.data) notices.push(`데이터 사용량을 건너뛰어 ${DEFAULT_GB}GB 기준으로 계산했어요. 실제 사용량을 넣으면 결과가 정확해져요.`);
-  notices.push(...(data.notices || []));
+  // 위에 이미 띄운 것은 여기서 뺀다 — 같은 말을 한 화면에 두 번 적지 않는다.
+  // 내레이터는 `impact — howToFind` 로 이어 붙이므로 impact 로 시작하는지를 본다.
+  const dup = text => shown.some(m => m.impact && String(text).startsWith(m.impact));
+  notices.push(...(data.notices || []).filter(text => !dup(text)));
   if (!best) notices.push('조건에 맞는 요금제를 아직 찾지 못했어요. 조건을 바꾸거나 잠시 후 다시 시도해 주세요.');
   return notices;
 }

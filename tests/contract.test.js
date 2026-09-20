@@ -373,3 +373,23 @@ test("INPUT_COMPLETED 는 막는 검사를 통과한 뒤에만 보낸다 — 분
     assert.ok(guard > 0 && sent > guard, `${file}: 검사보다 먼저 INPUT_COMPLETED 를 보내고 있다`);
   }
 });
+
+test("손해 안내는 내레이션을 펼치기 전에 보인다 — networkType 회귀 가드", () => {
+  // 통신 규격을 5G 로 좁히면 더 싼 요금제가 후보에서 빠진다. 그 사실이 '이 결과 설명 보기' 안에만 있어서,
+  // 펼치지 않은 사람은 월 8,800원을 잃은 줄 몰랐다(운영 사례 2026-09-21).
+  // 이제 recommendations 응답의 missingInputs 에서 바로 뽑아 카드 위에 띄운다.
+  const src = readFileSync('src/pages/Results.jsx', 'utf8');
+  assert.match(src, /LOSS_FIELDS\s*=\s*new Set\(\[[^\]]*'networkType'[^\]]*'promotionPeriod'/,
+    'Results.jsx: 손해 안내 필드 목록이 없다');
+  assert.match(src, /data\.missingInputs\s*\?\?\s*\[\]/, 'Results.jsx: missingInputs 를 응답에서 읽지 않는다');
+  // 카드(비교표)보다 위에 그려야 한다 — 아래에 있으면 스크롤해야 보인다.
+  assert.ok(src.indexOf('losses.map') < src.indexOf('<CompareTable'), 'Results.jsx: 손해 안내가 비교표보다 아래에 있다');
+});
+
+test("통신 규격 질문은 '희망'을 묻고 선택지가 둘이다", () => {
+  // "사용 중인 망"을 물어 필터로 쓰면, 사실대로 답한 사람이 더 싼 후보를 잃는다.
+  const src = readFileSync('src/pages/Detail.jsx', 'utf8');
+  assert.match(src, /label="희망하는 통신 규격"/, 'Detail.jsx: 질문이 "희망"을 묻지 않는다');
+  assert.ok(!/'LTE',\s*'LTE'/.test(src), 'Detail.jsx: LTE 단독 선택지가 남아 있다');
+  assert.match(src, /\[null, '상관없어요'\]/, "Detail.jsx: '상관없어요' 선택지가 없다");
+});
