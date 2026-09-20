@@ -450,6 +450,8 @@ function DashboardPage({ data, audit }) {
         ))}
       </div>
 
+      <ReportKpis data={data} />
+
       <UserMetrics data={data} unique={unique} />
 
       <Card title="운영 상태" sub="어제 같은 사고(설명 경로 실패·결과 화면 반복 호출)는 여기서 먼저 드러난다. 켜진 뒤 누적값이며 재시작하면 0부터.">
@@ -533,10 +535,98 @@ const FUNNEL_STEPS = [
   ['resultSaved', '결과를 저장한 사람'],
 ];
 
+/* 보고서 §9.2 핵심 KPI 셋. 정의·분모는 보고서 그대로이고, 값은 **BE 가 낸 것만** 적는다.
+   못 내는 것은 빈칸이 아니라 **왜 못 내는지**를 적는다 — 빈칸은 "0"으로 읽히고, 목표값을 성과로 읽으면 거짓이 된다.
+   BE 가 kpi 블록을 주기 시작하면 그 자리에 값이 들어온다(필드가 없으면 지금처럼 사유만 보인다). */
+function ReportKpis({ data }) {
+  const kpi = data.kpi ?? {};
+  const savings = data.savings ?? {};
+  const rows = [
+    {
+      name: '결과 도달률',
+      formula: '결과 화면 도달 사용자 ÷ 입력 시작 사용자',
+      value: kpi.resultReachRate,
+      blocked: '입력 시작(input_started)을 아직 세지 않는다 — 분모가 없다. 지금 세는 것은 결과에 도달한 사람뿐이다.',
+    },
+    {
+      name: '계산 오류율',
+      formula: '정답셋과 불일치한 계산 ÷ 검산 건수 · 목표 2% 이하',
+      value: kpi.calcErrorRate,
+      blocked: '배포 전 회귀 테스트에서 재는 값이라 운영 대시보드에는 오지 않는다. 골든 케이스 결과를 실어 주면 여기 적는다.',
+    },
+    {
+      name: '절감 기회 발견률',
+      formula: '월 5,000원 이상 순절감 가능한 사용자 ÷ 유효 계산 사용자',
+      value: kpi.savingOpportunityRate,
+      blocked: typeof savings.improved === 'number' && typeof savings.members === 'number'
+        ? `기준선이 다르다 — 지금 세는 것은 "절감이 0원보다 큰 사람" ${show(savings.improved)}명 / ${show(savings.members)}명이고, 보고서 기준인 5,000원 이상은 아직 세지 않는다.`
+        : '절감 표본이 아직 없다.',
+    },
+  ];
+  return (
+    <Card title="핵심 KPI · 보고서 §9.2" sub="정의와 분모는 보고서 그대로다. 목표값은 운영 가설이지 성과가 아니므로 적지 않는다 — 실측만 적고, 못 내는 것은 이유를 적는다.">
+      <ul className="m-0 grid list-none gap-2.5 p-0">
+        {rows.map(r => (
+          <li key={r.name} className="rounded-xl border border-adm-line bg-adm-bg/60 p-3.5">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <b className="text-sm">{r.name}</b>
+              <span className={`tnum font-extrabold ${r.value == null ? 'text-sm text-adm-amber' : 'text-xl text-adm-mint'}`}>
+                {r.value == null ? '집계 불가' : `${r.value}%`}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-adm-muted">{r.formula}</p>
+            {r.value == null && <p className="mt-1.5 text-xs leading-relaxed text-adm-text/80">{r.blocked}</p>}
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+/* 전환율. **BE 가 같은 행위자가 두 단계를 다 밟았는지로 낸 값**만 쓴다(G-56) — 화면은 나누지 않는다.
+   null 은 0 이 아니다. 모수가 0이거나(아무도 안 왔다) 이을 수 없는 단계(비회원 ip: ↔ 회원 u:)라는 뜻이라
+   막대를 그리지 않고 "집계 불가"로 비워 둔다. 0% 는 "와서 전부 나갔다"는 다른 사실이다. */
+const CONVERSIONS = [
+  ['loginToReport', '로그인 → 리포트'],
+  ['reportToCalendar', '리포트 → 캘린더'],
+  ['reportToSaved', '리포트 → 저장'],
+];
+
+function Conversion({ rates }) {
+  if (!rates) {
+    return <p className="mt-2 text-xs text-adm-muted">막대 길이는 단계 사이 차이를 보이는 것이다. 전환율은 계산 서버가 값으로 주면 여기에 적는다.</p>;
+  }
+  return (
+    <div className="mt-3">
+      <h4 className="mb-1.5 text-xs font-bold text-adm-muted">단계 전환율</h4>
+      <dl className="m-0 grid grid-cols-3 gap-2">
+        {CONVERSIONS.map(([key, label]) => {
+          const value = rates[key];
+          return (
+            <div key={key} className="rounded-lg border border-adm-line bg-adm-bg/60 p-2.5">
+              <dt className="text-[11px] leading-tight text-adm-muted">{label}</dt>
+              <dd className={`m-0 mt-1 font-extrabold tnum ${value == null ? 'text-sm text-adm-muted' : 'text-lg'}`}>
+                {value == null ? '집계 불가' : `${value}%`}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+      {/* 게이트→로그인은 영영 안 온다 — 비회원과 회원의 행위자 키가 달라 같은 사람을 이을 수 없다. */}
+      <p className="mt-2 text-xs text-adm-muted">
+        같은 사람이 두 단계를 다 밟았는지로 센 값이다. 게이트 → 로그인은 비회원·회원의 식별 방식이 달라 잇지 못해 여기 없다.
+      </p>
+    </div>
+  );
+}
+
 function UserMetrics({ data, unique }) {
   const totals = pick(data, 'funnel.unique') ?? {};
   const days = pick(data, 'funnel.windowDays');
-  const signups = (data.weeklyActivity ?? []).map(d => ({ label: `${d.date.slice(5).replace('-', '/')} ${weekday(d.date)}`, value: Number(d.signups) || 0 }));
+  // 가입 추이는 퍼널과 같은 창으로 본다 — BE 가 activity(14일)를 주면 그것을, 아직이면 기존 7일을 쓴다.
+  const activity = data.activity ?? data.weeklyActivity ?? [];
+  const activityDays = data.activityWindowDays ?? 7;
+  const signups = activity.map(d => ({ label: d.date.slice(5).replace('-', '/'), value: Number(d.signups) || 0 }));
   const tiles = [
     ['전체 회원', pick(data, 'members.total')],
     ['24시간 가입', pick(data, 'members.signedUp24h')],
@@ -547,14 +637,14 @@ function UserMetrics({ data, unique }) {
   ];
   return (
     <Card title="사용자 지표"
-          sub={`회원이 어디까지 오는지 한 판에. 모든 수는 사람 수다 — 같은 사람은 하루에 단계당 한 번만 센다(퍼널 ${show(days)}일 · 가입 7일).`}>
+          sub={`회원이 어디까지 오는지 한 판에. 모든 수는 사람 수다 — 같은 사람은 창 전체에서 한 번만 센다(퍼널 ${show(days)}일 · 가입 ${show(activityDays)}일).`}>
       <div className="grid gap-5 xl:grid-cols-2">
         <div>
           <h3 className="mb-2 text-[13px] font-bold text-adm-muted">단계별 도달 (사람 수)</h3>
           {pick(data, 'funnel.unavailable')
             ? <p className="text-sm text-adm-muted">퍼널 표를 읽지 못했어요.</p>
             : <HBars unit="명" color="#22d3ee" items={FUNNEL_STEPS.map(([key, label]) => ({ label, value: totals[key] ?? 0 }))} />}
-          <p className="mt-2 text-xs text-adm-muted">막대 길이는 단계 사이 차이를 보이는 것이고, 전환율은 적지 않는다 — 비율이 필요하면 계산 서버가 값으로 준다.</p>
+          <Conversion rates={pick(data, 'funnel.conversion')} />
         </div>
         <div>
           <h3 className="mb-2 text-[13px] font-bold text-adm-muted">일별 사람 수</h3>
@@ -569,7 +659,7 @@ function UserMetrics({ data, unique }) {
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
         <div>
-          <h3 className="mb-2 text-[13px] font-bold text-adm-muted">가입 추이 (7일)</h3>
+          <h3 className="mb-2 text-[13px] font-bold text-adm-muted">가입 추이 ({show(activityDays)}일)</h3>
           <BarChart color="#3ed4af" items={signups} empty="가입 기록을 읽지 못했어요." />
         </div>
         <div>
