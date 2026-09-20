@@ -698,10 +698,11 @@ function UserMetrics({ data, unique }) {
             ? <p className="text-sm text-adm-muted">퍼널 표를 읽지 못했어요.</p>
             : <HBars unit="명" color="#22d3ee" items={FUNNEL_STEPS.map(([key, label]) => ({ label, value: totals[key] ?? 0 }))} />}
           <Conversion rates={pick(data, 'funnel.conversion')} />
-          {/* 캘린더·저장은 2026-09-18~21 동안 기록 자체가 없었다(funnel_daily 의 종류 제약에 걸려 두 표 모두 비었다).
-              그 구간의 0 은 "아무도 안 했다"가 아니라 "세지 못했다"이다 — 이탈로 읽히지 않게 적어 둔다. */}
+          {/* 2026-09-18~21 동안 두 단계가 기록되지 않았다(funnel_daily 종류 제약). 그 구간의 0 은 "아무도 안 했다"가 아니다.
+              저장은 saved_result 로 일부 되살렸고(BE v72 기동 복원), 캘린더는 근거로 쓸 행이 없어 되살리지 못했다 — 둘을 나눠 적는다. */}
           <p className="mt-2 text-xs text-adm-amber">
-            캘린더·저장 두 단계는 2026-09-21부터 쌓인다. 그 전 구간은 집계 자체가 빠져 있었고 복구되지 않는다.
+            캘린더는 2026-09-21부터 쌓인다 — 그 전 구간은 집계가 빠져 있었고 되살릴 근거가 없다.
+            저장은 같은 구간이 빠졌다가 저장 기록으로 일부 되살렸다.
           </p>
         </div>
         <div>
