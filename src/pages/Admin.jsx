@@ -450,6 +450,8 @@ function DashboardPage({ data, audit }) {
         ))}
       </div>
 
+      <UserMetrics data={data} unique={unique} />
+
       <Card title="운영 상태" sub="어제 같은 사고(설명 경로 실패·결과 화면 반복 호출)는 여기서 먼저 드러난다. 켜진 뒤 누적값이며 재시작하면 0부터.">
         <dl className="m-0 grid grid-cols-2 gap-3 text-sm md:grid-cols-3 xl:grid-cols-6">
           {[
@@ -476,19 +478,9 @@ function DashboardPage({ data, audit }) {
 
       <Savings savings={data.savings} />
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Card title="퍼널 · 최근 14일 (사람 수)" sub="같은 사람은 하루 단계당 한 번만 센다. 횟수가 아니라 사람 수다.">
-          {pick(data, 'funnel.unavailable')
-            ? <p className="text-sm text-adm-muted">퍼널 표를 읽지 못했어요.</p>
-            : <AreaChart rows={unique} dimUntil={pick(data, 'funnel.contaminatedUntil')} note="결과 화면 반복 호출로 횟수가 부풀어 있던 구간(사람 수 집계 전)"
-                         series={[{ key: 'gateShown', label: '게이트 본 사람', color: '#22d3ee' }, { key: 'reportShown', label: '리포트 본 사람', color: '#3ed4af' }]} />}
-        </Card>
-        <Card title="최근 7일 활동" sub="가입 · 제보 · 수집 제안 · 카탈로그 반영">
-          <BarChart color="#22d3ee" items={(data.weeklyActivity ?? []).map(d => ({ label: `${d.date.slice(5).replace('-', '/')} ${weekday(d.date)}`, value: (Number(d.signups) || 0) }))} empty="활동 기록을 읽지 못했어요." />
-          <p className="mt-1 text-xs text-adm-muted">막대는 가입 수. 아래 표가 나머지 활동이다.</p>
-          <Activity days={data.weeklyActivity ?? []} />
-        </Card>
-      </div>
+      <Card title="최근 7일 활동" sub="가입 말고 나머지 — 제보 · 수집 제안 · 카탈로그 반영">
+        <Activity days={data.weeklyActivity ?? []} />
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card title="설명 실패 종류" sub="내레이터가 못 준 이유별(켜진 뒤 누적)">
@@ -526,6 +518,73 @@ function DashboardPage({ data, audit }) {
         ))}
       </div>
     </div>
+  );
+}
+
+/* 사용자 지표 한 판(사용자 지시 2026-09-21). 회원이 어디까지 오는지·얼마나 들어오는지를
+   흩어 두지 않고 모은다. 모든 수는 BE 값 그대로이고 **사람 수**다(하루 단계당 1회).
+   비율은 그리지 않는다 — 화면이 나누면 그 순간 화면이 숫자를 만드는 것이다(절대 원칙 2).
+   막대 길이로 단계 간 차이를 보이고, 숫자는 서버가 준 수를 그대로 적는다. */
+const FUNNEL_STEPS = [
+  ['gateShown', '게이트를 본 사람'],
+  ['memberLogin', '로그인한 사람'],
+  ['reportShown', '리포트를 본 사람'],
+  ['calendarShown', '캘린더를 본 사람'],
+  ['resultSaved', '결과를 저장한 사람'],
+];
+
+function UserMetrics({ data, unique }) {
+  const totals = pick(data, 'funnel.unique') ?? {};
+  const days = pick(data, 'funnel.windowDays');
+  const signups = (data.weeklyActivity ?? []).map(d => ({ label: `${d.date.slice(5).replace('-', '/')} ${weekday(d.date)}`, value: Number(d.signups) || 0 }));
+  const tiles = [
+    ['전체 회원', pick(data, 'members.total')],
+    ['24시간 가입', pick(data, 'members.signedUp24h')],
+    ['7일 가입', pick(data, 'members.signedUp7d')],
+    ['활성 세션', pick(data, 'members.activeSessions')],
+    ['구독 등록 회원', pick(data, 'members.withSubscription')],
+    ['저장된 결과', pick(data, 'stats.savedTotal')],
+  ];
+  return (
+    <Card title="사용자 지표"
+          sub={`회원이 어디까지 오는지 한 판에. 모든 수는 사람 수다 — 같은 사람은 하루에 단계당 한 번만 센다(퍼널 ${show(days)}일 · 가입 7일).`}>
+      <div className="grid gap-5 xl:grid-cols-2">
+        <div>
+          <h3 className="mb-2 text-[13px] font-bold text-adm-muted">단계별 도달 (사람 수)</h3>
+          {pick(data, 'funnel.unavailable')
+            ? <p className="text-sm text-adm-muted">퍼널 표를 읽지 못했어요.</p>
+            : <HBars unit="명" color="#22d3ee" items={FUNNEL_STEPS.map(([key, label]) => ({ label, value: totals[key] ?? 0 }))} />}
+          <p className="mt-2 text-xs text-adm-muted">막대 길이는 단계 사이 차이를 보이는 것이고, 전환율은 적지 않는다 — 비율이 필요하면 계산 서버가 값으로 준다.</p>
+        </div>
+        <div>
+          <h3 className="mb-2 text-[13px] font-bold text-adm-muted">일별 사람 수</h3>
+          {pick(data, 'funnel.unavailable')
+            ? <p className="text-sm text-adm-muted">퍼널 표를 읽지 못했어요.</p>
+            : <AreaChart rows={unique} dimUntil={pick(data, 'funnel.contaminatedUntil')} note="사람 수로 세기 전 구간"
+                         series={[{ key: 'gateShown', label: '게이트', color: '#22d3ee' },
+                                  { key: 'memberLogin', label: '로그인', color: '#a78bfa' },
+                                  { key: 'reportShown', label: '리포트', color: '#3ed4af' }]} />}
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-5 xl:grid-cols-2">
+        <div>
+          <h3 className="mb-2 text-[13px] font-bold text-adm-muted">가입 추이 (7일)</h3>
+          <BarChart color="#3ed4af" items={signups} empty="가입 기록을 읽지 못했어요." />
+        </div>
+        <div>
+          <h3 className="mb-2 text-[13px] font-bold text-adm-muted">회원 현황</h3>
+          <dl className="m-0 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {tiles.map(([label, value]) => (
+              <div key={label} className="rounded-xl border border-adm-line bg-adm-bg/60 p-3">
+                <dt className="text-xs text-adm-muted">{label}</dt>
+                <dd className="m-0 mt-1 text-lg font-extrabold tnum">{show(value)}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </div>
+    </Card>
   );
 }
 
