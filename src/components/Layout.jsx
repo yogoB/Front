@@ -25,7 +25,7 @@ export function Header() {
       <nav className="flex items-center gap-4">
         {member && <Link to="/mypage" className="inline-flex min-h-11 items-center px-2 text-sm text-muted hover:text-ink-soft">마이페이지</Link>}
         {member && <button type="button" onClick={logout} className="btn btn-ghost">로그아웃</button>}
-        {member === null && <Link to="/login" className="btn btn-brand">로그인</Link>}
+        {member === null && <Link to="/login" className="btn btn-dark">로그인</Link>}
       </nav>
     </header>
   );

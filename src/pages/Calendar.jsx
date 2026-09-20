@@ -135,6 +135,7 @@ export default function Calendar() {
             <p className="max-w-prose text-sm leading-relaxed text-muted">월간 캘린더로 전환 일정을 확인하고, 단계별 실행 가이드를 따라 진행해보세요.</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            {/* 이 화면이 추천하는 것은 "언제 바꾸느냐"다 — 강조색이 남는 유일한 자리다. */}
             <span className="rounded-lg bg-brand-tint px-3.5 py-2 text-[13px] font-bold text-brand-ink">{timing}</span>
             <button type="button" onClick={openExport} className="btn btn-dark">Google 캘린더 연동하기</button>
           </div>
@@ -146,7 +147,7 @@ export default function Calendar() {
           <label htmlFor="expiry" className="text-sm font-semibold">약정 만료일을 알려주시면 그 날에 맞춰 일정을 잡아드려요</label>
           <input id="expiry" type="date" value={expiryText} onChange={e => rememberExpiry(e.target.value)} className="field w-auto" />
           <button type="button" onClick={() => rememberExpiry('')} className="btn btn-ghost">지우기</button>
-          {note && <p className="basis-full text-[13px] font-semibold text-brand-ink">{note}</p>}
+          {note && <p className="basis-full text-[13px] font-semibold text-ink-soft">{note}</p>}
         </div>
 
         <div className="mt-5 grid items-start gap-6 lg:grid-cols-[300px_1fr]">
@@ -211,7 +212,7 @@ export default function Calendar() {
                   <NavBtn onClick={() => setView(v => new Date(v.getFullYear(), v.getMonth() - 1, 1))} label="이전 달">‹</NavBtn>
                   <NavBtn onClick={() => setView(v => new Date(v.getFullYear(), v.getMonth() + 1, 1))} label="다음 달">›</NavBtn>
                   <button type="button" onClick={() => setView(new Date(today.getFullYear(), today.getMonth(), 1))}
-                          className="ml-2 min-h-10 cursor-pointer rounded-lg bg-brand-tint px-3.5 text-xs font-bold text-brand-ink hover:bg-brand/30">
+                          className="ml-2 min-h-10 cursor-pointer rounded-lg border border-line bg-white px-3.5 text-xs font-bold text-ink-soft hover:bg-bg-soft">
                     오늘로 이동
                   </button>
                 </div>
@@ -237,7 +238,7 @@ export default function Calendar() {
         )}
 
         {/* 맨 아래 띠(시안) — 체크포인트를 훑었으면 캘린더에 담는 것이 '진행'이다 */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-card border border-brand bg-brand-tint/60 px-6 py-5">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-card border border-ink bg-white px-6 py-5">
           <div>
             <strong className="block text-[15px] font-extrabold">확인하고 진행하세요</strong>
             <p className="m-0 mt-1 text-[13px] leading-relaxed text-ink-soft">
@@ -292,7 +293,7 @@ function Grid({ view, anchor, events, today, result }) {
                    style={color ? { outline: `2px solid ${color}`, outlineOffset: -2 } : undefined}>
                 <div className="flex items-center justify-between">
                   <span className={`text-[13px] font-semibold ${outside ? 'text-muted/60' : ''}`} style={color ? { color } : undefined}>{date.getDate()}</span>
-                  {isToday && <span className="rounded bg-brand-strong px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-white">TODAY</span>}
+                  {isToday && <span className="rounded bg-ink px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-white">TODAY</span>}
                 </div>
                 {items.map(e => {
                   const past = date < today, c = STEP_COLORS[e.step];
@@ -332,14 +333,14 @@ function EventList({ events, anchor, today, stepName }) {
             <div className="flex items-center gap-2 text-sm font-extrabold">
               <span>{date.getMonth() + 1}월 {date.getDate()}일 {WEEKDAYS[date.getDay()]}</span>
               {isToday
-                ? <span className="rounded bg-brand-tint px-1.5 py-0.5 text-[10px] font-extrabold text-brand-ink">TODAY</span>
+                ? <span className="rounded bg-ink px-1.5 py-0.5 text-[10px] font-extrabold text-white">TODAY</span>
                 : <span className="text-xs font-semibold text-muted">{relativeDay(date, today)}</span>}
             </div>
             <ul className="m-0 grid list-none gap-2.5 p-0">
               {items.map(e => (
                 <li key={e.label} className="grid grid-cols-[auto_1fr_auto] items-center gap-2.5 text-sm">
                   <span className={`grid size-[18px] place-items-center rounded-full border-[1.5px] text-[11px] font-extrabold
-                    ${past ? 'border-brand bg-brand text-white' : 'border-[#cfd3da]'}`}>{past ? '✓' : ''}</span>
+                    ${past ? 'border-ink bg-ink text-white' : 'border-[#cfd3da]'}`}>{past ? '✓' : ''}</span>
                   <span className="font-semibold">{e.label}</span>
                   <span className="whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-bold"
                         style={{ background: STEP_COLORS[e.step] + '1f', color: STEP_COLORS[e.step] }}>{stepName(e.step)}</span>
@@ -370,7 +371,7 @@ function ExportPanel({ ref, events, anchor, result, onDownload }) {
             <li key={e.label} className="flex flex-wrap items-baseline gap-3">
               <span className="min-w-[68px] text-[13px] text-muted tnum">{date.getMonth() + 1}월 {date.getDate()}일</span>
               <a href={googleUrl(e, anchor, result)} target="_blank" rel="noopener noreferrer"
-                 className="text-sm font-semibold text-brand-ink underline hover:text-brand-strong">{e.label}</a>
+                 className="text-sm font-semibold text-ink underline hover:text-ink-soft">{e.label}</a>
             </li>
           );
         })}

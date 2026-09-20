@@ -7,6 +7,7 @@ import Analyzing from '../components/Analyzing.jsx';
 import { loadCatalog, loadPlans, carriersOf, DATA_BUCKETS, FEE_BUCKETS } from '../lib/catalog-data.js';
 import { won, tierPrice, foreignNote, tierKrwGuess, isForeign, matches, matchesAll, searchKey, findPlans, clampDigits, FEE_MAX } from '../lib/model.js';
 import { PriceNote } from '../components/SubscriptionPicker.jsx';
+import TierSelect from '../components/TierSelect.jsx';
 import { setInput } from '../lib/session.js';
 import { track } from '../lib/track.js';
 import { request } from '../lib/api.js';
@@ -118,9 +119,13 @@ export default function Detail() {
         <ErrorLine>{error}</ErrorLine>
 
         <div className="grid items-start gap-8 md:grid-cols-[260px_1fr]">
-          <Statement carrier={carrier} plan={currentPlan} contractHas={contractHas} fee={fee} />
+          {/* 폰에서는 질문이 먼저다 — 요약을 먼저 읽히게 하면 질문이 화면 아래로 밀린다(라이트와 같은 규칙). */}
+          <div className="order-2 md:order-1">
+            <Statement carrier={carrier} plan={currentPlan} contractHas={contractHas} fee={fee} />
+          </div>
 
-          <div className="min-w-0">
+          {/* 라이트와 같은 카드다 — 두 흐름의 골격을 맞춘다(2026-09-21). */}
+          <div className="order-1 min-w-0 rounded-card border border-line bg-white p-6 shadow-card sm:p-8 md:order-2">
             {step === 1 && (
               <>
                 <Question kicker="현재 통신사">어떤 통신사를 쓰고 계세요?</Question>
@@ -174,7 +179,7 @@ export default function Detail() {
                 <h2 className="mt-10 text-xl font-extrabold">지금 내는 월 통신비는요?</h2>
                 {currentPlan?.id ? (
                   // 요금제를 골랐으면 통신비는 그 요금제에서 온다 — 여기서 또 묻지 않는다. 못 찾은 사람은 아래 직접 입력이 그대로다.
-                  <p className="mt-3 rounded-xl bg-brand-tint px-4 py-3 text-sm leading-relaxed text-brand-ink">
+                  <p className="mt-3 rounded-xl bg-bg-soft px-4 py-3 text-sm leading-relaxed text-ink-soft">
                     <strong>{currentPlan.carrier} {currentPlan.name}</strong>에서 가져왔어요 — 월 {won(currentPlan.basePrice)}.
                     '현재' 금액은 이 요금제 기준으로 계산해요.
                   </p>
@@ -257,16 +262,15 @@ export default function Detail() {
                       </div>
                       {/* 등급을 여기서 고른다. 고르기 전에는 화면은 첫 등급 금액을 보여주면서 서버는 대표 등급(스탠다드)으로
                           계산해, 프리미엄 가입자가 스탠다드 금액을 추천받고 있었다. 이제 고른 값이 그대로 전송된다. */}
-                      <div className="mt-1.5 flex items-center gap-2 pr-2.5">
-                        <select value={w.tierId} aria-label={`${w.service.name} 등급`}
-                                onChange={e => setWish(list => list.map(x => x.id === w.id ? { ...x, tierId: Number(e.target.value) } : x))}
-                                className="min-h-10 min-w-0 flex-1 rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm">
-                          {w.service.tiers.map(t => (
-                            <option key={t.id} value={t.id}>{t.name} · {tierPrice(t)}</option>
-                          ))}
-                        </select>
-                        {/* 고른 등급이 해외 결제면 근거를 ⓘ 로 붙인다 — 목록의 금액은 원화 기준이다. */}
-                        <PriceNote note={foreignNote(w.service.tiers.find(t => t.id === w.tierId))} />
+                      {/* 금액은 상자 **밖**에 둔다. 상자 안에 넣으면 폭이 글자 길이를 따라가 옆 것을 민다
+                          — 라이트 목록에서 금액이 세 열로 갈렸던 것과 같은 원인이다(2026-09-21). */}
+                      <div className="mt-1.5 grid grid-cols-[6.5rem_1fr] items-center gap-3 pr-2.5">
+                        <span className="text-sm text-ink-soft tnum">
+                          {tierPrice(w.service.tiers.find(t => t.id === w.tierId))}
+                          <PriceNote note={foreignNote(w.service.tiers.find(t => t.id === w.tierId))} />
+                        </span>
+                        <TierSelect tiers={w.service.tiers} value={w.tierId} label={`${w.service.name} 등급`}
+                                    onChange={id => setWish(list => list.map(x => x.id === w.id ? { ...x, tierId: Number(id) } : x))} />
                       </div>
                     </div>
                   ))}
@@ -411,11 +415,11 @@ function PlanSearch({ plans, carrier, selected, onPick, onClear, status = 'ready
                 <div className="px-4 py-3 text-sm text-muted">
                   <p><strong className="text-ink-soft">"{query.trim()}"</strong> 는 목록에 없어요. 이름과 실제 통신비로 계속할 수 있어요.</p>
                   <button type="button" onClick={() => { onPick({ carrier, name: query.trim(), custom: true }); setQuery(''); }}
-                          className="btn-text mt-1 font-semibold text-brand-ink">이 이름으로 계속하기</button>
+                          className="btn-text mt-1 font-semibold text-ink">이 이름으로 계속하기</button>
                   <span className="mx-2 text-line">·</span>
                   {reported
-                    ? <p className="mt-1.5 font-semibold text-brand-ink">{reported}</p>
-                    : <button type="button" onClick={reportMissing} className="btn-text mt-1 font-semibold text-brand-ink">이 요금제가 없다고 알려주기</button>}
+                    ? <p className="mt-1.5 font-semibold text-ink">{reported}</p>
+                    : <button type="button" onClick={reportMissing} className="btn-text mt-1 font-semibold text-ink">이 요금제가 없다고 알려주기</button>}
                 </div>
               )}
             </div>
@@ -474,7 +478,7 @@ function AddModal({ catalog, chosen, onClose, onAdd, status = 'ready', onRetry }
       <div className="mb-4 flex max-h-[320px] flex-col overflow-y-auto rounded-card border border-line">
         {shown.map(s => (
           <label key={s.id} className="grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-line px-4 py-3 last:border-b-0">
-            <input type="checkbox" className="size-[18px] accent-brand"
+            <input type="checkbox" className="size-[18px] accent-ink"
                    checked={picked.includes(s.id)}
                    onChange={() => setPicked(p => p.includes(s.id) ? p.filter(x => x !== s.id) : [...p, s.id])} />
             <span className="font-semibold">{s.icon}  {s.name}</span>

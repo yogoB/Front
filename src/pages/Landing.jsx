@@ -69,7 +69,7 @@ function SavingsRoulette({ samples, basis }) {
       <div className="group relative mx-auto mt-3 w-fit">
         <button type="button" aria-describedby="savings-source" aria-label="절감액 출처 보기"
                 className="grid size-11 cursor-help place-items-center rounded-full bg-white text-ink">
-          <span className="grid size-5 place-items-center rounded-full border border-ink/45 text-[11px] font-extrabold leading-none transition-colors group-hover:border-brand group-hover:bg-brand group-focus-within:border-brand">
+          <span className="grid size-5 place-items-center rounded-full border border-ink/45 text-[11px] font-extrabold leading-none transition-colors group-hover:border-ink group-hover:bg-ink group-hover:text-white group-focus-within:border-ink">
             !
           </span>
         </button>

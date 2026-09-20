@@ -43,7 +43,7 @@ export default function AuthReturn() {
   return (
     <p role="status" aria-live="polite"
        className={`mx-auto mt-3 w-full max-w-page rounded-xl px-4.5 py-3 text-sm font-semibold
-         ${bad ? 'bg-warn-tint text-warn-ink' : 'bg-brand-tint text-brand-ink'}`}>
+         ${bad ? 'bg-warn-tint text-warn-ink' : 'bg-bg-soft text-ink'}`}>
       {note}
       {!bad && <> 변경은 <a href="/mypage" className="font-bold underline underline-offset-[3px]">마이페이지</a>!</>}
     </p>

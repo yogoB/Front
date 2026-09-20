@@ -26,7 +26,7 @@ export default function ReportFab() {
           기본은 px-2.5 + 아이콘 44px = 지름 64px 정원, 간격은 hover 때 글자 쪽 margin 으로만 생긴다. */}
       <button type="button" onClick={() => setOpen(true)} aria-label="오류 제보"
               className="group fixed bottom-6 right-6 z-40 flex h-16 cursor-pointer items-center rounded-full border-0
-                         bg-brand px-2.5 text-white shadow-[0_14px_30px_rgba(170,150,255,.45)] transition-all duration-200
+                         bg-ink px-2.5 text-white shadow-[0_14px_30px_rgb(23_24_42_/_28%)] transition-all duration-200
                          hover:pr-7 focus-visible:pr-7">
         <span className="grid size-11 shrink-0 place-items-center rounded-full bg-white/20">
           <Envelope />
@@ -110,7 +110,7 @@ function ReportDialog({ onClose }) {
       {done ? (
         <>
           <p className="text-sm leading-relaxed text-ink-soft">접수했어요. 확인한 뒤 고칠게요. 고맙습니다.</p>
-          <button type="button" onClick={onClose} className="btn btn-brand mt-5">닫기</button>
+          <button type="button" onClick={onClose} className="btn btn-dark mt-5">닫기</button>
         </>
       ) : (
         <form onSubmit={submit} className="grid gap-4">
@@ -133,15 +133,15 @@ function ReportDialog({ onClose }) {
                 {TARGETS.map(([v, label]) => (
                   <button key={v} type="button" onClick={() => { setTargetType(v); setTarget(null); setQuery(''); }} aria-pressed={targetType === v}
                           className={`min-h-10 cursor-pointer rounded-full border px-4 text-sm font-semibold transition-colors duration-150
-                            ${targetType === v ? 'border-brand bg-brand-tint text-brand-ink' : 'border-line bg-white text-ink-soft hover:bg-bg-soft'}`}>
+                            ${targetType === v ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink-soft hover:bg-bg-soft'}`}>
                     {label}
                   </button>
                 ))}
               </div>
               {target ? (
-                <div className="flex items-center justify-between gap-3 rounded-field border border-brand bg-brand-tint px-3.5 py-2.5 text-sm font-semibold text-brand-ink">
+                <div className="flex items-center justify-between gap-3 rounded-field border border-line bg-bg-soft px-3.5 py-2.5 text-sm font-semibold text-ink">
                   <span>{target.label}</span>
-                  <button type="button" onClick={() => setTarget(null)} className="btn-text min-h-8 text-brand-ink">바꾸기</button>
+                  <button type="button" onClick={() => setTarget(null)} className="btn-text min-h-8 text-ink">바꾸기</button>
                 </div>
               ) : (
                 <>
@@ -178,7 +178,7 @@ function ReportDialog({ onClose }) {
 
           <div className="flex items-center gap-3">
             <button type="submit" disabled={!description.trim() || busy}
-                    className="btn btn-brand disabled:cursor-not-allowed disabled:opacity-45">
+                    className="btn btn-dark disabled:cursor-not-allowed disabled:opacity-45">
               {busy ? '보내는 중…' : '제보 보내기'}
             </button>
             {status && <span role="alert" className="text-[13px] text-danger">{status}</span>}

@@ -135,7 +135,7 @@ export default function Results() {
           흐림은 "여기에 답이 있다"를 보이는 장치다. 화면 게이트일 뿐 API 는 여전히 공개다(D-36 주석 유지). */}
       <div className={guest ? 'select-none blur-[6px]' : undefined}>
       <main className="mx-auto max-w-page px-6 py-8">
-        <span className="inline-block rounded-full bg-brand-tint px-3 py-1.5 text-[13px] font-bold text-brand-ink">
+        <span className="inline-block rounded-full bg-bg-soft px-3 py-1.5 text-[13px] font-bold text-ink-soft">
           최적화 완료
         </span>
         <h1 className="mb-1 mt-4 text-2xl font-extrabold tracking-[-.01em] md:text-[28px]">최적 요금 조합 비교 분석</h1>
@@ -177,12 +177,12 @@ export default function Results() {
         {recommended && <SaveResult input={input} best={recommended} current={current} />}
 
         {input.mode === 'light' && (
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand-tint px-6 py-5">
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-white px-6 py-5">
             <div>
               <strong className="font-bold">더 정밀한 결과를 원하시나요?</strong>
               <p className="mt-1 max-w-prose text-sm leading-relaxed text-ink-soft">통신사·약정·결합 할인을 추가 반영하면 더 정확한 조합을 찾을 수 있어요.</p>
             </div>
-            <button type="button" onClick={() => navigate('/detail')} className="btn btn-brand">더 정확한 절감받기</button>
+            <button type="button" onClick={() => navigate('/detail')} className="btn btn-dark">더 정확한 절감받기</button>
           </div>
         )}
 
@@ -203,7 +203,7 @@ export default function Results() {
               <ul className="mb-6 grid list-none gap-2.5 rounded-xl border border-line bg-white px-5 py-4 text-sm leading-relaxed text-ink-soft">
                 {notices.map(text => (
                   <li key={text} className="max-w-[72ch]">
-                    <span className="text-brand-ink">ⓘ </span>
+                    <span className="text-muted">ⓘ </span>
                     {splitLines(text).map((line, i) => <span key={i} className="block first:inline">{line}</span>)}
                   </li>
                 ))}
@@ -214,7 +214,7 @@ export default function Results() {
 
         <ul className="mt-8 flex list-none flex-wrap gap-2.5 p-0">
           {['금액마다 출처 표시', '안 쓰는 혜택은 0원으로 계산', '카드·계좌 연결 없음'].map(t => (
-            <li key={t} className="chip bg-white"><span className="size-1.5 rounded-full bg-brand" aria-hidden="true" />{t}</li>
+            <li key={t} className="chip bg-white"><span className="size-1.5 rounded-full bg-ink" aria-hidden="true" />{t}</li>
           ))}
         </ul>
 
@@ -641,7 +641,7 @@ function ReportWrong({ planId, planName }) {
                    aria-label="출처 링크(선택)" placeholder="출처 링크(선택) — 통신사 공식 페이지 https://…" className="field" />
             <div className="flex items-center gap-3">
               <button type="submit" disabled={!description.trim() || busy}
-                      className="btn btn-brand disabled:cursor-not-allowed disabled:opacity-45">
+                      className="btn btn-dark disabled:cursor-not-allowed disabled:opacity-45">
                 {busy ? '보내는 중…' : '제보 보내기'}
               </button>
               {status && <span className="text-[13px] text-danger">{status}</span>}
@@ -673,11 +673,11 @@ function Summary({ message }) {
 }
 
 /* 추천 사유는 내레이터가 만든다(narrate 응답의 reasons). 펼치기 전·장애 시엔 빈 배열이고 그때는 숨긴다.
-   시안의 보라 박스 — 표와 같은 카드 안에 붙는다. */
+   표와 같은 카드 안에 붙는다. 예전엔 보라(--color-detail)였는데 강조색을 하나로 줄이며 회색면으로 바꿨다(2026-09-21). */
 function Reasons({ reasons }) {
   return (
-    <section className="m-5 rounded-xl bg-detail-tint p-5">
-      <h2 className="mb-3 text-[15px] font-extrabold text-detail">💡 왜 나에게 이 상품이 추천됐나요?</h2>
+    <section className="m-5 rounded-xl border border-line bg-bg-soft p-5">
+      <h2 className="mb-3 text-[15px] font-extrabold text-ink">💡 왜 나에게 이 상품이 추천됐나요?</h2>
       <ul className="m-0 grid list-none gap-2 p-0">
         {reasons.map((text, i) => (
           <li key={i} className="max-w-prose text-sm leading-relaxed text-ink-soft">
@@ -707,10 +707,10 @@ function Empty({ message }) {
     <>
       <Header />
       <main className="mx-auto my-20 max-w-[560px] px-6 text-center">
-        <span className="inline-block rounded-full bg-brand-tint px-3 py-1.5 text-[13px] font-bold text-brand-ink">안내</span>
+        <span className="inline-block rounded-full bg-bg-soft px-3 py-1.5 text-[13px] font-bold text-ink-soft">안내</span>
         <h1 className="mt-5 text-[26px] font-extrabold">비교할 입력이 없어요</h1>
         <p className="mt-3 text-muted">{message}</p>
-        <a href="/modes" className="btn btn-brand mt-7 inline-flex">모드 선택으로</a>
+        <a href="/modes" className="btn btn-dark mt-7 inline-flex">모드 선택으로</a>
       </main>
     </>
   );

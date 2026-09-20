@@ -47,7 +47,7 @@ export function Question({ kicker, children, sub, tip }) {
   useEffect(() => { ref.current?.focus({ preventScroll: true }); scrollTo(0, 0); }, []);
   return (
     <div className="mb-8">
-      {kicker && <span className="text-sm font-bold text-brand-ink">{kicker}</span>}
+      {kicker && <span className="text-sm font-bold text-muted">{kicker}</span>}
       <div className="flex items-center justify-between gap-3">
         <h1 ref={ref} tabIndex={-1} className="mb-3 mt-2 text-2xl font-extrabold leading-snug tracking-[-.01em] outline-none md:text-[28px]">
           {children}
@@ -111,7 +111,7 @@ export function SearchState({ status, empty, onRetry, className = 'px-4 py-3 tex
     return (
       <p className={`flex flex-wrap items-center gap-2 text-muted ${className}`}>
         목록을 불러오지 못했어요.
-        {onRetry && <button type="button" onClick={onRetry} className="btn-text font-semibold text-brand-ink">다시 시도</button>}
+        {onRetry && <button type="button" onClick={onRetry} className="btn-text font-semibold text-ink">다시 시도</button>}
       </p>
     );
   }

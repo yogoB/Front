@@ -337,7 +337,7 @@ export default function Admin() {
           <input id="admin-id" name="id" autoComplete="username" required className="field mb-3.5" />
           <Label htmlFor="admin-password">비밀번호</Label>
           <input id="admin-password" name="password" type="password" autoComplete="current-password" required className="field" />
-          <button type="submit" className="btn btn-brand btn-block mt-5">로그인</button>
+          <button type="submit" className="btn btn-adm btn-block mt-5">로그인</button>
           <Link to="/" className="mt-4 block text-center text-xs text-adm-muted hover:text-adm-text">요고비 홈으로</Link>
         </form>
       </div>
@@ -883,7 +883,7 @@ function FragmentRow({ row, open, onToggle, onSave }) {
               <select id={`gap-status-${row.id}`} name="status" defaultValue={row.status} className="field min-h-10 w-auto">{GAP_STATUS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
             <div className="min-w-[260px] flex-1"><Label htmlFor={`gap-note-${row.id}`}>메모</Label>
               <input id={`gap-note-${row.id}`} name="note" defaultValue={row.note ?? ''} maxLength={1000} className="field min-h-10" placeholder="어디까지 봤는지, 왜 보류인지" /></div>
-            <button type="submit" className="btn btn-brand min-h-10">저장</button>
+            <button type="submit" className="btn btn-adm min-h-10">저장</button>
           </form>
         </td></tr>
       )}
@@ -949,7 +949,7 @@ function ReportsBoard({ onChanged, say }) {
                          maxLength={1000} placeholder="처리 메모" className="field min-h-9 min-w-[160px] py-1.5 text-xs" />
                 </Td>
                 <Td className="whitespace-nowrap">
-                  {row.status !== 'RESOLVED' && <button type="button" onClick={() => mark(row, 'RESOLVED')} className={`btn btn-brand mr-1.5 ${small}`}>처리완료</button>}
+                  {row.status !== 'RESOLVED' && <button type="button" onClick={() => mark(row, 'RESOLVED')} className={`btn btn-adm mr-1.5 ${small}`}>처리완료</button>}
                   {row.status !== 'REJECTED' && <button type="button" onClick={() => mark(row, 'REJECTED')} className={danger}>반려</button>}
                 </Td>
               </tr>
@@ -1146,7 +1146,7 @@ function CatalogPage({ say, onChanged }) {
                   <>
                     {/* 서버도 막지만 화면에서도 먼저 막는다 */}
                     <button type="button" disabled={r.review_status === 'MISMATCH'} onClick={() => decide(r.id, 'approve')}
-                            className={`btn btn-brand mr-1.5 ${small} disabled:cursor-not-allowed disabled:opacity-45`}>승인</button>
+                            className={`btn btn-adm mr-1.5 ${small} disabled:cursor-not-allowed disabled:opacity-45`}>승인</button>
                     <button type="button" onClick={() => decide(r.id, 'reject')} className={danger}>거절</button>
                   </>
                 ) : r.status}
@@ -1157,7 +1157,7 @@ function CatalogPage({ say, onChanged }) {
         <p className="mt-3 text-sm text-adm-muted">시세 스냅샷이 비어 있으면 요금제 제안이 만들어지지 않는다 — 시세 수집을 먼저 돌린다. 배포 서버는 유휴 시 정지하므로 예약 시각에 잠들어 있으면 정기 실행이 건너뛰어진다.</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <button type="button" onClick={sweep} className="btn btn-ghost">① 시세 스냅샷 수집</button>
-          <button type="button" onClick={harvest} className="btn btn-brand">② 지금 수집 실행</button>
+          <button type="button" onClick={harvest} className="btn btn-adm">② 지금 수집 실행</button>
         </div>
       </Card>
 

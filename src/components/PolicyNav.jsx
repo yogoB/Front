@@ -13,7 +13,7 @@ export default function PolicyNav() {
       {DOCS.map(([to, label]) => (
         <NavLink key={to} to={to}
           className={({ isActive }) => `rounded-full px-3.5 py-2 text-sm font-semibold ${
-            isActive ? 'bg-brand-tint text-brand-ink' : 'bg-bg-soft text-ink-soft hover:bg-[#eceef2]'}`}>
+            isActive ? 'bg-ink text-white' : 'bg-bg-soft text-ink-soft hover:bg-[#eceef2]'}`}>
           {label}
         </NavLink>
       ))}

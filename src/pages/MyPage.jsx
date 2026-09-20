@@ -49,7 +49,7 @@ export default function MyPage() {
           <h1 className="text-[26px] font-extrabold">내 계정</h1>
           <p className="mt-3 rounded-card border border-line bg-bg-soft p-5 text-sm text-ink-soft">
             로그인하면 현재 요금제와 구독을 저장해 중복 결제를 점검해 드려요.{' '}
-            <Link to="/login" className="font-semibold text-brand-ink underline">로그인하기</Link>
+            <Link to="/login" className="font-semibold text-ink underline">로그인하기</Link>
           </p>
         </main>
       </>
@@ -200,7 +200,7 @@ function Profile({ member, onChange }) {
   return (
     <Card title="내 계정">
       <div className="flex items-center gap-4">
-        <span className="grid size-14 place-items-center rounded-full bg-brand text-xl font-extrabold text-white">
+        <span className="grid size-14 place-items-center rounded-full bg-ink text-xl font-extrabold text-white">
           {[...display][0] ?? '·'}
         </span>
         <div>
@@ -217,13 +217,13 @@ function Profile({ member, onChange }) {
           <input value={value} onChange={e => setValue(e.target.value)} autoFocus
                  aria-label="새 닉네임" className="field" />
           <div className="flex gap-2">
-            <button type="submit" className="btn btn-brand">저장</button>
+            <button type="submit" className="btn btn-dark">저장</button>
             <button type="button" onClick={() => { setEditing(false); setStatus(''); }} className="btn btn-ghost">취소</button>
           </div>
         </form>
       ) : (
         <button type="button" onClick={() => { setValue(member.nickname ?? ''); setEditing(true); }}
-                className="mt-3 cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold text-brand-ink underline underline-offset-[3px]">
+                className="mt-3 cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold text-ink underline underline-offset-[3px]">
           닉네임 바꾸기
         </button>
       )}
@@ -262,7 +262,7 @@ function CurrentPlan({ member, plans, onSaved }) {
           {found.length ? found.map(plan => (
             <button key={plan.id} type="button" onClick={() => save(plan)}
                     className={`flex w-full cursor-pointer items-center gap-2.5 border-b border-line px-4 py-3.5 text-left
-                      font-semibold last:border-b-0 ${plan.id === member?.currentPlanId ? 'bg-brand-tint text-brand-ink' : 'bg-white hover:bg-bg-soft'}`}>
+                      font-semibold last:border-b-0 ${plan.id === member?.currentPlanId ? 'bg-ink text-white' : 'bg-white hover:bg-bg-soft'}`}>
               <span>{plan.carrier} {plan.name}</span>
               <small className="text-xs font-medium text-muted">
                 {NETWORKS[plan.networkType] ?? plan.networkType} · 월 {won(plan.basePrice)}
@@ -355,7 +355,7 @@ function Subscriptions({ services, rows, onChanged }) {
         </select>
         <input value={price} onChange={e => setPrice(e.target.value)} inputMode="numeric"
                aria-label="월 결제액" className="field sm:w-28" />
-        <button type="submit" className="btn btn-brand">추가</button>
+        <button type="submit" className="btn btn-dark">추가</button>
       </form>
       <Status>{status}</Status>
     </Card>
@@ -403,7 +403,7 @@ function PaymentImport({ onImported }) {
         <br />
         올리지 않아도 괜찮아요 — 아래에서 직접 추가해도 중복 점검은 똑같이 됩니다.
       </p>
-      <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-brand-ink hover:bg-bg-soft">
+      <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-ink hover:bg-bg-soft">
         <input
           type="file"
           accept="application/json,.json"
@@ -416,7 +416,7 @@ function PaymentImport({ onImported }) {
       {result && (
         <div className="mt-3 rounded-xl border border-line bg-bg-soft px-4 py-3 text-sm">
           <p>
-            결제 {result.imported}건을 읽어 구독 <strong className="text-brand-ink">{result.recognized}건</strong>을 찾았어요.
+            결제 {result.imported}건을 읽어 구독 <strong className="text-ink">{result.recognized}건</strong>을 찾았어요.
           </p>
           {result.unrecognized?.length > 0 && (
             <p className="mt-1 text-[13px] text-muted">

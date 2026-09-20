@@ -57,7 +57,9 @@ export default function GoogleConsent({ onContinue, dark = false, label = 'Googl
         </div>
       </fieldset>
       {error && <p role="alert" className={`mt-3 text-sm ${dark ? 'text-[#ffb4ab]' : 'text-danger'}`}>{error}</p>}
-      <button type="submit" className={`btn btn-lg btn-block mt-6 ${dark ? 'btn-brand' : 'btn-dark'}`}>
+      {/* 검은 면 위에서는 검은 버튼이 안 보인다 — 흑백을 뒤집는다(강조색 규칙: 누르는 것은 민트가 아니다). */}
+      <button type="submit"
+              className={`btn btn-lg btn-block mt-6 ${dark ? 'border-white bg-white text-ink hover:bg-white/90' : 'btn-dark'}`}>
         <GoogleMark />
         {pending ? '연결하는 중…' : label}
       </button>
@@ -70,7 +72,7 @@ function Consent({ id, checked, onChange, required = false, after, children }) {
     <div className="flex min-h-7 items-start gap-3">
       <input id={id} name={id} type="checkbox" checked={checked} required={required}
              onChange={event => onChange(id, event.target.checked)}
-             className="mt-0.5 size-5 shrink-0 cursor-pointer accent-brand" />
+             className="mt-0.5 size-5 shrink-0 cursor-pointer accent-ink" />
       <div className="text-sm leading-relaxed">
         <label htmlFor={id} className="cursor-pointer">{children}</label>
         {after && <> · {after}</>}

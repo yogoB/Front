@@ -71,12 +71,22 @@ export default function Light() {
   return (
     <div className="min-h-screen bg-bg-page">
       <Header />
-      <main className="mx-auto max-w-[860px] px-6 py-8">
+      <main className="mx-auto max-w-[900px] px-6 py-8">
         <FlowHead steps={STEPS} current={step} onGo={go} onBack={back} />
         <ErrorLine>{error}</ErrorLine>
 
+        {/* 단계가 바뀌어도 **골격은 그대로** 둔다(Mobbin 레퍼런스 Copy.ai·Babbel, 사용자 지적 2026-09-21).
+            전에는 1·2단계가 회색 바탕에 글자만 떠 있고 3단계에서 갑자기 사이드바가 생겨, 같은 흐름인데
+            화면 모양이 세 번 바뀌었다. 합계는 1단계부터 보여 준다 — 답할수록 채워지는 것이 보인다.
+            폰에서는 질문이 먼저다(order) — 합계를 먼저 읽히게 하면 질문이 접힌 화면 아래로 밀린다. */}
+        <div className="grid items-start gap-6 md:grid-cols-[260px_1fr]">
+          <div className="order-2 md:order-1">
+            <Summary subs={subs} fee={fee} dataLabel={dataSkipped ? '모름' : DATA_BUCKETS[dataIdx].label} />
+          </div>
+          <section className="order-1 min-w-0 rounded-card border border-line bg-white p-6 shadow-card sm:p-8 md:order-2">
+
         {step === 1 && (
-          <section className="mx-auto max-w-[560px]">
+          <div>
             <Question kicker="기본 정보" sub="대략적으로 선택해도 괜찮아요. 해당 용량 이상인 요금제를 찾아요."
                       tip="통신사 앱 → 사용량 조회에서 확인할 수 있어요">
               한 달에 데이터 얼마나 쓰세요?
@@ -86,11 +96,11 @@ export default function Light() {
                        idx={dataIdx} max={DATA_BUCKETS.length - 1}
                        onChange={i => { setDataIdx(i); setDataSkipped(false); }} />
             <Actions onNext={() => go(2)} onSkip={() => { setDataSkipped(true); go(2); }} />
-          </section>
+          </div>
         )}
 
         {step === 2 && (
-          <section className="mx-auto max-w-[560px]">
+          <div>
             <Question kicker="현재 납부액"
                       sub="지난달 실제 납부한 결합·약정 할인이 다 적용된 총 납부금액을 알려주세요."
                       tip="통신사 앱 → 청구내역에서 확인할 수 있어요">
@@ -106,7 +116,7 @@ export default function Light() {
             {customFee && (
               <div className="mt-5">
                 <label htmlFor="fee-input" className="mb-2 block text-sm font-semibold">직접 입력</label>
-                <div className="flex min-h-13 items-center rounded-xl border border-line bg-white px-4 shadow-card focus-within:border-brand focus-within:ring-[3px] focus-within:ring-brand-tint">
+                <div className="flex min-h-13 items-center rounded-xl border border-line bg-white px-4 shadow-card focus-within:border-ink focus-within:ring-[3px] focus-within:ring-ink/10">
                   <input id="fee-input" inputMode="numeric" placeholder="55000" autoFocus value={feeText}
                          onChange={e => {
                            // 상한을 넘긴 값은 화면에도 상태에도 남지 않게 여기서 자른다.
@@ -120,24 +130,23 @@ export default function Light() {
               </div>
             )}
             <Actions onNext={() => go(3)} onSkip={() => { setFee(null); setCustomFee(false); go(3); }} />
-          </section>
+          </div>
         )}
 
         {step === 3 && (
-          <section className="grid items-start gap-8 md:grid-cols-[260px_1fr]">
-            <Summary subs={subs} fee={fee} dataLabel={dataSkipped ? '모름' : DATA_BUCKETS[dataIdx].label} />
-            <div className="min-w-0">
-              <Question kicker="구독 정보" sub="이용 중인 서비스를 고르고 등급을 선택해 주세요.">
-                구독 서비스 정보를 알려주세요
-              </Question>
-              <SubscriptionPicker
-                subs={subs} query={query} onQuery={setQuery} status={catalogState} onRetry={fetchCatalog}
-                onToggle={id => setSubs(list => list.map(s => s.id === id ? { ...s, checked: !s.checked } : s))}
-                onTier={(id, tierId) => setSubs(list => list.map(s => s.id === id ? { ...s, tierId } : s))} />
-              <Actions onNext={analyze} nextLabel="분석 시작하기" />
-            </div>
-          </section>
+          <div>
+            <Question kicker="구독 정보" sub="이용 중인 서비스를 고르고 등급을 선택해 주세요.">
+              구독 서비스 정보를 알려주세요
+            </Question>
+            <SubscriptionPicker
+              subs={subs} query={query} onQuery={setQuery} status={catalogState} onRetry={fetchCatalog}
+              onToggle={id => setSubs(list => list.map(s => s.id === id ? { ...s, checked: !s.checked } : s))}
+              onTier={(id, tierId) => setSubs(list => list.map(s => s.id === id ? { ...s, tierId } : s))} />
+            <Actions onNext={analyze} nextLabel="분석 시작하기" />
+          </div>
         )}
+          </section>
+        </div>
       </main>
     </div>
   );
