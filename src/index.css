@@ -133,6 +133,7 @@
   .policy article h3 { @apply mb-2 mt-5 text-base font-bold; }
   .policy article p { @apply my-2 text-[15px] leading-[1.8] text-ink-soft; }
   .policy article ul { @apply my-2.5 list-disc pl-5; }
+  .policy article ol { @apply my-2.5 list-decimal pl-5; }
   .policy article li { @apply my-1 text-[15px] leading-[1.8] text-ink-soft; }
   .policy article strong { @apply text-ink; }
 }

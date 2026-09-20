@@ -5,7 +5,7 @@ import { FlowHead, Question, ErrorLine, Actions, RangeCard, SearchState } from '
 import { Choice, ChoiceGroup } from '../components/Choice.jsx';
 import Analyzing from '../components/Analyzing.jsx';
 import { loadCatalog, loadPlans, carriersOf, DATA_BUCKETS, FEE_BUCKETS } from '../lib/catalog-data.js';
-import { won, tierPrice, foreignNote, tierKrwGuess, isForeign, matches, matchesAll, searchKey, clampDigits, FEE_MAX } from '../lib/model.js';
+import { won, tierPrice, foreignNote, tierKrwGuess, isForeign, matches, matchesAll, searchKey, findPlans, clampDigits, FEE_MAX } from '../lib/model.js';
 import { PriceNote } from '../components/SubscriptionPicker.jsx';
 import { setInput } from '../lib/session.js';
 import { request } from '../lib/api.js';
@@ -81,7 +81,8 @@ export default function Detail() {
       mode: 'detail',
       carrier: carrier.name, mvno: carrier.mvno,
       // 지금 쓰는 요금제 id 만 보낸다. 없으면 '현재' 열은 입력값 합계로 돌아간다.
-      currentPlanId: currentPlan?.id ?? null, currentPlanLabel: currentPlan ? `${currentPlan.carrier} ${currentPlan.name}` : null,
+      currentPlanId: currentPlan?.id ?? null,
+      currentPlanLabel: currentPlan ? (currentPlan.custom ? currentPlan.name : `${currentPlan.carrier} ${currentPlan.name}`) : null,
       contract: { has: contractHas === true, endDate: contractEnd || null },
       data: { label: b.label, gb: b.rep },
       fee,
@@ -127,7 +128,16 @@ export default function Detail() {
                   onClear={() => { setCarrier(null); setCarrierQuery(''); setContractHas(null); setContractEnd(''); setCurrentPlan(null); }} />
                 {carrier && (
                   <PlanSearch plans={plans} status={plansState} onRetry={fetchPlans} carrier={carrier.name}
-                              selected={currentPlan} onPick={setCurrentPlan} onClear={() => setCurrentPlan(null)} />
+                              selected={currentPlan}
+                              onPick={plan => {
+                                setCurrentPlan(plan);
+                                setFee(null);
+                                setCustomFee(false);
+                                setFeeText('');
+                                setCarrier(carriers.find(c => c.name === plan.carrier) ?? { name: plan.carrier, mvno: true });
+                                setCarrierQuery(plan.carrier);
+                              }}
+                              onClear={() => setCurrentPlan(null)} />
                 )}
                 {carrier && (
                   <div>
@@ -158,22 +168,29 @@ export default function Detail() {
                            value={DATA_BUCKETS[dataIdx].label} idx={dataIdx} max={DATA_BUCKETS.length - 1} onChange={setDataIdx} />
 
                 <h2 className="mt-10 text-xl font-extrabold">지금 내는 월 통신비는요?</h2>
-                {currentPlan ? (
+                {currentPlan?.id ? (
                   // 요금제를 골랐으면 통신비는 그 요금제에서 온다 — 여기서 또 묻지 않는다. 못 찾은 사람은 아래 직접 입력이 그대로다.
                   <p className="mt-3 rounded-xl bg-brand-tint px-4 py-3 text-sm leading-relaxed text-brand-ink">
                     <strong>{currentPlan.carrier} {currentPlan.name}</strong>에서 가져왔어요 — 월 {won(currentPlan.basePrice)}.
                     '현재' 금액은 이 요금제 기준으로 계산해요.
                   </p>
                 ) : (
-                <div className="mt-3 flex flex-wrap gap-2.5" role="group" aria-label="현재 월 통신비">
-                  {FEE_BUCKETS.map(b => (
-                    <Choice key={b.label} label={b.label} active={!customFee && fee?.label === b.label}
-                            onClick={() => { setCustomFee(false); setFee({ label: b.label, amount: b.rep }); }} />
-                  ))}
-                  <Choice label="직접입력" active={customFee} onClick={() => setCustomFee(true)} />
-                </div>
+                  <>
+                    {currentPlan?.custom && (
+                      <p className="mt-3 text-sm leading-relaxed text-muted">
+                        <strong className="text-ink-soft">{currentPlan.name}</strong>의 실제 월 통신비를 아래에서 골라 주세요.
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-2.5" role="group" aria-label="현재 월 통신비">
+                      {FEE_BUCKETS.map(b => (
+                        <Choice key={b.label} label={b.label} active={!customFee && fee?.label === b.label}
+                                onClick={() => { setCustomFee(false); setFee({ label: b.label, amount: b.rep }); }} />
+                      ))}
+                      <Choice label="직접입력" active={customFee} onClick={() => setCustomFee(true)} />
+                    </div>
+                  </>
                 )}
-                {!currentPlan && customFee && (
+                {!currentPlan?.id && customFee && (
                   <input type="number" inputMode="numeric" min={0} max={FEE_MAX} step={100} placeholder="예: 55000" autoFocus
                          aria-label="통신비 직접 입력(원)" value={feeText}
                          onChange={e => {
@@ -326,14 +343,12 @@ function CarrierSearch({ query, onQuery, open, selected, onPick, onClear, carrie
   );
 }
 
-/* 지금 쓰는 요금제(선택, G-30). 고른 통신사의 요금제만 후보이고, 검색 규칙은 통신사와 같다(소문자+공백 제거).
-   1,700여 건이라 상위 8건만 보여준다. 고르면 id 만 BE 로 가고, '현재' 열을 BE 가 같은 계산기로 낸다. */
+/* 지금 쓰는 요금제(선택, G-30). 전체 카탈로그에서 찾되 정확한 이름과 고른 통신사를 먼저 보여준다.
+   고르면 id 만 BE 로 가고, 요금제의 통신사가 앞에서 고른 통신사도 바로잡는다. */
 function PlanSearch({ plans, carrier, selected, onPick, onClear, status = 'ready', onRetry }) {
   const [query, setQuery] = useState('');
   const [reported, setReported] = useState('');
-  const mine = useMemo(() => plans.filter(p => searchKey(p.carrier) === searchKey(carrier)), [plans, carrier]);
-  // 낱말을 모두 포함하면 걸린다 — "SKT 청년"으로도 "0 청년 다이렉트 62"를 찾는다(통짜 비교로는 안 걸렸다).
-  const found = query.trim() ? mine.filter(p => matchesAll(p.name, query, carrier)).slice(0, 8) : [];
+  const found = useMemo(() => findPlans(plans, query, carrier), [plans, query, carrier]);
 
   /* 카탈로그에 없는 요금제는 사용자가 알려 줄 수 있다 — 그래야 수집 대상이 된다(결손 보드, D-56).
      공개·CSRF 면제 경로라 토큰 왕복이 없다. 응답은 있든 없든 늘 같으므로(카탈로그를 훑는 통로가 되면 안 된다)
@@ -359,20 +374,19 @@ function PlanSearch({ plans, carrier, selected, onPick, onClear, status = 'ready
       {selected ? (
         <>
           <div className="flex items-center justify-between gap-3 rounded-field border border-brand bg-brand-tint px-4 py-2.5 font-semibold text-brand-ink">
-            <span>{selected.name} <small className="ml-1 text-xs font-medium text-muted tnum">월 {won(selected.basePrice)}</small></span>
+            <span>{selected.custom ? selected.name : `${selected.carrier} ${selected.name}`}
+              {selected.basePrice != null && <small className="ml-1 text-xs font-medium text-muted tnum">월 {won(selected.basePrice)}</small>}
+            </span>
             <button type="button" onClick={onClear} aria-label="요금제 선택 해제"
                     className="grid size-9 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-base text-brand-ink hover:bg-white/60">✕</button>
           </div>
-          <p className="mt-1.5 text-xs leading-relaxed text-muted">이 요금제로 '현재' 금액을 계산해요.</p>
+          <p className="mt-1.5 text-xs leading-relaxed text-muted">{selected.custom ? '목록에 없는 요금제예요. 다음 단계에서 실제 월 통신비를 알려주세요.' : "이 요금제로 '현재' 금액을 계산해요."}</p>
         </>
       ) : (
         <>
           <input id="current-plan" value={query} onChange={e => setQuery(e.target.value)} autoComplete="off"
-                 placeholder={status === 'loading' ? '요금제를 불러오는 중이에요…'
-                   : status === 'failed' ? '요금제 목록을 불러오지 못했어요'
-                   : mine.length ? '요금제 이름 검색' : '이 통신사의 요금제가 카탈로그에 없어요'}
-                 disabled={status === 'ready' && !mine.length} aria-busy={status === 'loading'}
-                 className="field disabled:bg-bg-soft disabled:text-muted" />
+                 placeholder={status === 'loading' ? '요금제를 불러오는 중이에요…' : status === 'failed' ? '요금제 목록을 불러오지 못했어요' : '통신사 또는 요금제 이름 검색'}
+                 aria-busy={status === 'loading'} className="field" />
           {status !== 'ready' && (
             <div className="mt-2 overflow-hidden rounded-card border border-line bg-white">
               <SearchState status={status} onRetry={onRetry} empty="" />
@@ -383,12 +397,18 @@ function PlanSearch({ plans, carrier, selected, onPick, onClear, status = 'ready
               {found.length ? found.map(p => (
                 <button key={p.id} type="button" onClick={() => { onPick(p); setQuery(''); }}
                         className="flex w-full cursor-pointer items-center justify-between gap-3 border-b border-line bg-white px-4 py-3 text-left font-semibold last:border-b-0 hover:bg-bg-soft">
-                  <span>{p.name}</span>
+                  <span className="min-w-0">
+                    <small className="mr-1.5 text-xs font-medium text-muted">{p.carrier}</small>
+                    {p.name}
+                  </span>
                   <small className="text-xs font-medium text-muted tnum">월 {won(p.basePrice)}</small>
                 </button>
               )) : (
                 <div className="px-4 py-3 text-sm text-muted">
-                  <p><strong className="text-ink-soft">"{query.trim()}"</strong> 는 목록에 없어요. 비워 두고 아래에서 통신비를 직접 넣어도 괜찮아요.</p>
+                  <p><strong className="text-ink-soft">"{query.trim()}"</strong> 는 목록에 없어요. 이름과 실제 통신비로 계속할 수 있어요.</p>
+                  <button type="button" onClick={() => { onPick({ carrier, name: query.trim(), custom: true }); setQuery(''); }}
+                          className="btn-text mt-1 font-semibold text-brand-ink">이 이름으로 계속하기</button>
+                  <span className="mx-2 text-line">·</span>
                   {reported
                     ? <p className="mt-1.5 font-semibold text-brand-ink">{reported}</p>
                     : <button type="button" onClick={reportMissing} className="btn-text mt-1 font-semibold text-brand-ink">이 요금제가 없다고 알려주기</button>}
@@ -418,7 +438,7 @@ function Statement({ carrier, plan, contractHas, fee }) {
         <Row label="통신사" value={carrier?.name || '—'} />
         <Row label="요금제" value={plan ? plan.name : '—'} />
         <Row label="약정" value={contractHas === null ? '—' : contractHas ? '약정 중' : '무약정'} />
-        <Row label="통신비" value={fee ? won(fee.amount) : plan ? `${won(plan.basePrice)} (요금제)` : '—'} />
+        <Row label="통신비" value={plan?.basePrice != null ? `${won(plan.basePrice)} (요금제)` : fee ? won(fee.amount) : '—'} />
       </dl>
     </aside>
   );

@@ -2,9 +2,9 @@ import test from 'node:test';
 import { readFileSync, readdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { request, ApiError, onUnauthorized } from '../src/lib/api.js';
-import { DATA_BUCKETS, FEE_BUCKETS, loadCarriers } from '../src/lib/catalog-data.js';
+import { DATA_BUCKETS, FEE_BUCKETS, UNLIMITED_DATA_MB, loadCarriers } from '../src/lib/catalog-data.js';
 import { parseDay, icsEscape, icsText, monthGrid, relativeDay, EVENTS_FROM_EXPIRY, EVENTS_FROM_TODAY, googleUrl, startOfToday, isoDay } from '../src/lib/schedule.js';
-import { integer, buildRequest, DEFAULT_GB, splitLines, matches, matchesAll, clampDigits } from '../src/lib/model.js';
+import { integer, buildRequest, DEFAULT_GB, splitLines, matches, matchesAll, findPlans, clampDigits } from '../src/lib/model.js';
 
 // 추천 요청은 화면이 세션에 담아 둔 입력으로 만든다(model.buildRequest). 요청을 만드는 곳은 그 함수 하나다 —
 // 전에는 이 테스트가 아무 화면도 부르지 않는 낡은 빌더를 검사하고 있었다(레거시 정리 2026-09-18).
@@ -140,7 +140,10 @@ test('range buckets carry a positive integer representative for BE (monthlyDataG
     for (const b of list)
       assert.ok(Number.isInteger(b.rep) && b.rep > 0, `${b.label} rep must be positive int`);
   // representative gb is what /recommendations receives; keep it in Java int range and non-skippable-safe
-  assert.deepEqual(DATA_BUCKETS.map(b => b.rep), [2, 4, 10, 30, 80, 100]);
+  assert.deepEqual(DATA_BUCKETS.map(b => b.rep), [2, 4, 10, 30, 80, 976]);
+  const unlimitedGb = DATA_BUCKETS.at(-1).rep;
+  assert.ok(unlimitedGb * 1024 <= UNLIMITED_DATA_MB);
+  assert.ok((unlimitedGb + 1) * 1024 > UNLIMITED_DATA_MB);
 });
 
 // 절대 원칙 2: 금액 계산은 BE_main 의 pricing 모듈만. 프론트는 서버 금액으로 산술하지 않는다.
@@ -243,6 +246,16 @@ test('요금제 검색은 띄어쓴 낱말을 모두 포함하면 걸린다', ()
   assert.ok(matchesAll('0 청년 다이렉트 62', '청년 62', 'SKT'));      // 순서가 달라도 걸린다
   assert.ok(matchesAll('0 청년 다이렉트 62', '', 'SKT'));             // 빈 검색어는 전부 통과
   assert.ok(!matchesAll('0 청년 다이렉트 62', 'SKT 청년 59', 'SKT')); // 진짜 없는 것은 없다고 나와야 한다
+});
+
+test('현재 요금제 검색은 정확한 이름을 먼저 찾고 잘못 고른 통신사 밖도 찾는다', () => {
+  const plans = Array.from({ length: 8 }, (_, i) => ({ id: i + 1, carrier: 'SKT', name: `슈퍼 요금제 ${i}` }));
+  plans.push({ id: 99, carrier: 'KT', name: '슈퍼 요금제' });
+
+  const found = findPlans(plans, '슈퍼 요금제', 'SKT');
+  assert.equal(found[0].id, 99, '정확한 이름이 단순 포함 결과 8개 뒤로 밀리면 안 된다');
+  assert.equal(findPlans(plans, 'KT 슈퍼', 'SKT')[0].carrier, 'KT',
+    '앞에서 통신사를 잘못 골라도 요금제 이름으로 바로잡을 수 있어야 한다');
 });
 
 // 지금 요금제가 왜 후보에서 빠졌는지는 **BE 가 판정한다**(current.excluded, G-52).

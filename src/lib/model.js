@@ -25,6 +25,25 @@ export const matchesAll = (haystack, query, drop = '') => {
   return words.every(word => key.includes(word));
 };
 
+/** 현재 요금제 검색. 정확한 이름을 먼저, 그다음 이름 시작·선택 통신사 순으로 보여준다.
+ * 통신사를 잘못 골랐어도 전체 카탈로그에서 찾는다 — 요금제 선택이 통신사를 바로잡는다. */
+export const findPlans = (plans, query, preferredCarrier = '', limit = 8) => {
+  const typed = String(query ?? '').trim();
+  if (!typed) return [];
+  const queryKey = searchKey(typed);
+  const preferred = searchKey(preferredCarrier);
+  const rank = plan => {
+    const name = searchKey(plan.name);
+    const full = searchKey(`${plan.carrier}${plan.name}`);
+    if (name === queryKey || full === queryKey) return 0;
+    if (name.startsWith(queryKey) || full.startsWith(queryKey)) return 1;
+    return preferred && searchKey(plan.carrier) === preferred ? 2 : 3;
+  };
+  return plans.filter(plan => matchesAll(`${plan.carrier} ${plan.name}`, typed))
+    .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'ko'))
+    .slice(0, limit);
+};
+
 /** 해외 결제 등급인가. 원화 확정 금액이 없어 계산에는 사용자가 확인한 금액이 필요하다. */
 export const isForeign = tier => Boolean(tier?.currency) && tier.currency !== 'KRW';
 

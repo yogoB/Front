@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { forgetMember } from '../lib/useMember.js';
 import { won } from '../lib/model.js';
 import { Header } from './Layout.jsx';
+import GoogleConsent from './GoogleConsent.jsx';
 
 /* 비회원 화면. 리포트 대신 이것 하나만 그린다(ux-flow D-36, 사용자 결정 2026-09-17).
    **금액은 한 줄도 비치지 않는다** — 그래서 결과를 아예 계산하지 않고 이 화면으로 끝낸다.
@@ -18,12 +19,7 @@ export default function GuestGate({ onGoogle, onBack }) {
           결과 리포트는 로그인한 뒤에 볼 수 있어요.<br />
           지금까지 답하신 내용은 그대로 남아 있어요.
         </p>
-        <button type="button" onClick={onGoogle}
-                className="flex min-h-14 w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl
-                           border-0 bg-ink px-4 py-4 text-base font-bold text-white transition-colors duration-150 hover:bg-black">
-          <GoogleMark />
-          Google 로 계속하기
-        </button>
+        <GoogleConsent onContinue={onGoogle} label="Google 로 계속하기" />
         {/* 막다른 길을 만들지 않는다 — 로그인하지 않기로 한 사람도 나갈 곳이 있어야 한다. */}
         <button type="button" onClick={onBack} className="btn-text mt-4 underline underline-offset-[3px]">
           조건 다시 고르기
@@ -32,15 +28,6 @@ export default function GuestGate({ onGoogle, onBack }) {
     </>
   );
 }
-
-const GoogleMark = () => (
-  <svg viewBox="0 0 18 18" aria-hidden="true" className="size-5 shrink-0 rounded-sm bg-white p-0.5">
-    <path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.5h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.6z" />
-    <path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.9-2.2c-.8.5-1.8.9-3.1.9-2.4 0-4.4-1.6-5.1-3.8H.9v2.3A9 9 0 0 0 9 18z" />
-    <path fill="#FBBC05" d="M3.9 10.7a5.4 5.4 0 0 1 0-3.4V5H.9a9 9 0 0 0 0 8l3-2.3z" />
-    <path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6A9 9 0 0 0 .9 5l3 2.3C4.6 5.2 6.6 3.6 9 3.6z" />
-  </svg>
-);
 
 /* 결과 화면 전용 게이트(사용자 결정 2026-09-18, 시안). 계산까지 끝낸 뒤 **절감액 한 줄만** 보여주고 로그인을 청한다.
    D-36 의 "금액은 한 줄도 비치지 않는다"를 티저 한 줄로 바꾼 것이다 — 그 정책이 "이탈이 높으면 꺼낼 카드"로
@@ -52,7 +39,7 @@ export function LoginTeaser({ amount, basis, onGoogle, onBack }) {
   useEffect(() => { ref.current?.showModal(); }, []);
   return (
     <dialog ref={ref} onCancel={e => e.preventDefault()} aria-labelledby="teaser-title"
-            className="m-auto w-[min(560px,92vw)] rounded-[20px] bg-ink px-6 py-10 text-center text-white
+            className="m-auto max-h-[90dvh] w-[min(560px,92vw)] overflow-y-auto rounded-[20px] bg-ink px-6 py-10 text-center text-white
                        backdrop:bg-ink/20 md:px-10">
       <p className="mb-6 text-[44px] leading-none" aria-hidden="true">🧾💸</p>
       <h2 id="teaser-title" className="text-[21px] font-extrabold leading-relaxed md:text-[23px]">
@@ -67,10 +54,9 @@ export function LoginTeaser({ amount, basis, onGoogle, onBack }) {
         <br />
         구체적인 내용과 일정플랜이 궁금하신가요?
       </h2>
-      <button type="button" onClick={onGoogle} className="btn btn-brand btn-lg btn-block mt-7">
-        <GoogleMark />
-        로그인
-      </button>
+      <div className="mt-7">
+        <GoogleConsent onContinue={onGoogle} dark label="로그인" />
+      </div>
       <p className="mt-5 text-sm text-white/70">로그인해서 구체적인 내용을 확인해보세요!</p>
       {/* 금액에는 기준을 붙인다(절대 원칙 4) — 무엇에 견준 절감인지 적지 않으면 숫자가 혼자 걸어다닌다. */}
       {amount > 0 && <p className="mt-1 text-xs text-white/45">{basis} 월 절감액이에요</p>}

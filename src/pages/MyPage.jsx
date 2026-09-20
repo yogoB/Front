@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Header, Footer } from '../components/Layout.jsx';
 import { request, ApiError } from '../lib/api.js';
 import { loadCatalog } from '../lib/catalog-data.js';
-import { won, matches, tierPrice, tierKrwGuess, integer } from '../lib/model.js';
+import { won, findPlans, tierPrice, tierKrwGuess, integer } from '../lib/model.js';
 import { useMember, forgetMember } from '../lib/useMember.js';
 import { MemberCheckFailed } from '../components/GuestGate.jsx';
 
@@ -238,8 +238,7 @@ function CurrentPlan({ member, plans, onSaved }) {
   const current = plans.find(p => p.id === member?.currentPlanId);
 
   // 1,700여 개 중 검색어에 맞는 8개만 보여준다 — 목록 전체를 그리면 화면이 못 쓰게 된다.
-  // 공백·대소문자를 무시한다 — "요고38"로도 "KT 요고 38"을 찾는다.
-  const found = query.trim() ? plans.filter(p => matches(`${p.carrier} ${p.name}`, query)).slice(0, 8) : [];
+  const found = findPlans(plans, query);
 
   async function save(plan) {
     setStatus('저장 중…');

@@ -4,6 +4,7 @@ import { toPng } from 'html-to-image';
 import { Header, Footer } from '../components/Layout.jsx';
 import { request, ApiError, backendUrl } from '../lib/api.js';
 import { won, provenance, splitLines, searchKey, buildRequest, keptSubs, DEFAULT_GB } from '../lib/model.js';
+import { UNLIMITED_DATA_MB } from '../lib/catalog-data.js';
 import { getInput, setResult, setNext } from '../lib/session.js';
 import { useMember } from '../lib/useMember.js';
 import { LoginTeaser, MemberCheckFailed } from '../components/GuestGate.jsx';
@@ -329,7 +330,8 @@ function currentTotal(source) {
 const baseFee = cost => cost.breakdown.find(l => l.label.endsWith('기본료'));
 
 /** 카탈로그 제원 표기(금액이 아니라 데이터·통화 수량 — 표기 변환만 한다). null 은 미확인이다. */
-const fmtData = mb => mb == null ? null : `${mb % 1024 ? (mb / 1024).toFixed(1) : mb / 1024}GB`;
+const fmtData = mb => mb == null ? null : mb === UNLIMITED_DATA_MB ? '무제한'
+  : `${mb % 1024 ? (mb / 1024).toFixed(1) : mb / 1024}GB`;
 
 /* 요금제 망 표기. LTE_5G 는 통합요금제(5G·LTE 양쪽)다. */
 const NETWORK_LABEL = { FIVE_G: '5G', LTE: 'LTE', LTE_5G: '5G/LTE 통합', THREE_G: '3G' };
@@ -338,11 +340,11 @@ const NETWORK_LABEL = { FIVE_G: '5G', LTE: 'LTE', LTE_5G: '5G/LTE 통합', THREE
    후보 질의의 절을 그대로 한 행에 적용한 결과다. 화면이 규칙을 베껴 두면 거울이 하나 더 생기고,
    실제로 그 거울이 틀렸다(데이터가 넉넉한데 "데이터가 모자라요", 2026-09-20). 화면은 문장만 만든다.
    ageLimit 은 카탈로그 원문이라 제한 없는 요금제도 'ALL' 이 온다 — ELIGIBILITY 일 때만 쓴다. */
-function excludedSentence(excluded) {
+function excludedSentence(excluded, requiredLabel) {
   if (!excluded) return null;
   const { reason, planDataMb, requiredDataMb, planNetwork, requiredNetwork, ageLimit } = excluded;
   if (reason === 'DATA')
-    return `지금 요금제의 데이터는 ${fmtData(planDataMb) ?? '확인 필요'}, 원하시는 건 ${fmtData(requiredDataMb) ?? '그보다 많아요'}예요.`;
+    return `지금 요금제의 데이터는 ${fmtData(planDataMb) ?? '확인 필요'}, 원하시는 건 ${requiredLabel === '무제한' ? '무제한' : fmtData(requiredDataMb) ?? '그보다 많아요'}예요.`;
   if (reason === 'NETWORK')
     return `지금 요금제는 ${NETWORK_LABEL[planNetwork] ?? planNetwork} 전용인데 ${requiredNetwork} 로 찾으셨어요.`;
   if (reason === 'ELIGIBILITY')
@@ -399,9 +401,10 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
     : months === 6 ? recommended.semiannualSavings : recommended.monthlySavings;
   const spec = (view, fallback) => fmtData(view?.dataMb) ?? fallback;
   const guessed = input.data ? `${input.data.label} 충족` : `${DEFAULT_GB}GB 기준 충족`;
+  const exclusion = excludedSentence(excluded, input.data?.label);
 
   const rows = [
-    ['요금제 (Plan)', cur ? cur.plan : input.carrier ? `${input.carrier} · 현재 요금제` : '현재 요금제', rec.plan, low.plan],
+    ['요금제 (Plan)', cur ? cur.plan : input.currentPlanLabel ?? (input.carrier ? `${input.carrier} · 현재 요금제` : '현재 요금제'), rec.plan, low.plan],
     // 월 요금 = 요금제 기본료 줄(구독 제외). 현재 열 폴백은 사용자가 입력한 월 통신비다.
     ['월 요금 (Monthly)', cur ? cur.fee : input.fee?.amount != null ? won(input.fee.amount) : '—', rec.fee, low.fee],
     ['데이터 (Data)',
@@ -441,7 +444,7 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
       {minimalCostsMore && (
         <p className="bg-warn-tint px-4.5 py-2.5 text-[13px] leading-relaxed text-warn-ink">
           <strong>지금 요금제가 더 싸요.</strong> 다만 지금 요금제로는 원하시는 조건을 맞출 수 없어요.
-          {excludedSentence(excluded) && ` ${excludedSentence(excluded)}`}
+          {exclusion && ` ${exclusion}`}
           {' '}가운데 열은 {currentCarrier ? `${currentCarrier} 안에서 ` : ''}그 조건을 맞추는 가장 싼 조합이에요.
           조건이 지금으로 충분하면 그대로 두셔도 괜찮아요.
         </p>
