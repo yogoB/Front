@@ -338,6 +338,17 @@ const Delta = ({ label, value }) => (
   </div>
 );
 
+/* 기간 한정 특가 한 줄. BE 의 promoMonths·regularPrice 를 그대로 읽는다(CostResult, 2026-09-21).
+   필드가 없으면 null 을 돌려 아무것도 그리지 않는다 — BE 가 싣기 시작하면 저절로 켜진다.
+   **특가 뒤 금액을 모르면 숫자를 지어내지 않고 모른다고 적는다**(절대 원칙 2·4). */
+function promoLine(cost) {
+  const months = cost?.promoMonths;
+  if (months == null) return null;
+  return cost.regularPrice == null
+    ? `${months}개월 특가예요 · 그 뒤 금액은 확인하지 못했어요`
+    : `${months}개월 특가예요 · 그 뒤 월 ${won(cost.regularPrice)}`;
+}
+
 /* 이 두 가지는 "더 알려주세요"가 아니라 **이미 잃은 것·알 수 없는 것**을 알린다 — 그래서 먼저 보여 준다.
    networkType: 규격을 좁혀 더 싼 요금제를 후보에서 뺐다(BE 는 더 싼 게 실제로 있을 때만 보낸다).
    promotionPeriod: 요금제 이름에 특가 기간이 적혀 있는데 카탈로그에 그 기간을 담을 칸이 없다 —
@@ -473,19 +484,19 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
 
   const columns = [
     { tone: 'now', title: '현재 상황', sub: current ? '지금 요금제 · 같은 계산기' : '현재 통신사 및 납부 요금', total: curTotal,
-      plan: rows[0][1] },
+      plan: rows[0][1], promo: promoLine(current?.cost) },
     { tone: 'best', best: true, title: '추천 · 변경 최소 🌟',
       sub: !minimalKnown ? (currentCarrier ? `${currentCarrier} 안에는 조건을 맞추는 요금제가 없어 전체 1순위를 적었어요` : '지금 조건에서 가장 나은 조합 · 체감 환산 월 요금')
         : sameAsCheapest ? `${recommended.carrier} 그대로가 가장 싼 조합이에요`
         : `${recommended.carrier} 그대로 · 번호이동 없이 바꾸는 조합`,
-      total: won(recommended.monthlyTotal), plan: rows[0][2],
+      total: won(recommended.monthlyTotal), plan: rows[0][2], promo: promoLine(recommended),
       save: recommended.monthlySavings <= 0 ? ''
         : periodUnknown
           ? `${months}개월 절감액은 특가가 끝난 뒤 금액을 몰라 내지 않았어요`
           : `정가 대비 ${months === 12 ? '연' : months === 6 ? '6개월' : '월'} ${won(periodSaving)} 절감` },
     { tone: 'base', title: '최저가 조합',
       sub: sameAsCheapest ? '추천 조합과 같은 조합이에요' : `월 총액이 가장 낮은 조합 · ${cheapest.carrier} 로 옮겨야 해요`,
-      total: won(cheapest.monthlyTotal), plan: rows[0][3] },
+      total: won(cheapest.monthlyTotal), plan: rows[0][3], promo: promoLine(cheapest) },
   ];
 
   return (
@@ -578,6 +589,8 @@ function Dashboard({ columns, subs, tools }) {
               : <p className="mt-2 text-[13px] text-muted">&nbsp;</p>}
             <div className="mt-4 border-t border-line pt-3 text-sm">
               <p className="font-semibold">{col.plan}</p>
+              {/* 특가는 지금 금액이 언제까지인지를 말한다 — 요금제 이름 바로 아래가 읽히는 자리다. */}
+              {col.promo && <p className="mt-1 text-xs font-semibold text-warn-ink">{col.promo}</p>}
               {subs.length > 0 && (
                 <>
                   <p className="mt-3 text-xs font-semibold text-muted">함께 쓰는 구독</p>

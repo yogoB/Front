@@ -425,3 +425,15 @@ test("안내 중복 제거는 공백을 눌러서 비교한다", () => {
   assert.ok(!notice.startsWith(impact), '전제가 깨졌다 — 원본 비교가 이미 성공하면 이 가드는 의미가 없다');
   assert.ok(flat(notice).startsWith(flat(impact)), '공백을 눌러도 중복을 못 잡는다');
 });
+
+test("특가 뒤 금액을 모르면 숫자를 지어내지 않는다", () => {
+  // BE CostResult: promoMonths=null 이면 특가가 아니고, regularPrice=null 이면 "확인하지 못했다"이다.
+  // 추정값을 넣지 않는다(절대 원칙 2·4) — 모르면 모른다고 적는다.
+  const src = readFileSync('src/pages/Results.jsx', 'utf8');
+  const body = src.slice(src.indexOf('function promoLine'), src.indexOf('function promoLine') + 500);
+  assert.match(body, /promoMonths;\s*\n\s*if \(months == null\) return null;/, 'Results.jsx: 특가가 아닐 때 null 을 돌려주지 않는다');
+  assert.match(body, /cost\.regularPrice == null/, 'Results.jsx: 특가 뒤 금액의 null 을 가르지 않는다');
+  // null 가지에는 won( 이 없어야 한다 — 있으면 숫자를 만들어 적고 있다는 뜻이다.
+  const unknownBranch = body.slice(body.indexOf('regularPrice == null'), body.indexOf(':', body.indexOf('regularPrice == null')));
+  assert.ok(!unknownBranch.includes('won('), 'Results.jsx: 모르는 금액 자리에 숫자를 적고 있다');
+});
