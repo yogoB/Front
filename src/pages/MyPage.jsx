@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Header, Footer } from '../components/Layout.jsx';
 import { request, ApiError } from '../lib/api.js';
@@ -65,6 +65,7 @@ export default function MyPage() {
         <SavedResults />
         <Subscriptions services={services} rows={subscriptions} onChanged={() => { reloadSubs(); reloadDetections(); }} />
         <PaymentImport onImported={() => { reloadSubs(); reloadDetections(); }} />
+        <Consents />
         <Detections detection={findings} hasPlan={Boolean(member?.currentPlanId)} />
         <DeleteAccount />
       </main>
@@ -158,6 +159,103 @@ function SavedResults() {
             ))}
           </ul>
         )}
+      <Status>{status}</Status>
+    </Card>
+  );
+}
+
+/* 수집·이용 동의. 로그인 화면에서 체크는 받으면서 **나중에 보거나 바꿀 자리가 없었다**(2026-09-21).
+   개인정보처리방침 7조가 열람·처리정지를 약속하는데 화면에 길이 없으면 그건 빈말이다.
+
+   항목마다 근거가 달라 다루는 법도 다르다(BE docs/privacy.md):
+   - ESSENTIAL     계약 이행 근거라 철회할 수 없다. 방침 버전이 오르면 '고지'이고, 확인하면 그 시점으로 올린다.
+   - MARKETING     동의 근거라 언제든 끄고 켤 수 있다.
+   - SAVINGS_ALERT 동의 근거지만 **로그인할 때만 기록**된다 — 지금 BE 에 변경 경로가 없어 읽기만 한다.
+
+   `current:false` 는 "구버전 동의"다. 그걸 "동의함"으로만 적으면 거짓이라 그 사실을 따로 적는다. */
+const CONSENT_ITEMS = {
+  ESSENTIAL: { name: '필수 동의', desc: '만 14세 이상 · 이용약관 · 개인정보 수집·이용. 서비스 제공의 근거라 철회할 수 없어요.' },
+  SAVINGS_ALERT: { name: '절감 추천 알림', desc: '요금제 변경 시점을 알려 드려요. 로그인할 때 고른 값이에요.' },
+  MARKETING: { name: '이벤트·혜택 정보 수신', desc: '언제든 끄고 켤 수 있어요.' },
+};
+const CONSENT_ORDER = ['ESSENTIAL', 'SAVINGS_ALERT', 'MARKETING'];
+
+function Consents() {
+  const [rows, setRows] = useState();      // undefined=확인 중 · null=못 읽음 · 배열=읽음
+  const [status, setStatus] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(() => {
+    request('/api/v1/me/consent', { member: true })
+      .then(({ data }) => setRows(Array.isArray(data) ? data : []))
+      .catch(() => setRows(null));
+  }, []);
+  useEffect(load, [load]);
+
+  async function call(path, body) {
+    setBusy(true); setStatus('');
+    try { await request(path, { method: 'POST', member: true, body }); load(); }
+    catch (e) { setStatus(message(e)); }
+    finally { setBusy(false); }
+  }
+
+  if (rows === undefined) return <Card title="알림·수신 설정"><p className="text-sm text-muted">불러오는 중이에요…</p></Card>;
+  if (rows === null) {
+    return (
+      <Card title="알림·수신 설정">
+        <p className="text-sm text-muted">동의 기록을 불러오지 못했어요.</p>
+        <button type="button" onClick={load} className="btn btn-ghost mt-3">다시 시도</button>
+      </Card>
+    );
+  }
+
+  const byItem = new Map(rows.map(r => [r.item, r]));
+  // 철회한 기록은 agreed 가 true 라도 지금은 동의가 아니다 — withdrawnAt 을 함께 본다.
+  const live = row => Boolean(row?.agreed) && !row?.withdrawnAt;
+  const essential = byItem.get('ESSENTIAL');
+  const stale = live(essential) && essential.current === false;
+
+  return (
+    <Card title="알림·수신 설정">
+      {stale && (
+        <div className="mb-4 rounded-xl bg-warn-tint px-4 py-3 text-sm leading-relaxed text-warn-ink">
+          개인정보처리방침이 바뀌었어요. 내용을 확인하시면 확인 시점을 기록해 둘게요 — 확인 전에도 서비스는 그대로 쓰실 수 있어요.
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Link to="/privacy" className="btn btn-ghost min-h-10">방침 보기</Link>
+            <button type="button" disabled={busy} onClick={() => call('/api/v1/me/consent/acknowledge')}
+                    className="btn btn-dark min-h-10 disabled:opacity-45">확인했어요</button>
+          </div>
+        </div>
+      )}
+      <ul className="m-0 grid list-none gap-2.5 p-0">
+        {CONSENT_ORDER.map(item => {
+          const row = byItem.get(item);
+          const on = live(row);
+          const meta = CONSENT_ITEMS[item];
+          return (
+            <li key={item} className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl border border-line px-4 py-3">
+              <div className="min-w-0">
+                <strong className="block text-sm font-bold">{meta.name}</strong>
+                <p className="mt-0.5 text-[13px] leading-relaxed text-muted">{meta.desc}</p>
+                {on && row.current === false && item !== 'ESSENTIAL' && (
+                  <p className="mt-1 text-[13px] font-semibold text-warn-ink">이전 방침 기준 동의라 지금은 유효하지 않아요. 다시 켜 주세요.</p>
+                )}
+              </div>
+              {item === 'MARKETING'
+                ? <button type="button" disabled={busy} aria-pressed={on}
+                          onClick={() => call('/api/v1/me/consent/marketing', { agree: !on })}
+                          className={`btn min-h-10 disabled:opacity-45 ${on ? 'btn-dark' : 'btn-ghost'}`}>
+                    {on ? '받는 중' : '받기'}
+                  </button>
+                : <span className="whitespace-nowrap text-[13px] font-semibold text-ink-soft">{on ? '동의함' : '동의 안 함'}</span>}
+            </li>
+          );
+        })}
+      </ul>
+      {/* 바꿀 수 없는 항목을 바꿀 수 있는 척하지 않는다. BE 에 변경 경로를 요청해 두었다. */}
+      <p className="mt-3 text-[13px] leading-relaxed text-muted">
+        절감 추천 알림은 지금 로그인할 때만 고를 수 있어요. 바꾸시려면 로그아웃 후 다시 로그인하면서 선택해 주세요.
+      </p>
       <Status>{status}</Status>
     </Card>
   );
