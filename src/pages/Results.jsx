@@ -102,7 +102,9 @@ export default function Results() {
   };
   // 6개월 탭은 BE 가 semiannualSavings 를 주기 시작하면 저절로 나타난다(계약 확정 2026-09-18).
   // 월 절감 ×6 으로 채우지 않는다 — 프론트 기간 환산은 절대 원칙 2 위반이다(contract.test.js 가드).
-  const tabs = [1, 6, 12].filter(m => m !== 6 || recommended?.semiannualSavings != null);
+  // **값이 아니라 필드가 왔는지**로 정한다. BE 가 이 값을 null 로 보내기 시작했는데(특가 뒤 금액을 모를 때)
+  // 값으로 판정하면 탭이 통째로 사라져, "모른다"가 "그런 기간은 없다"로 둔갑한다(2026-09-21).
+  const tabs = [1, 6, 12].filter(m => m !== 6 || (recommended != null && 'semiannualSavings' in recommended));
 
   async function saveImage() {
     setSaveNote('');
@@ -296,7 +298,12 @@ function SaveHero({ best, current, sameAsCheapest = true }) {
     const diff = current.monthlySavings;
     // 이 차액은 BE 가 1순위(최저가 조합)와 견준 값이다 — 가운데 열이 그것과 다르면 그렇게 적는다.
     const basis = sameAsCheapest ? '' : ' · 최저가 조합 기준';
-    if (diff > 0) { head = '지금보다 매달'; amount = won(diff); foot = `1년이면 ${won(current.annualSavings)}${basis}`; }
+    if (diff > 0) {
+      head = '지금보다 매달'; amount = won(diff);
+      foot = current.annualSavings == null
+        ? `1년치는 특가가 끝난 뒤 금액을 몰라 내지 않았어요${basis}`
+        : `1년이면 ${won(current.annualSavings)}${basis}`;
+    }
     else if (diff < 0) { head = '지금 요금제가 더 싸요 — 매달'; amount = won(-diff); foot = `추천 조합으로 옮기면 그만큼 더 내요${basis}`; }
     else { head = '지금과 같은 금액이에요'; amount = won(best.monthlyTotal); foot = '옮겨도 월 요금은 그대로예요'; }
   } else {
@@ -304,7 +311,9 @@ function SaveHero({ best, current, sameAsCheapest = true }) {
     head = saving ? '정가 대비 매달' : '추천 조합은 매달';
     amount = won(saving ? best.monthlySavings : best.monthlyTotal);
     // 절감 0 은 "못 찾음"이 아니라 기준이 정가라는 뜻이다. 입력 구간 대표값과 빼지 않는다 — 화면이 금액을 만들지 않는다.
-    foot = saving ? `1년이면 ${won(best.annualSavings)}` : '정가 기준 금액이에요 — 지금 쓰는 요금제를 알려주시면 얼마나 아끼는지 계산해요';
+    foot = !saving ? '정가 기준 금액이에요 — 지금 쓰는 요금제를 알려주시면 얼마나 아끼는지 계산해요'
+      : best.annualSavings == null ? '1년치는 특가가 끝난 뒤 금액을 몰라 내지 않았어요'
+      : `1년이면 ${won(best.annualSavings)}`;
   }
   return (
     <section className="mb-6 flex flex-wrap items-center justify-between gap-6 rounded-card bg-brand-tint px-6 py-6 md:px-8">
@@ -427,8 +436,11 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
   const cur = current ? columnFacts(current.cost) : null;
   const curTotal = current ? won(current.cost.monthlyTotal) : (currentTotal(input) === null ? '—' : won(currentTotal(input)));
   // 기간 절감액은 BE 값 그대로다(1=monthlySavings, 6=semiannualSavings, 12=annualSavings). 곱하지 않는다(절대 원칙 2).
+  // null 은 "모른다"다 — 기간 한정 특가가 그 기간 안에 끝나는데 그 뒤 금액을 카탈로그가 모를 때 온다.
+  // 0 으로 적으면 "안 아낀다"는 거짓말이 되고, won(null) 은 예외를 던진다.
   const periodSaving = months === 12 ? recommended.annualSavings
     : months === 6 ? recommended.semiannualSavings : recommended.monthlySavings;
+  const periodUnknown = months !== 1 && periodSaving == null;
   const spec = (view, fallback) => fmtData(view?.dataMb) ?? fallback;
   const guessed = input.data ? `${input.data.label} 충족` : `${DEFAULT_GB}GB 기준 충족`;
   const exclusion = excludedSentence(excluded, input.data?.label);
@@ -463,7 +475,10 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
         : sameAsCheapest ? `${recommended.carrier} 그대로가 가장 싼 조합이에요`
         : `${recommended.carrier} 그대로 · 번호이동 없이 바꾸는 조합`,
       total: won(recommended.monthlyTotal), plan: rows[0][2],
-      save: recommended.monthlySavings > 0 ? `정가 대비 ${months === 12 ? '연' : months === 6 ? '6개월' : '월'} ${won(periodSaving)} 절감` : '' },
+      save: recommended.monthlySavings <= 0 ? ''
+        : periodUnknown
+          ? `${months}개월 절감액은 특가가 끝난 뒤 금액을 몰라 내지 않았어요`
+          : `정가 대비 ${months === 12 ? '연' : months === 6 ? '6개월' : '월'} ${won(periodSaving)} 절감` },
     { tone: 'base', title: '최저가 조합',
       sub: sameAsCheapest ? '추천 조합과 같은 조합이에요' : `월 총액이 가장 낮은 조합 · ${cheapest.carrier} 로 옮겨야 해요`,
       total: won(cheapest.monthlyTotal), plan: rows[0][3] },

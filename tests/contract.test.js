@@ -393,3 +393,18 @@ test("통신 규격 질문은 '희망'을 묻고 선택지가 둘이다", () => 
   assert.ok(!/'LTE',\s*'LTE'/.test(src), 'Detail.jsx: LTE 단독 선택지가 남아 있다');
   assert.match(src, /\[null, '상관없어요'\]/, "Detail.jsx: '상관없어요' 선택지가 없다");
 });
+
+test("기간 절감액이 null 이면 숫자로 메우지 않는다 — won(null) 예외 가드", () => {
+  // BE 가 기간 한정 특가 뒤 금액을 모르면 annualSavings·semiannualSavings 를 null 로 보낸다(2026-09-21).
+  // null 은 "모른다"이지 0 이 아니고, won(null) 은 TypeError 로 화면을 하얗게 만든다.
+  const src = readFileSync('src/pages/Results.jsx', 'utf8');
+  assert.ok(!/won\(periodSaving\)(?![^]*periodUnknown)/.test(src.slice(0, src.indexOf('periodUnknown'))),
+    'Results.jsx: periodSaving 을 검사 없이 won 에 넘긴다');
+  assert.match(src, /periodUnknown\s*=\s*months !== 1 && periodSaving == null/,
+    'Results.jsx: 기간 값이 모르는 값인지 가르지 않는다');
+  for (const field of ['current.annualSavings', 'best.annualSavings']) {
+    assert.ok(src.includes(`${field} == null`), `Results.jsx: ${field} 의 null 을 가르지 않는다`);
+  }
+  // 6개월 탭은 값이 아니라 필드 유무로 정해야 한다 — 값으로 정하면 "모른다"가 "없다"로 둔갑한다.
+  assert.match(src, /'semiannualSavings' in recommended/, 'Results.jsx: 6개월 탭을 값으로 판정하고 있다');
+});
