@@ -8,6 +8,7 @@ import { loadCatalog, loadPlans, carriersOf, DATA_BUCKETS, FEE_BUCKETS } from '.
 import { won, tierPrice, foreignNote, tierKrwGuess, isForeign, matches, matchesAll, searchKey, findPlans, clampDigits, FEE_MAX } from '../lib/model.js';
 import { PriceNote } from '../components/SubscriptionPicker.jsx';
 import { setInput } from '../lib/session.js';
+import { track } from '../lib/track.js';
 import { request } from '../lib/api.js';
 
 const STEPS = ['기본', '요금제', '구독'];
@@ -64,6 +65,8 @@ export default function Detail() {
       .catch(() => setPlansState('failed'));
   }, []);
   useEffect(() => { fetchCatalog(); fetchPlans(); }, [fetchCatalog, fetchPlans]);
+  // 보고서 §9.2 결과 도달률의 분모 — 입력을 시작한 사람.
+  useEffect(() => { track('INPUT_STARTED'); }, []);
 
   const go = next => { setError(''); setStep(next); };
   const back = () => (step > 1 ? go(step - 1) : navigate('/modes'));
@@ -76,6 +79,7 @@ export default function Detail() {
   function analyze() {
     if (!carrier) { setError('통신사를 먼저 선택해 주세요.'); go(1); return; }
     if (!wish.length) { setError('지금 쓰는 구독 서비스를 하나 이상 넣어주세요.'); return; }
+    track('INPUT_COMPLETED');   // 막는 검사를 통과한 뒤에 센다 — 되돌아가는 사람을 완료로 세지 않는다
     const b = DATA_BUCKETS[dataIdx];
     setInput({
       mode: 'detail',

@@ -6,6 +6,7 @@ import { Choice } from '../components/Choice.jsx';
 import SubscriptionPicker from '../components/SubscriptionPicker.jsx';
 import Analyzing from '../components/Analyzing.jsx';
 import { loadCatalog, DATA_BUCKETS, FEE_BUCKETS } from '../lib/catalog-data.js';
+import { track } from '../lib/track.js';
 import { won, tierKrwGuess, isForeign, clampDigits, FEE_MAX } from '../lib/model.js';
 import { setInput } from '../lib/session.js';
 
@@ -37,11 +38,14 @@ export default function Light() {
       .catch(e => { setCatalogState('failed'); setError(e.message || '구독 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'); });
   }, []);
   useEffect(() => { fetchCatalog(); }, [fetchCatalog]);
+  // 보고서 §9.2 결과 도달률의 분모 — 입력을 시작한 사람. 하루 한 번만 쌓인다(BE 가 묶는다).
+  useEffect(() => { track('INPUT_STARTED'); }, []);
 
   const go = next => { setError(''); setStep(next); };
   const back = () => (step > 1 ? go(step - 1) : navigate('/modes'));
 
   function analyze() {
+    track('INPUT_COMPLETED');
     const chosen = subs.filter(s => s.checked);
     if (!chosen.length) { setError('구독 서비스를 하나 이상 골라주세요.'); return; }
     const bucket = DATA_BUCKETS[dataIdx];

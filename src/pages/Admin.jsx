@@ -541,30 +541,37 @@ const FUNNEL_STEPS = [
 function ReportKpis({ data }) {
   const kpi = data.kpi ?? {};
   const savings = data.savings ?? {};
+  // 못 내는 이유는 BE 가 함께 보낸다(*Note) — 한계가 사는 곳이 거기라 값과 같이 따라와야 한다.
+  // 아직 안 보내는 판(구버전)에서는 화면 문구로 떨어진다.
   const rows = [
     {
       name: '결과 도달률',
       formula: '결과 화면 도달 사용자 ÷ 입력 시작 사용자',
       value: kpi.resultReachRate,
-      blocked: '입력 시작(input_started)을 아직 세지 않는다 — 분모가 없다. 지금 세는 것은 결과에 도달한 사람뿐이다.',
+      blocked: kpi.resultReachRateNote
+        ?? '입력 시작(INPUT_STARTED)이 아직 쌓이지 않았다 — 분모가 없다. 입력 화면이 그 이벤트를 보내기 시작하면 값이 온다.',
     },
     {
       name: '계산 오류율',
       formula: '정답셋과 불일치한 계산 ÷ 검산 건수 · 목표 2% 이하',
       value: kpi.calcErrorRate,
-      blocked: '배포 전 회귀 테스트에서 재는 값이라 운영 대시보드에는 오지 않는다. 골든 케이스 결과를 실어 주면 여기 적는다.',
+      blocked: kpi.calcErrorRateNote
+        ?? '배포 전 골든 감사 결과이지 런타임 지표가 아니다. 감사 산출을 실어 주면 여기 적는다.',
     },
     {
       name: '절감 기회 발견률',
-      formula: '월 5,000원 이상 순절감 가능한 사용자 ÷ 유효 계산 사용자',
+      formula: `월 ${show(kpi.savingOpportunityThreshold ?? savings.opportunityThreshold ?? 5000)}원 이상 순절감 가능한 사용자 ÷ 유효 계산 사용자`,
       value: kpi.savingOpportunityRate,
+      detail: typeof savings.opportunity === 'number'
+        ? `${show(savings.opportunity)}명 / ${show(kpi.savingOpportunityOf ?? savings.members)}명`
+        : null,
       blocked: typeof savings.improved === 'number' && typeof savings.members === 'number'
         ? `기준선이 다르다 — 지금 세는 것은 "절감이 0원보다 큰 사람" ${show(savings.improved)}명 / ${show(savings.members)}명이고, 보고서 기준인 5,000원 이상은 아직 세지 않는다.`
         : '절감 표본이 아직 없다.',
     },
   ];
   return (
-    <Card title="핵심 KPI · 보고서 §9.2" sub="정의와 분모는 보고서 그대로다. 목표값은 운영 가설이지 성과가 아니므로 적지 않는다 — 실측만 적고, 못 내는 것은 이유를 적는다.">
+    <Card title={`핵심 KPI · ${kpi.source ?? '보고서 §9.2'}`} sub="정의와 분모는 보고서 그대로다. 목표값은 운영 가설이지 성과가 아니므로 적지 않는다 — 실측만 적고, 못 내는 것은 이유를 적는다.">
       <ul className="m-0 grid list-none gap-2.5 p-0">
         {rows.map(r => (
           <li key={r.name} className="rounded-xl border border-adm-line bg-adm-bg/60 p-3.5">
@@ -575,6 +582,7 @@ function ReportKpis({ data }) {
               </span>
             </div>
             <p className="mt-1 text-xs text-adm-muted">{r.formula}</p>
+            {r.value != null && r.detail && <p className="mt-1 text-xs text-adm-muted tnum">{r.detail}</p>}
             {r.value == null && <p className="mt-1.5 text-xs leading-relaxed text-adm-text/80">{r.blocked}</p>}
           </li>
         ))}
@@ -645,6 +653,11 @@ function UserMetrics({ data, unique }) {
             ? <p className="text-sm text-adm-muted">퍼널 표를 읽지 못했어요.</p>
             : <HBars unit="명" color="#22d3ee" items={FUNNEL_STEPS.map(([key, label]) => ({ label, value: totals[key] ?? 0 }))} />}
           <Conversion rates={pick(data, 'funnel.conversion')} />
+          {/* 캘린더·저장은 2026-09-18~21 동안 기록 자체가 없었다(funnel_daily 의 종류 제약에 걸려 두 표 모두 비었다).
+              그 구간의 0 은 "아무도 안 했다"가 아니라 "세지 못했다"이다 — 이탈로 읽히지 않게 적어 둔다. */}
+          <p className="mt-2 text-xs text-adm-amber">
+            캘린더·저장 두 단계는 2026-09-21부터 쌓인다. 그 전 구간은 집계 자체가 빠져 있었고 복구되지 않는다.
+          </p>
         </div>
         <div>
           <h3 className="mb-2 text-[13px] font-bold text-adm-muted">일별 사람 수</h3>
