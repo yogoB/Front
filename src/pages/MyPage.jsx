@@ -300,7 +300,7 @@ function Profile({ member, onChange }) {
   return (
     <Card title="내 계정">
       <div className="flex items-center gap-4">
-        <span className="grid size-14 place-items-center rounded-full bg-brand-strong text-xl font-extrabold text-white">
+        <span className="grid size-14 place-items-center rounded-full bg-brand text-xl font-extrabold text-ink">
           {[...display][0] ?? '·'}
         </span>
         <div>

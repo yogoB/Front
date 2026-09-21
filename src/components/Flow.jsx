@@ -18,7 +18,7 @@ function Progress({ steps, current, onGo }) {
                     className={`relative z-[1] flex min-h-11 cursor-pointer flex-col items-center gap-1.5 border-0 bg-transparent px-2 text-xs font-semibold
                       ${now ? 'text-brand-ink' : 'text-muted'}`}>
               <span className={`grid size-[26px] place-items-center rounded-full border text-xs
-                ${now ? 'border-brand-strong bg-brand-strong text-white' : done ? 'border-brand bg-white text-brand-ink' : 'border-line bg-white text-muted'}`}>
+                ${now ? 'border-brand bg-brand text-ink' : done ? 'border-brand bg-white text-brand-ink' : 'border-line bg-white text-muted'}`}>
                 {n}
               </span>
               <span>{label}</span>

@@ -293,7 +293,7 @@ function Grid({ view, anchor, events, today, result }) {
                    style={color ? { outline: `2px solid ${color}`, outlineOffset: -2 } : undefined}>
                 <div className="flex items-center justify-between">
                   <span className={`text-[13px] font-semibold ${outside ? 'text-muted/60' : ''}`} style={color ? { color } : undefined}>{date.getDate()}</span>
-                  {isToday && <span className="rounded bg-brand-strong px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-white">TODAY</span>}
+                  {isToday && <span className="rounded bg-brand px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-ink">TODAY</span>}
                 </div>
                 {items.map(e => {
                   const past = date < today, c = STEP_COLORS[e.step];
@@ -333,14 +333,14 @@ function EventList({ events, anchor, today, stepName }) {
             <div className="flex items-center gap-2 text-sm font-extrabold">
               <span>{date.getMonth() + 1}월 {date.getDate()}일 {WEEKDAYS[date.getDay()]}</span>
               {isToday
-                ? <span className="rounded bg-brand-strong px-1.5 py-0.5 text-[10px] font-extrabold text-white">TODAY</span>
+                ? <span className="rounded bg-brand px-1.5 py-0.5 text-[10px] font-extrabold text-ink">TODAY</span>
                 : <span className="text-xs font-semibold text-muted">{relativeDay(date, today)}</span>}
             </div>
             <ul className="m-0 grid list-none gap-2.5 p-0">
               {items.map(e => (
                 <li key={e.label} className="grid grid-cols-[auto_1fr_auto] items-center gap-2.5 text-sm">
                   <span className={`grid size-[18px] place-items-center rounded-full border-[1.5px] text-[11px] font-extrabold
-                    ${past ? 'border-brand-strong bg-brand-strong text-white' : 'border-[#cfd3da]'}`}>{past ? '✓' : ''}</span>
+                    ${past ? 'border-brand bg-brand text-ink' : 'border-[#cfd3da]'}`}>{past ? '✓' : ''}</span>
                   <span className="font-semibold">{e.label}</span>
                   <span className="whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-bold"
                         style={{ background: STEP_COLORS[e.step] + '1f', color: STEP_COLORS[e.step] }}>{stepName(e.step)}</span>

@@ -44,7 +44,7 @@ export default function Modes() {
                 {/* 호버가 되는 기기에서만 오른쪽 아래에 띄운다(card-arrow, index.css).
                     손가락 기기에서는 설명이 흐름에 남아 있어 겹친다 — 320px 카드에서 실제로 겹쳤다. */}
                 <span aria-hidden="true"
-                      className="card-arrow grid size-11 place-items-center rounded-full bg-brand-strong text-lg text-white
+                      className="card-arrow grid size-11 place-items-center rounded-full bg-brand text-lg text-ink
                                  transition-transform duration-150 group-hover:translate-x-0.5">
                   →
                 </span>
@@ -62,7 +62,7 @@ export default function Modes() {
 }
 
 const Chip = ({ children }) => (
-  <span className="inline-flex min-h-10 items-center rounded-full bg-brand-strong px-4 py-2 text-[.68em] font-extrabold leading-none text-white sm:min-h-12 sm:px-5">
+  <span className="inline-flex min-h-10 items-center rounded-full bg-brand px-4 py-2 text-[.68em] font-extrabold leading-none text-ink sm:min-h-12 sm:px-5">
     {children}
   </span>
 );

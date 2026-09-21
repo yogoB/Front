@@ -582,10 +582,10 @@ function Dashboard({ columns, subs, tools }) {
         {columns.map(col => (
           <section key={col.title}
                    className={`flex flex-col rounded-2xl border bg-white p-5
-                     ${col.best ? 'border-brand shadow-[0_0_0_3px_rgb(58_139_255_/_22%)]' : 'border-ink'}`}>
+                     ${col.best ? 'border-brand shadow-[0_0_0_3px_rgb(62_207_171_/_35%)]' : 'border-ink'}`}>
             <div className="flex items-center justify-between gap-2">
               <span className={`text-[13px] font-bold ${col.best ? 'text-brand-ink' : 'text-muted'}`}>{col.title}</span>
-              {col.best && <span className="rounded-full bg-brand-strong px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-white">추천</span>}
+              {col.best && <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-ink">추천</span>}
             </div>
             <p className="mt-1 min-h-[2.6em] text-xs leading-relaxed text-muted">{col.sub}</p>
             <p className="mt-3 whitespace-nowrap text-[30px] font-extrabold leading-none tracking-[-.03em] tnum">{col.total}</p>
