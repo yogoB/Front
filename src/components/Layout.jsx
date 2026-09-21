@@ -45,14 +45,12 @@ export function Footer({ compact = false }) {
           <Link to="/terms">이용약관</Link>
           <Link to="/privacy">개인정보처리방침</Link>
           <Link to="/data-sources">데이터 출처</Link>
+          {/* 운영자용. 누구나 열 수 있는 정적 페이지지만 데이터는 전부 인증이 필요하다(backoffice.md §2).
+              전에는 압축 푸터(랜딩)에서 숨겼는데, 랜딩이 운영자가 들어오는 자리라 입구가 사라져 있었다
+              (사용자 제보 2026-09-21). 링크 줄 안에 두면 줄이 늘지 않아 랜딩 높이도 그대로다. */}
+          <Link to="/admin" rel="nofollow" className="hover:underline">관리자 로그인</Link>
         </div>
       </div>
-      {/* 운영자용. 누구나 열 수 있는 정적 페이지지만 데이터는 전부 인증이 필요하다(backoffice.md §2). */}
-      {!compact && <div className="mt-[18px]">
-        <Link to="/admin" rel="nofollow" className="text-xs text-muted hover:text-ink-soft hover:underline">
-          관리자 로그인
-        </Link>
-      </div>}
     </footer>
   );
 }
