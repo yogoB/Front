@@ -31,7 +31,24 @@ export default function Landing() {
       <main className="mx-auto flex min-h-0 w-full max-w-page flex-1 flex-col px-5 pb-0 sm:px-6">
         <section className="flex min-h-0 flex-1 flex-col items-center justify-center py-5 text-center sm:py-7">
           <h1 className="text-[40px] font-extrabold leading-[1.08] tracking-[-.04em] text-ink sm:text-[56px] md:text-[68px]">
-            <span className="block">디지털 고정지출</span>
+            {/* 처음 보는 말이라 한 줄로 뜻을 붙인다(사용자 결정 2026-09-21).
+                손가락에는 호버가 없어 **탭·키보드 포커스로도** 열리게 tabIndex 를 준다.
+                점선 밑줄은 "눌러 볼 것이 있다"는 표시다 — 아무 표시가 없으면 아무도 올려 보지 않는다. */}
+            <span className="group relative inline-block">
+              <span tabIndex={0} aria-describedby="hero-term"
+                    className="cursor-help underline decoration-ink/25 decoration-dotted underline-offset-[6px] outline-none">
+                디지털 고정지출
+              </span>
+              <span id="hero-term" role="tooltip"
+                    /* 아래에 띄우면 제목 둘째 줄('절감 솔루션')을 가린다 — 위는 비어 있다. */
+                    className="pointer-events-none invisible absolute bottom-[calc(100%+12px)] left-1/2 z-20 w-[min(340px,calc(100vw-32px))]
+                               -translate-x-1/2 translate-y-1 rounded-lg bg-ink px-3.5 py-2.5 text-center text-[13px] font-medium
+                               leading-relaxed tracking-normal text-white opacity-0 shadow-[0_12px_28px_rgb(23_24_42_/.18)] transition duration-150
+                               group-hover:visible group-hover:translate-y-0 group-hover:opacity-100
+                               group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                통신요금·구독료처럼 매달 자동으로 빠져나가는 디지털 서비스 비용이에요.
+              </span>
+            </span>
             <span className="block"><span className="text-brand">절감</span> 솔루션</span>
           </h1>
 
