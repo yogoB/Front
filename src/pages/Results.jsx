@@ -143,7 +143,7 @@ export default function Results() {
       <div className={guest ? 'select-none blur-[6px]' : undefined}>
       <main className="mx-auto max-w-page px-6 py-8">
         <span className="inline-block rounded-full bg-bg-soft px-3 py-1.5 text-[13px] font-bold text-ink-soft">
-          최적화 완료
+          절감 완료
         </span>
         <h1 className="mb-1 mt-4 text-2xl font-extrabold tracking-[-.01em] md:text-[28px]">최적 요금 조합 비교 분석</h1>
         <p className="mb-6 text-sm text-muted">카탈로그 가격 기준 · {stamp(data.receivedAt)} 계산</p>
@@ -204,6 +204,8 @@ export default function Results() {
           </div>
         )}
 
+        {/* 다음 행동 버튼을 설명 보기 **바로 아래**에 둔다(사용자 결정 2026-09-21).
+            전에는 리포트 맨 끝에 있어 계산 내역·제보 폼을 다 지나야 보였다. */}
         {story !== 'open' ? (
           <button type="button" onClick={openStory} disabled={story === 'loading'} className="btn btn-ghost btn-block mt-6 bg-white">
             {story === 'loading' ? '설명을 만드는 중…' : story === 'failed' ? '설명을 불러오지 못했어요 — 다시 시도' : '이 결과 설명 보기 ↓'}
@@ -230,6 +232,10 @@ export default function Results() {
           </section>
         )}
 
+        <button type="button" onClick={() => navigate('/calendar')} className="btn btn-primary btn-block btn-lg mt-4">
+          이렇게 진행해보세요! →
+        </button>
+
         <ul className="mt-8 flex list-none flex-wrap gap-2.5 p-0">
           {['금액마다 출처 표시', '안 쓰는 혜택은 0원으로 계산', '카드·계좌 연결 없음'].map(t => (
             <li key={t} className="chip bg-white"><span className="size-1.5 rounded-full bg-brand" aria-hidden="true" />{t}</li>
@@ -240,10 +246,8 @@ export default function Results() {
         {recommended && <ReportWrong planId={recommended.planId} planName={recommended.planName} />}
 
         {/* '다시 비교하기'는 뺐다(사용자 결정 2026-09-18) — 다음 행동은 하나다. 조건을 고치려면 헤더·뒤로가기로 간다. */}
-        <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
-          <p className="text-[13px] text-muted">ⓘ 상기 분석 결과는 통신사별 결합 형태에 따라 실제 고지 금액과 다를 수 있습니다.</p>
-          <button type="button" onClick={() => navigate('/calendar')} className="btn btn-primary">이렇게 진행해보세요! →</button>
-        </div>
+        {/* 같은 버튼을 위로 올렸으므로 여기서는 지운다 — 한 화면에 같은 행동을 두 번 두지 않는다. */}
+        <p className="mt-10 text-[13px] text-muted">ⓘ 상기 분석 결과는 통신사별 결합 형태에 따라 실제 고지 금액과 다를 수 있습니다.</p>
       </main>
       <div className="mx-auto w-full max-w-page px-6"><Footer /></div>
       </div>
@@ -291,7 +295,7 @@ function SaveHero({ best, current, sameAsCheapest = true }) {
   let head, amount, foot;
   if (current) {
     const diff = current.monthlySavings;
-    // 이 차액은 BE 가 1순위(최저가 조합)와 견준 값이다 — 가운데 열이 그것과 다르면 그렇게 적는다.
+    // 이 차액은 BE 가 1순위(최저가 조합)와 견준 값이다 — 추천 열이 그것과 다르면 그렇게 적는다.
     const basis = sameAsCheapest ? '' : ' · 최저가 조합 기준';
     if (diff > 0) {
       head = '지금보다 매달'; amount = won(diff);
@@ -491,9 +495,14 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
     ['위약금 (Penalty)', input.contract?.has ? '확인 필요' : '없음', '확인 필요', '확인 필요'],
   ];
 
+  /* 열 순서는 현재 → 최저가 → 추천(변경 최소)이다(사용자 결정 2026-09-21).
+     맨 오른쪽이 마지막에 읽히는 자리라 '그래서 뭘 하면 되나'를 거기 둔다. */
   const columns = [
     { tone: 'now', title: '현재 상황', sub: current ? '지금 요금제 · 같은 계산기' : '현재 통신사 및 납부 요금', total: curTotal,
       plan: rows[0][1], promo: promoLine(current?.cost) },
+    { tone: 'base', title: '최저가 조합',
+      sub: sameAsCheapest ? '추천 조합과 같은 조합이에요' : `월 총액이 가장 낮은 조합 · ${cheapest.carrier} 로 옮겨야 해요`,
+      total: won(cheapest.monthlyTotal), plan: rows[0][3], promo: promoLine(cheapest) },
     { tone: 'best', best: true, title: '추천 · 변경 최소 🌟',
       sub: !minimalKnown ? (currentCarrier ? `${currentCarrier} 안에는 조건을 맞추는 요금제가 없어 전체 1순위를 적었어요` : '지금 조건에서 가장 나은 조합 · 체감 환산 월 요금')
         : sameAsCheapest ? `${recommended.carrier} 그대로가 가장 싼 조합이에요`
@@ -503,9 +512,6 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
         : periodUnknown
           ? `${months}개월 절감액은 특가가 끝난 뒤 금액을 몰라 내지 않았어요`
           : `정가 대비 ${months === 12 ? '연' : months === 6 ? '6개월' : '월'} ${won(periodSaving)} 절감` },
-    { tone: 'base', title: '최저가 조합',
-      sub: sameAsCheapest ? '추천 조합과 같은 조합이에요' : `월 총액이 가장 낮은 조합 · ${cheapest.carrier} 로 옮겨야 해요`,
-      total: won(cheapest.monthlyTotal), plan: rows[0][3], promo: promoLine(cheapest) },
   ];
 
   return (
@@ -515,7 +521,7 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
         <p className="bg-warn-tint px-4.5 py-2.5 text-[13px] leading-relaxed text-warn-ink">
           <strong>지금 요금제가 더 싸요.</strong> 다만 지금 요금제로는 원하시는 조건을 맞출 수 없어요.
           {exclusion && ` ${exclusion}`}
-          {' '}가운데 열은 {currentCarrier ? `${currentCarrier} 안에서 ` : ''}그 조건을 맞추는 가장 싼 조합이에요.
+          {' '}맨 오른쪽 열은 {currentCarrier ? `${currentCarrier} 안에서 ` : ''}그 조건을 맞추는 가장 싼 조합이에요.
           조건이 지금으로 충분하면 그대로 두셔도 괜찮아요.
         </p>
       )}
@@ -547,13 +553,13 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
               <span className="text-[15px] font-semibold text-muted">상세 구분 항목</span>
             </th>
             <ColHead title="현재 상황">{curTotal}</ColHead>
-            <ColHead title="추천 · 변경 최소" best>{won(recommended.monthlyTotal)}</ColHead>
             <ColHead title="최저가 조합">
               {/* 정가와 체감가가 같으면(할인 없음) 취소선을 긋지 않는다 — 같은 금액을 두 번 적는 꼴이다. */}
               {cheapest.baseline !== cheapest.monthlyTotal &&
                 <s className="mr-2 text-sm font-semibold text-muted">{won(cheapest.baseline)}</s>}
               {won(cheapest.monthlyTotal)}
             </ColHead>
+            <ColHead title="추천 · 변경 최소" best>{won(recommended.monthlyTotal)}</ColHead>
           </tr>
         </thead>
         <tbody>
@@ -563,8 +569,8 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
                 {label}
               </th>
               <Cell value={cur} />
-              <Cell value={rec} best />
               <Cell value={low} />
+              <Cell value={rec} best />
             </tr>
           ))}
         </tbody>
@@ -585,8 +591,9 @@ function Dashboard({ columns, subs, tools }) {
       <div className="grid gap-3 md:grid-cols-3 md:gap-4">
         {columns.map(col => (
           <section key={col.title}
-                   className={`flex flex-col rounded-2xl border bg-white p-5
-                     ${col.best ? 'border-brand shadow-[0_0_0_3px_rgb(62_207_171_/_35%)]' : 'border-ink'}`}>
+                   /* 추천 카드에 두르던 민트 테두리·링을 뺐다(사용자 결정 2026-09-21).
+                      셋 다 같은 검정 테두리이고, 어느 것이 추천인지는 오른쪽 위 '추천' 배지가 말한다. */
+                   className="flex flex-col rounded-2xl border border-ink bg-white p-5">
             <div className="flex items-center justify-between gap-2">
               <span className={`text-[13px] font-bold ${col.best ? 'text-brand-ink' : 'text-muted'}`}>{col.title}</span>
               {col.best && <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-ink">추천</span>}

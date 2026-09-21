@@ -169,7 +169,7 @@ export default function Detail() {
 
             {step === 2 && (
               <>
-                <Question kicker="희망 조건" tip="통신사 앱 → 사용량 조회에서 확인할 수 있어요"
+                <Question kicker="요금 정보" tip="통신사 앱 → 사용량 조회에서 확인할 수 있어요"
                           sub="원하는 데이터 사용량과 지금 내는 통신비를 알려주시면 절감액까지 계산해요.">
                   지금 얼마나 쓰고 계세요?
                 </Question>
