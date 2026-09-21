@@ -354,11 +354,15 @@ function promoLine(cost) {
   return { text: `${months}개월 뒤 월 ${won(after)}${verb}`, warn: now != null && after > now };
 }
 
-/* 이 두 가지는 "더 알려주세요"가 아니라 **이미 잃은 것·알 수 없는 것**을 알린다 — 그래서 먼저 보여 준다.
+/* 이 셋은 "더 알려주세요"가 아니라 **이미 잃은 것·알 수 없는 것·놓치고 있는 것**을 알린다.
+   그래서 설명을 펼치기 전에 먼저 보여 준다 — 돈이 걸린 말이 '설명 보기' 뒤에 숨으면 안 된다.
    networkType: 규격을 좁혀 더 싼 요금제를 후보에서 뺐다(BE 는 더 싼 게 실제로 있을 때만 보낸다).
-   promotionPeriod: 요금제 이름에 특가 기간이 적혀 있는데 카탈로그에 그 기간을 담을 칸이 없다 —
-   기간이 끝난 뒤 금액을 모르므로 6·12개월 환산을 그대로 믿으면 안 된다. */
-const LOSS_FIELDS = new Set(['networkType', 'promotionPeriod']);
+   promotionPeriod: 기간이 끝난 뒤 금액을 몰라 그 기간 절감액을 내지 못했다.
+   carrierBenefitCondition: 조건을 채우면 더 싼 요금제가 있는데, 조건 충족 여부를 서버가 모른다.
+     **이 혜택가는 카드 금액 자리에 절대 넣지 않는다**(BE G-72). results 의 금액은 언제나 기본료
+     기준이고 순위에도 기본료만 쓴다 — 혜택가를 카드에 올리면 조건을 못 채운 사람에게 없는 금액을
+     약속하는 꼴이 된다. 안내 문구로만 적는다. */
+const LOSS_FIELDS = new Set(['networkType', 'promotionPeriod', 'carrierBenefitCondition']);
 
 /* 모르면 막히지 않는다(원칙 5-①): 빠진 입력과 카탈로그 결손을 그대로 안내한다. */
 /* ⓘ 안내. missingInputs 문장은 서버(notices)가 만든다 — 같은 값으로 두 곳에서 문장을

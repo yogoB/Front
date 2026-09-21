@@ -446,3 +446,15 @@ test("특가 뒤 금액을 모르면 숫자를 지어내지 않는다", () => {
   // 바뀐 뒤 금액이 지금과 같으면 바뀌는 게 없다 — 그런 행이 카탈로그에 실제로 있었다.
   assert.match(body, /if \(now != null && after === now\) return null;/, 'Results.jsx: 안 바뀌는데 바뀐다고 적고 있다');
 });
+
+test("카드 금액은 언제나 BE 의 monthlyTotal 이다 — 혜택가를 올리지 않는다", () => {
+  // 통신사 혜택가(조건 충족 시 금액)는 안내로만 적는다. 조건 충족 여부를 서버가 모르기 때문에
+  // 순위에도 안 들어가고(BE G-72), 카드에 올리면 조건을 못 채운 사람에게 없는 금액을 약속하게 된다.
+  const src = readFileSync('src/pages/Results.jsx', 'utf8');
+  assert.match(src, /total: won\(recommended\.monthlyTotal\)/, 'Results.jsx: 추천 카드 금액이 monthlyTotal 이 아니다');
+  assert.match(src, /total: won\(cheapest\.monthlyTotal\)/, 'Results.jsx: 최저가 카드 금액이 monthlyTotal 이 아니다');
+  // 안내는 문구로만 — impact/howToFind 를 그대로 출력하고 금액을 따로 뽑아 쓰지 않는다.
+  assert.match(src, /LOSS_FIELDS = new Set\(\[[^\]]*'carrierBenefitCondition'/, 'Results.jsx: 혜택 조건 안내를 먼저 띄우지 않는다');
+  assert.ok(!/benefitPrice|discountedPrice|혜택가/.test(src.replace(/\/\*[\s\S]*?\*\//g, '')),
+    'Results.jsx: 혜택가를 따로 읽는 코드가 있다');
+});
