@@ -88,11 +88,11 @@ export default function Results() {
   // 왜 없는지는 둘 중 하나다 — 통신사를 모르거나, 알지만 그 통신사에 다른 후보가 없거나(예: SKT·LTE 는 카탈로그에 1건뿐).
   // 둘을 같은 문장으로 적으면 이미 통신사를 알려준 사람에게 또 알려달라고 하게 된다.
   const narrated = { ...data, ...(told ?? {}) };   // 설명 필드는 첫 응답 또는 narrate 응답에서
-  /* 손해를 알리는 두 가지는 **설명을 펼치기 전에** 보여 준다. 전에는 내레이션 안에만 있어서,
-     '이 결과 설명 보기'를 누르지 않은 사람은 통신 규격을 좁혀 더 싼 요금제를 잃은 사실을 영영 몰랐다.
-     나머지 missingInputs(약정·결합·통신사 등)는 "더 알려주면 정확해진다"는 권유라 지금 자리에 둔다. */
-  const losses = (data.missingInputs ?? []).filter(m => LOSS_FIELDS.has(m.field));
-  const notices = buildNotices(input, narrated, recommended, losses);
+  /* 안내는 **모두** 설명 펼침 안에 둔다(사용자 결정 2026-09-21).
+     한동안 통신망·특가·혜택조건 셋을 비교표 위에 따로 띄웠는데, 결과를 보러 온 화면에서
+     노란 상자 두 개가 먼저 읽히는 게 소음이라는 판단이다. 지워지는 게 아니라 자리를 옮기는 것이다 —
+     '이 결과 설명 보기' 안의 안내 목록에 그대로 들어간다(중복 제거 대상이 없어져 전부 실린다). */
+  const notices = buildNotices(input, narrated, recommended);
   const reasons = narrated.reasons ?? [];
   const planViews = {
     recommended: recommended && plans.find(p => p.id === recommended.planId),
@@ -147,17 +147,6 @@ export default function Results() {
         </span>
         <h1 className="mb-1 mt-4 text-2xl font-extrabold tracking-[-.01em] md:text-[28px]">최적 요금 조합 비교 분석</h1>
         <p className="mb-6 text-sm text-muted">카탈로그 가격 기준 · {stamp(data.receivedAt)} 계산</p>
-
-        {losses.length > 0 && (
-          <ul className="mb-5 grid list-none gap-2 p-0">
-            {losses.map(m => (
-              <li key={m.field} className="rounded-xl border border-line bg-warn-tint px-4 py-3 text-sm leading-relaxed text-warn-ink">
-                <strong className="font-bold">{m.impact}</strong>
-                {m.howToFind && <span className="mt-1 block font-medium">{m.howToFind}</span>}
-              </li>
-            ))}
-          </ul>
-        )}
 
         {/* 계산 결과(표)가 먼저다 — 사용자 결정 2026-09-18: 처음 보이는 것은 비교표 카드뿐이고, 설명(내레이션)은 아래에서 펼친다.
             시안의 결과 카드 하나 — 기간 토글·저장 아이콘·3열 비교표·추천 사유를 한 판에 담는다. */}
@@ -358,31 +347,18 @@ function promoLine(cost) {
   return { text: `${months}개월 뒤 월 ${won(after)}${verb}`, warn: now != null && after > now };
 }
 
-/* 이 셋은 "더 알려주세요"가 아니라 **이미 잃은 것·알 수 없는 것·놓치고 있는 것**을 알린다.
-   그래서 설명을 펼치기 전에 먼저 보여 준다 — 돈이 걸린 말이 '설명 보기' 뒤에 숨으면 안 된다.
-   networkType: 규격을 좁혀 더 싼 요금제를 후보에서 뺐다(BE 는 더 싼 게 실제로 있을 때만 보낸다).
-   promotionPeriod: 기간이 끝난 뒤 금액을 몰라 그 기간 절감액을 내지 못했다.
-   carrierBenefitCondition: 조건을 채우면 더 싼 요금제가 있는데, 조건 충족 여부를 서버가 모른다.
-     **이 혜택가는 카드 금액 자리에 절대 넣지 않는다**(BE G-72). results 의 금액은 언제나 기본료
-     기준이고 순위에도 기본료만 쓴다 — 혜택가를 카드에 올리면 조건을 못 채운 사람에게 없는 금액을
-     약속하는 꼴이 된다. 안내 문구로만 적는다. */
-const LOSS_FIELDS = new Set(['networkType', 'promotionPeriod', 'carrierBenefitCondition']);
+/* 통신사 혜택가(carrierBenefitCondition)는 **카드 금액 자리에 절대 넣지 않는다**(BE G-72).
+   results 의 금액은 언제나 기본료 기준이고 순위에도 기본료만 쓴다 — 혜택가를 카드에 올리면
+   조건을 못 채운 사람에게 없는 금액을 약속하는 꼴이 된다. 서버가 준 안내 문구로만 나간다. */
 
 /* 모르면 막히지 않는다(원칙 5-①): 빠진 입력과 카탈로그 결손을 그대로 안내한다. */
 /* ⓘ 안내. missingInputs 문장은 서버(notices)가 만든다 — 같은 값으로 두 곳에서 문장을
    만들면 표현이 갈라진다(D-46). 여기 남는 둘은 서버가 알 수 없는 것뿐이다:
    데이터 입력을 건너뛴 화면 상태와, 결과가 없어 서버가 내레이터를 부르지 않은 경우. */
-function buildNotices(source, data, best, shown = []) {
+function buildNotices(source, data, best) {
   const notices = [];
   if (!source.data) notices.push(`데이터 사용량을 건너뛰어 ${DEFAULT_GB}GB 기준으로 계산했어요. 실제 사용량을 넣으면 결과가 정확해져요.`);
-  // 위에 이미 띄운 것은 여기서 뺀다 — 같은 말을 한 화면에 두 번 적지 않는다.
-  // 내레이터는 `impact — howToFind` 로 이어 붙이므로 impact 로 시작하는지를 본다.
-  // **양쪽 다 공백을 눌러서 비교한다.** 내레이터는 impact 의 줄바꿈·연속 공백을 한 칸으로 줄여서 싣는데
-  // (안 줄이면 응답이 깨져 설명이 통째로 사라진 사고가 있었다), 화면이 원본 그대로 비교하면
-  // BE 가 안내 문구에 줄바꿈을 넣는 날 중복 제거가 조용히 실패해 같은 말이 두 번 뜬다(내레이터 지적 2026-09-21).
-  const flat = text => String(text ?? '').replace(/\s+/g, ' ').trim();
-  const dup = text => shown.some(m => m.impact && flat(text).startsWith(flat(m.impact)));
-  notices.push(...(data.notices || []).filter(text => !dup(text)));
+  notices.push(...(data.notices || []));
   if (!best) notices.push('조건에 맞는 요금제를 아직 찾지 못했어요. 조건을 바꾸거나 잠시 후 다시 시도해 주세요.');
   return notices;
 }

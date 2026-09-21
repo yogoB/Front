@@ -374,16 +374,13 @@ test("INPUT_COMPLETED 는 막는 검사를 통과한 뒤에만 보낸다 — 분
   }
 });
 
-test("손해 안내는 내레이션을 펼치기 전에 보인다 — networkType 회귀 가드", () => {
-  // 통신 규격을 5G 로 좁히면 더 싼 요금제가 후보에서 빠진다. 그 사실이 '이 결과 설명 보기' 안에만 있어서,
-  // 펼치지 않은 사람은 월 8,800원을 잃은 줄 몰랐다(운영 사례 2026-09-21).
-  // 이제 recommendations 응답의 missingInputs 에서 바로 뽑아 카드 위에 띄운다.
+test("안내는 서버 문장을 그대로 싣는다 — 화면이 문구를 만들지 않는다", () => {
+  // 안내는 전부 '이 결과 설명 보기' 안에 둔다(사용자 결정 2026-09-21 — 결과 위 노란 상자는 소음이었다).
+  // 자리를 옮겼을 뿐 지워진 게 아니므로, 서버가 준 notices 를 **거르지 않고** 전부 실어야 한다.
   const src = readFileSync('src/pages/Results.jsx', 'utf8');
-  assert.match(src, /LOSS_FIELDS\s*=\s*new Set\(\[[^\]]*'networkType'[^\]]*'promotionPeriod'/,
-    'Results.jsx: 손해 안내 필드 목록이 없다');
-  assert.match(src, /data\.missingInputs\s*\?\?\s*\[\]/, 'Results.jsx: missingInputs 를 응답에서 읽지 않는다');
-  // 카드(비교표)보다 위에 그려야 한다 — 아래에 있으면 스크롤해야 보인다.
-  assert.ok(src.indexOf('losses.map') < src.indexOf('<CompareTable'), 'Results.jsx: 손해 안내가 비교표보다 아래에 있다');
+  assert.match(src, /notices\.push\(\.\.\.\(data\.notices \|\| \[\]\)\);/,
+    'Results.jsx: 서버 안내를 거르거나 가공하고 있다');
+  assert.ok(!/LOSS_FIELDS/.test(src), 'Results.jsx: 안내를 따로 띄우던 목록이 남아 있다');
 });
 
 test("통신 규격 질문은 '희망'을 묻고 선택지가 둘이다", () => {
@@ -408,23 +405,6 @@ test("기간 절감액이 null 이면 숫자로 메우지 않는다 — won(null
   // 기간 탭은 어떤 판정도 하지 않는다. 값으로 켜면 null 이 오는 날, 키로 켜면 BE 가 null 키를
   // 생략하는 날 탭이 사라져 "모른다"가 "그런 기간은 없다"로 둔갑한다.
   assert.match(src, /const tabs = \[1, 6, 12\];/, 'Results.jsx: 기간 탭을 조건부로 그리고 있다');
-});
-
-test("안내 중복 제거는 공백을 눌러서 비교한다", () => {
-  // 내레이터는 impact 의 줄바꿈·연속 공백을 한 칸으로 줄여 notices 에 싣는다(응답이 깨지는 걸 막으려고).
-  // 화면이 원본 그대로 startsWith 를 걸면, BE 가 문구에 줄바꿈을 넣는 날 중복 제거가 조용히 실패한다.
-  const src = readFileSync('src/pages/Results.jsx', 'utf8');
-  assert.match(src, /const flat = text => String\(text \?\? ''\)\.replace\(\/\\s\+\/g, ' '\)\.trim\(\);/,
-    'Results.jsx: 공백을 누르는 함수가 없다');
-  assert.match(src, /flat\(text\)\.startsWith\(flat\(m\.impact\)\)/,
-    'Results.jsx: 한쪽만 공백을 누르거나 원본으로 비교하고 있다');
-
-  // 같은 규칙을 여기서 실제로 돌려 본다 — 정규식이 바뀌면 이 단언이 먼저 깨진다.
-  const flat = text => String(text ?? '').replace(/\s+/g, ' ').trim();
-  const impact = '통신망을 5G 로 좁혀서\n요금제 22건을  뺐어요';
-  const notice = '통신망을 5G 로 좁혀서 요금제 22건을 뺐어요 — 통신 규격을 상관없어요로 두면 같이 봐요';
-  assert.ok(!notice.startsWith(impact), '전제가 깨졌다 — 원본 비교가 이미 성공하면 이 가드는 의미가 없다');
-  assert.ok(flat(notice).startsWith(flat(impact)), '공백을 눌러도 중복을 못 잡는다');
 });
 
 test("특가 뒤 금액을 모르면 숫자를 지어내지 않는다", () => {
@@ -454,7 +434,6 @@ test("카드 금액은 언제나 BE 의 monthlyTotal 이다 — 혜택가를 올
   assert.match(src, /total: won\(recommended\.monthlyTotal\)/, 'Results.jsx: 추천 카드 금액이 monthlyTotal 이 아니다');
   assert.match(src, /total: won\(cheapest\.monthlyTotal\)/, 'Results.jsx: 최저가 카드 금액이 monthlyTotal 이 아니다');
   // 안내는 문구로만 — impact/howToFind 를 그대로 출력하고 금액을 따로 뽑아 쓰지 않는다.
-  assert.match(src, /LOSS_FIELDS = new Set\(\[[^\]]*'carrierBenefitCondition'/, 'Results.jsx: 혜택 조건 안내를 먼저 띄우지 않는다');
   assert.ok(!/benefitPrice|discountedPrice|혜택가/.test(src.replace(/\/\*[\s\S]*?\*\//g, '')),
     'Results.jsx: 혜택가를 따로 읽는 코드가 있다');
 });
