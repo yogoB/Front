@@ -33,10 +33,11 @@ export default function Landing() {
           <h1 className="text-[40px] font-extrabold leading-[1.08] tracking-[-.04em] text-ink sm:text-[56px] md:text-[68px]">
             {/* 처음 보는 말이라 한 줄로 뜻을 붙인다(사용자 결정 2026-09-21).
                 손가락에는 호버가 없어 **탭·키보드 포커스로도** 열리게 tabIndex 를 준다.
-                점선 밑줄은 "눌러 볼 것이 있다"는 표시다 — 아무 표시가 없으면 아무도 올려 보지 않는다. */}
+                밑줄 표시는 뺐다(사용자 지시 2026-09-21) — 제목 밑에 점선이 깔려 보였다.
+                남은 단서는 마우스 커서 모양(cursor-help)뿐이다. */}
             <span className="group relative inline-block">
               <span tabIndex={0} aria-describedby="hero-term"
-                    className="cursor-help underline decoration-ink/25 decoration-dotted underline-offset-[6px] outline-none">
+                    className="cursor-help outline-none">
                 디지털 고정지출
               </span>
               <span id="hero-term" role="tooltip"
