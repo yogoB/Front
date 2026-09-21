@@ -18,9 +18,12 @@ export function Header() {
   return (
     /* 시안: 화면 끝까지 흰 띠. 회색 바탕 화면에서는 그림자로 띄운다. */
     <header className="relative z-10 flex w-full items-center justify-between bg-white px-6 py-4 shadow-[0_1px_10px_rgba(20,20,43,.06)]">
-      <Link to="/" className="inline-flex items-center gap-2 text-lg font-bold">
-        <span className="grid size-7 place-items-center rounded-lg bg-brand text-[15px] font-extrabold text-ink">B</span>
-        YogoB
+      {/* 로고 이미지(사용자 제공 2026-09-21). 글자가 그림 안에 있으므로 alt 로 읽어 준다.
+          width/height 를 적어 두면 이미지가 늦게 와도 헤더 높이가 흔들리지 않는다.
+          그림 안쪽에 투명 여백이 꽤 있어(글자가 세로 55% 정도만 차지한다) 40px 로 키워야
+          예전 마크와 비슷하게 읽힌다 — 32px 로 두면 글자가 17px 밖에 안 된다. */}
+      <Link to="/" className="inline-flex items-center" aria-label="요고비 홈">
+        <img src="/logo.png" alt="YogoB" width={756} height={328} className="h-10 w-auto" />
       </Link>
       <nav className="flex items-center gap-4">
         {member && <Link to="/mypage" className="inline-flex min-h-11 items-center px-2 text-sm text-muted hover:text-ink-soft">마이페이지</Link>}
