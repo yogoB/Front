@@ -8,10 +8,13 @@
    예외는 포커스 링 하나다(아래 :focus-visible) — 검은 면 위에서도 보여야 하는 접근성 장치라
    강조색을 쓰되 뜻을 싣지 않는다. 새 화면을 만들 때 민트를 쓰고 싶으면 먼저 "이게 추천이나 절감인가"를 묻는다. */
 @theme {
-  --color-brand: #3ed4af;
-  --color-brand-strong: #22b892;
-  --color-brand-tint: #e4f8f2;
-  --color-brand-ink: #149a76;
+  /* 강조색(사용자 결정 2026-09-21). brand 는 면·테두리·점처럼 **글자가 올라가지 않는** 자리에 쓴다.
+     흰 글자를 얹는 자리(채운 버튼·배지)는 brand-strong 을 쓴다 — brand 위의 흰 글자는 3.3:1 이라
+     본문 크기에서 WCAG AA(4.5:1)에 못 미친다. strong 은 4.7:1, ink 는 흰 배경에서 6.3:1 이다. */
+  --color-brand: #3a8bff;
+  --color-brand-strong: #1f6fe0;
+  --color-brand-tint: #e8f1ff;
+  --color-brand-ink: #0b5bc4;
   --color-bg-page: #f3f4f6;
   --color-ink: #17182a;
   --color-ink-soft: #414257;
@@ -97,10 +100,12 @@
 
   /* v4 의 @apply 는 유틸리티만 받는다 — 컴포넌트 클래스를 다시 @apply 할 수 없다.
      그래서 .btn 을 상속하지 않고, 마크업에서 "btn btn-dark" 처럼 두 개를 함께 쓴다.
-     회원 화면의 누르는 버튼은 .btn-dark 하나다 — 민트 버튼(.btn-brand)은 지웠다. */
+     회원 화면의 주 버튼은 .btn-primary(파랑) 하나다. .btn-dark 는 밝은 면 위에서 파랑과 겨루지
+     않아야 하는 자리(어두운 카드 안의 반전 버튼 등)에만 남긴다. */
   /* 눌리는 것은 전부 44px 이상(touch-target-size). 여백은 4px 단위 스케일만 쓴다. */
   .btn { @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-field
          border border-transparent px-5 py-2.5 text-[15px] font-semibold transition-colors duration-150; }
+  .btn-primary { @apply border-brand-strong bg-brand-strong text-white hover:border-brand-ink hover:bg-brand-ink; }
   .btn-ghost { @apply border-line bg-white text-ink-soft hover:border-[#d9d9e2] hover:bg-bg-soft; }
   .btn-dark  { @apply border-ink bg-ink text-white hover:border-black hover:bg-black; }
   .btn-lg    { @apply min-h-13 rounded-xl px-7 py-3.5 text-base; }
@@ -109,15 +114,19 @@
   .btn-text { @apply inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent px-2 text-sm
               text-muted transition-colors duration-150 hover:text-ink-soft; }
 
-  .field { @apply min-h-11 w-full rounded-field border border-line bg-white px-3.5 py-2.5 outline-none
-           focus:border-ink focus:ring-[3px] focus:ring-ink/10; }
+  /* '골라진 것' 한 가지 모양. 검정 면으로 칠하면 목록이 검은 덩어리가 된다(사용자 지적 2026-09-21).
+     옅은 파랑 면 + 파랑 테두리 + 파랑 글자면 골라졌다는 게 읽히면서 화면이 가벼워진다. */
+  .picked { @apply border-brand bg-brand-tint text-brand-ink; }
 
-  /* 슬라이더 — 채워진 구간은 --pct 로 넘긴다. 조작하는 물건이라 검정이다(강조색 규칙). */
+  .field { @apply min-h-11 w-full rounded-field border border-line bg-white px-3.5 py-2.5 outline-none
+           focus:border-brand focus:ring-[3px] focus:ring-brand-tint; }
+
+  /* 슬라이더 — 채워진 구간은 --pct 로 넘긴다. 손으로 미는 물건이라 강조색을 쓴다. */
   .range { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px; outline: none;
-    background: linear-gradient(var(--color-ink) 0 0) 0 / var(--pct, 40%) 100% no-repeat #dfe2e7; }
+    background: linear-gradient(var(--color-brand) 0 0) 0 / var(--pct, 40%) 100% no-repeat #dfe2e7; }
   .range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 999px; background: #fff;
-    border: 2px solid var(--color-ink); box-shadow: 0 1px 4px rgb(0 0 0 / 15%); cursor: pointer; }
-  .range::-moz-range-thumb { width: 16px; height: 16px; border-radius: 999px; background: #fff; border: 2px solid var(--color-ink); cursor: pointer; }
+    border: 2px solid var(--color-brand); box-shadow: 0 1px 4px rgb(0 0 0 / 15%); cursor: pointer; }
+  .range::-moz-range-thumb { width: 16px; height: 16px; border-radius: 999px; background: #fff; border: 2px solid var(--color-brand); cursor: pointer; }
 
   /* ⓘ 도움말 — 올리거나 포커스하면 아래에 검은 말풍선(시안). 내용은 data-tip. */
   .info { @apply relative grid size-6 shrink-0 cursor-help place-items-center rounded-full border-[1.5px] border-[#6b7280]

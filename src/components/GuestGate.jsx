@@ -74,7 +74,7 @@ export function MemberCheckFailed() {
     <main className="mx-auto my-20 max-w-[560px] px-6 text-center">
       <h1 className="text-[22px] font-extrabold">로그인 상태를 확인하지 못했어요</h1>
       <p className="mt-3 text-muted">서버 응답이 늦거나 연결이 끊겼어요. 잠시 후 다시 시도해 주세요.</p>
-      <button type="button" onClick={forgetMember} className="btn btn-dark mt-6">다시 시도</button>
+      <button type="button" onClick={forgetMember} className="btn btn-primary mt-6">다시 시도</button>
     </main>
   );
 }

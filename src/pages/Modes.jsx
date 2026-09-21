@@ -30,7 +30,7 @@ export default function Modes() {
             {MODES.map(m => (
               <Link key={m.to} to={m.to}
                     className="group relative flex min-h-48 flex-col items-center justify-center rounded-card border border-line bg-white px-6 py-10 text-center shadow-card
-                               transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-ink sm:min-h-64 sm:px-9">
+                               transition-[border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-brand sm:min-h-64 sm:px-9">
                 <span className="absolute left-6 top-6 text-xs font-bold text-muted sm:left-7 sm:top-7">{m.badge}</span>
                 {/* 상세 설명은 호버로 띄운다(사용자 결정 2026-09-21). 손가락에는 호버가 없으므로
                     hover 가 되는 기기에서만 숨기고, 그때는 흐름에서 빼 제목이 카드 정중앙에 오게 한다.
@@ -44,7 +44,7 @@ export default function Modes() {
                 {/* 호버가 되는 기기에서만 오른쪽 아래에 띄운다(card-arrow, index.css).
                     손가락 기기에서는 설명이 흐름에 남아 있어 겹친다 — 320px 카드에서 실제로 겹쳤다. */}
                 <span aria-hidden="true"
-                      className="card-arrow grid size-11 place-items-center rounded-full bg-ink text-lg text-white
+                      className="card-arrow grid size-11 place-items-center rounded-full bg-brand-strong text-lg text-white
                                  transition-transform duration-150 group-hover:translate-x-0.5">
                   →
                 </span>
@@ -62,7 +62,7 @@ export default function Modes() {
 }
 
 const Chip = ({ children }) => (
-  <span className="inline-flex min-h-10 items-center rounded-full bg-ink px-4 py-2 text-[.68em] font-extrabold leading-none text-white sm:min-h-12 sm:px-5">
+  <span className="inline-flex min-h-10 items-center rounded-full bg-brand-strong px-4 py-2 text-[.68em] font-extrabold leading-none text-white sm:min-h-12 sm:px-5">
     {children}
   </span>
 );

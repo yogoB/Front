@@ -31,7 +31,7 @@ export default function Landing() {
       <main className="mx-auto flex min-h-0 w-full max-w-page flex-1 flex-col px-5 pb-0 sm:px-6">
         <section className="flex min-h-0 flex-1 flex-col items-center justify-center py-5 text-center sm:py-7">
           <h1 className="text-[40px] font-extrabold leading-[1.08] tracking-[-.04em] text-ink sm:text-[56px] md:text-[68px]">
-            <span className="block">통신요금+구독료</span>
+            <span className="block">디지털 고정지출</span>
             <span className="block"><span className="text-brand">절감</span> 솔루션</span>
           </h1>
 
@@ -43,7 +43,7 @@ export default function Landing() {
                 : <SavingsStatus>공개할 절감액 표본을 모으는 중이에요.</SavingsStatus>}
           </div>
 
-          <button type="button" onClick={() => navigate('/modes')} className="btn btn-dark btn-lg mt-7 min-w-44 active:translate-y-px">
+          <button type="button" onClick={() => navigate('/modes')} className="btn btn-primary btn-lg mt-7 min-w-44 active:translate-y-px">
             시작
           </button>
         </section>
@@ -60,16 +60,18 @@ function SavingsRoulette({ samples, basis }) {
   return (
     <div>
       <p className="text-sm font-semibold text-ink/60">실제 1인당 월 절감액</p>
-      <div className="mt-2 h-[4.15rem] overflow-hidden sm:h-[5.25rem]">
-        <p key={amount} className="roulette-number tnum whitespace-nowrap text-[54px] font-extrabold leading-none tracking-[-.04em] text-ink sm:text-[72px]">
-          {amount.toLocaleString('ko-KR')}<span className="ml-1 text-[.38em] font-bold">원</span>
+      {/* 글자 상자를 칸 **가운데**에 둔다. 위에 붙여 두면 한글 윗부분(72px 기준 7px)이 잘렸다.
+          칸은 룰렛이 아래에서 올라오는 걸 가리는 용도라 남겨 둔다. */}
+      <div className="mt-2 flex h-[4.5rem] items-center justify-center overflow-hidden px-3 sm:h-[5.75rem]">
+        <p key={amount} className="roulette-number tnum whitespace-nowrap text-[clamp(38px,11vw,54px)] font-extrabold leading-none tracking-[-.04em] text-ink sm:text-[72px]">
+          {amount.toLocaleString('ko-KR')}<span className="ml-1">원</span>
         </p>
       </div>
       <span className="sr-only">실제 이용자 절감액 표본을 무작위로 순환 표시합니다.</span>
       <div className="group relative mx-auto mt-3 w-fit">
         <button type="button" aria-describedby="savings-source" aria-label="절감액 출처 보기"
                 className="grid size-11 cursor-help place-items-center rounded-full bg-white text-ink">
-          <span className="grid size-5 place-items-center rounded-full border border-ink/45 text-[11px] font-extrabold leading-none transition-colors group-hover:border-ink group-hover:bg-ink group-hover:text-white group-focus-within:border-ink">
+          <span className="grid size-5 place-items-center rounded-full border border-ink/45 text-[11px] font-extrabold leading-none transition-colors group-hover:border-brand group-hover:bg-brand group-hover:text-white group-focus-within:border-brand">
             !
           </span>
         </button>
@@ -84,7 +86,7 @@ function SavingsRoulette({ samples, basis }) {
 
 function SavingsStatus({ children }) {
   return (
-    <div className="flex h-[7.9rem] items-center justify-center sm:h-[9rem]" role="status">
+    <div className="flex h-[8.25rem] items-center justify-center sm:h-[9.5rem]" role="status">
       <p className="text-sm font-semibold text-ink/60">{children}</p>
     </div>
   );

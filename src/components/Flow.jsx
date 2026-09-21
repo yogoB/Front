@@ -12,13 +12,13 @@ function Progress({ steps, current, onGo }) {
         return (
           <li key={label} className="relative flex flex-1 flex-col items-center">
             {n < steps.length && (
-              <span aria-hidden="true" className={`absolute left-1/2 top-[13px] h-px w-full ${done ? 'bg-ink' : 'bg-[#cfd3da]'}`} />
+              <span aria-hidden="true" className={`absolute left-1/2 top-[13px] h-px w-full ${done ? 'bg-brand' : 'bg-[#cfd3da]'}`} />
             )}
             <button type="button" onClick={() => onGo(n)} aria-current={now ? 'step' : undefined}
                     className={`relative z-[1] flex min-h-11 cursor-pointer flex-col items-center gap-1.5 border-0 bg-transparent px-2 text-xs font-semibold
-                      ${now ? 'text-ink' : 'text-muted'}`}>
+                      ${now ? 'text-brand-ink' : 'text-muted'}`}>
               <span className={`grid size-[26px] place-items-center rounded-full border text-xs
-                ${now ? 'border-ink bg-ink text-white' : done ? 'border-ink bg-white text-ink' : 'border-line bg-white text-muted'}`}>
+                ${now ? 'border-brand-strong bg-brand-strong text-white' : done ? 'border-brand bg-white text-brand-ink' : 'border-line bg-white text-muted'}`}>
                 {n}
               </span>
               <span>{label}</span>
@@ -72,7 +72,7 @@ export function ErrorLine({ children }) {
 export function Actions({ onNext, nextLabel = '다음', onSkip, skipLabel = '모르겠어요, 건너뛸게요' }) {
   return (
     <div className="mt-10 flex flex-col items-center gap-3">
-      <button type="button" onClick={onNext} className="btn btn-dark btn-block btn-lg rounded-lg">{nextLabel}</button>
+      <button type="button" onClick={onNext} className="btn btn-primary btn-block btn-lg rounded-lg">{nextLabel}</button>
       {onSkip && (
         <button type="button" onClick={onSkip} className="btn-text text-[13px] hover:underline hover:underline-offset-[3px]">
           {skipLabel}

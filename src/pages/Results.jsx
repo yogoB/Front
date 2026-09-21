@@ -169,7 +169,7 @@ export default function Results() {
                 {tabs.map(m => (
                   <button key={m} type="button" onClick={() => setMonths(m)} aria-pressed={months === m}
                           className={`min-h-11 cursor-pointer rounded-full border px-3.5 text-[13px] font-semibold transition-colors
-                            ${months === m ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink-soft hover:bg-bg-soft'}`}>
+                            ${months === m ? 'picked' : 'border-line bg-white text-ink-soft hover:bg-bg-soft'}`}>
                     {m}개월
                   </button>
                 ))}
@@ -200,7 +200,7 @@ export default function Results() {
               <strong className="font-bold">더 정밀한 결과를 원하시나요?</strong>
               <p className="mt-1 max-w-prose text-sm leading-relaxed text-ink-soft">통신사·약정·결합 할인을 추가 반영하면 더 정확한 조합을 찾을 수 있어요.</p>
             </div>
-            <button type="button" onClick={() => navigate('/detail')} className="btn btn-dark">더 정확한 절감받기</button>
+            <button type="button" onClick={() => navigate('/detail')} className="btn btn-primary">더 정확한 절감받기</button>
           </div>
         )}
 
@@ -232,7 +232,7 @@ export default function Results() {
 
         <ul className="mt-8 flex list-none flex-wrap gap-2.5 p-0">
           {['금액마다 출처 표시', '안 쓰는 혜택은 0원으로 계산', '카드·계좌 연결 없음'].map(t => (
-            <li key={t} className="chip bg-white"><span className="size-1.5 rounded-full bg-ink" aria-hidden="true" />{t}</li>
+            <li key={t} className="chip bg-white"><span className="size-1.5 rounded-full bg-brand" aria-hidden="true" />{t}</li>
           ))}
         </ul>
 
@@ -242,7 +242,7 @@ export default function Results() {
         {/* '다시 비교하기'는 뺐다(사용자 결정 2026-09-18) — 다음 행동은 하나다. 조건을 고치려면 헤더·뒤로가기로 간다. */}
         <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
           <p className="text-[13px] text-muted">ⓘ 상기 분석 결과는 통신사별 결합 형태에 따라 실제 고지 금액과 다를 수 있습니다.</p>
-          <button type="button" onClick={() => navigate('/calendar')} className="btn btn-dark">이렇게 진행해보세요! →</button>
+          <button type="button" onClick={() => navigate('/calendar')} className="btn btn-primary">이렇게 진행해보세요! →</button>
         </div>
       </main>
       <div className="mx-auto w-full max-w-page px-6"><Footer /></div>
@@ -581,11 +581,11 @@ function Dashboard({ columns, subs, tools }) {
       <div className="grid gap-3 md:grid-cols-3 md:gap-4">
         {columns.map(col => (
           <section key={col.title}
-                   className={`flex flex-col rounded-2xl border border-ink bg-white p-5
-                     ${col.best ? 'shadow-[0_0_0_3px_rgb(23_24_42_/_12%)]' : ''}`}>
+                   className={`flex flex-col rounded-2xl border bg-white p-5
+                     ${col.best ? 'border-brand shadow-[0_0_0_3px_rgb(58_139_255_/_22%)]' : 'border-ink'}`}>
             <div className="flex items-center justify-between gap-2">
-              <span className={`text-[13px] font-bold ${col.best ? 'text-ink' : 'text-muted'}`}>{col.title}</span>
-              {col.best && <span className="rounded-full bg-ink px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-white">추천</span>}
+              <span className={`text-[13px] font-bold ${col.best ? 'text-brand-ink' : 'text-muted'}`}>{col.title}</span>
+              {col.best && <span className="rounded-full bg-brand-strong px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-white">추천</span>}
             </div>
             <p className="mt-1 min-h-[2.6em] text-xs leading-relaxed text-muted">{col.sub}</p>
             <p className="mt-3 whitespace-nowrap text-[30px] font-extrabold leading-none tracking-[-.03em] tnum">{col.total}</p>
@@ -626,7 +626,7 @@ function Dashboard({ columns, subs, tools }) {
 function ColHead({ title, children, best }) {
   return (
     <th scope="col" className={`border-b-2 px-4.5 py-3 text-left align-bottom
-      ${best ? 'border-ink bg-ink/[.04]' : 'border-line'}`}>
+      ${best ? 'border-brand bg-brand-tint/40' : 'border-line'}`}>
       <span className="block text-xs font-bold text-muted">{title}</span>
       <span className="mt-1 block text-lg font-extrabold tnum">{children}</span>
     </th>
@@ -640,7 +640,7 @@ const Lines = ({ value }) => (Array.isArray(value) ? value : [value])
 
 function Cell({ value, best }) {
   return (
-    <td className={`border-b border-line px-4.5 py-3.5 align-top ${best ? 'bg-ink/[.04]' : ''}`}>
+    <td className={`border-b border-line px-4.5 py-3.5 align-top ${best ? 'bg-brand-tint/40' : ''}`}>
       <Lines value={value} />
     </td>
   );
@@ -713,7 +713,7 @@ function ReportWrong({ planId, planName }) {
                    aria-label="출처 링크(선택)" placeholder="출처 링크(선택) — 통신사 공식 페이지 https://…" className="field" />
             <div className="flex items-center gap-3">
               <button type="submit" disabled={!description.trim() || busy}
-                      className="btn btn-dark disabled:cursor-not-allowed disabled:opacity-45">
+                      className="btn btn-primary disabled:cursor-not-allowed disabled:opacity-45">
                 {busy ? '보내는 중…' : '제보 보내기'}
               </button>
               {status && <span className="text-[13px] text-danger">{status}</span>}
@@ -782,7 +782,7 @@ function Empty({ message }) {
         <span className="inline-block rounded-full bg-bg-soft px-3 py-1.5 text-[13px] font-bold text-ink-soft">안내</span>
         <h1 className="mt-5 text-[26px] font-extrabold">비교할 입력이 없어요</h1>
         <p className="mt-3 text-muted">{message}</p>
-        <a href="/modes" className="btn btn-dark mt-7 inline-flex">모드 선택으로</a>
+        <a href="/modes" className="btn btn-primary mt-7 inline-flex">모드 선택으로</a>
       </main>
     </>
   );

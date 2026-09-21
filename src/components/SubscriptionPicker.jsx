@@ -31,17 +31,17 @@ export default function SubscriptionPicker({ subs, query, onQuery, onToggle, onT
             <label key={sub.id}
                    className={`flex min-h-14 shrink-0 cursor-pointer items-center gap-3
                      border-b border-line px-4 py-2.5 last:border-b-0 transition-colors duration-150
-                     ${sub.checked ? 'bg-ink text-white [&_[role=img]]:text-white/70' : 'hover:bg-bg-soft'}`}>
+                     ${sub.checked ? 'bg-brand-tint' : 'hover:bg-bg-soft'}`}>
               <input type="checkbox" checked={sub.checked} onChange={() => onToggle(sub.id)}
-                     className="size-[18px] shrink-0 accent-ink" />
+                     className="size-[18px] shrink-0 accent-[var(--color-brand-strong)]" />
               <span className="grid min-w-0 flex-1 grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 sm:grid-cols-[1fr_7rem_11rem]">
                 <span className="min-w-0 truncate font-semibold">{sub.service.icon}  {sub.service.name}</span>
-                <span className={`whitespace-nowrap justify-self-end text-sm tnum ${sub.checked ? 'text-white/75' : 'text-ink-soft'}`}>
+                <span className={`whitespace-nowrap justify-self-end text-sm tnum ${sub.checked ? 'text-brand-ink' : 'text-ink-soft'}`}>
                   {tierPrice(tier)}
                   <PriceNote note={foreignNote(tier)} />
                 </span>
                 <span className="col-span-2 sm:col-span-1">
-                  <TierSelect tiers={sub.service.tiers} value={sub.tierId} dark={sub.checked}
+                  <TierSelect tiers={sub.service.tiers} value={sub.tierId}
                               label={`${sub.service.name} 등급`}
                               onChange={id => onTier(sub.id, Number(id))} />
                 </span>

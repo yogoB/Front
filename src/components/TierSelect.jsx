@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 
    목록이 스크롤 영역 안에 있어 바깥으로 삐져나온 말풍선은 잘린다 — 그래서 행 안에 자리를 잡고
    길어지면 그 안에서 스크롤한다. */
-export default function TierSelect({ tiers, value, onChange, label, dark = false }) {
+export default function TierSelect({ tiers, value, onChange, label }) {
   const [open, setOpen] = useState(false);
   const box = useRef(null);
   const only = tiers.length < 2;
@@ -24,7 +24,7 @@ export default function TierSelect({ tiers, value, onChange, label, dark = false
   }, [open]);
 
   if (only) {
-    return <span className={`truncate text-sm ${dark ? 'text-white/60' : 'text-muted'}`}>{current?.name ?? '—'}</span>;
+    return <span className="truncate text-sm text-muted">{current?.name ?? '—'}</span>;
   }
 
   return (
@@ -33,8 +33,7 @@ export default function TierSelect({ tiers, value, onChange, label, dark = false
               /* label 이 이 버튼을 감싼 <label> 의 클릭으로 번지면 체크박스가 같이 토글된다 — 막는다. */
               onClick={e => { e.preventDefault(); e.stopPropagation(); setOpen(o => !o); }}
               className={`flex min-h-10 w-full cursor-pointer items-center justify-between gap-1.5 rounded-lg border px-2.5 text-left text-sm
-                ${dark ? 'border-white/25 bg-transparent text-white/85 hover:border-white/50'
-                       : 'border-line bg-white text-ink-soft hover:border-ink/35'}`}>
+                border-line bg-white text-ink-soft hover:border-brand`}>
         <span className="truncate">{current?.name}</span>
         <span aria-hidden="true" className="shrink-0 text-[10px] opacity-60">▾</span>
       </button>
@@ -46,7 +45,7 @@ export default function TierSelect({ tiers, value, onChange, label, dark = false
             <button key={t.id} type="button" role="option" aria-selected={t.id === value}
                     onClick={e => { e.preventDefault(); e.stopPropagation(); onChange(t.id); setOpen(false); }}
                     className={`block w-full cursor-pointer border-0 px-3 py-2 text-left text-sm
-                      ${t.id === value ? 'bg-ink font-semibold text-white' : 'bg-white text-ink-soft hover:bg-bg-soft'}`}>
+                      ${t.id === value ? 'bg-brand-tint font-semibold text-brand-ink' : 'bg-white text-ink-soft hover:bg-bg-soft'}`}>
               {t.name}
             </button>
           ))}

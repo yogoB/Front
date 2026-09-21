@@ -137,7 +137,7 @@ export default function Calendar() {
           <div className="flex flex-wrap items-center gap-3">
             {/* 이 화면이 추천하는 것은 "언제 바꾸느냐"다 — 강조색이 남는 유일한 자리다. */}
             <span className="rounded-lg bg-brand-tint px-3.5 py-2 text-[13px] font-bold text-brand-ink">{timing}</span>
-            <button type="button" onClick={openExport} className="btn btn-dark">Google 캘린더 연동하기</button>
+            <button type="button" onClick={openExport} className="btn btn-primary">Google 캘린더 연동하기</button>
           </div>
         </div>
       </div>
@@ -221,7 +221,7 @@ export default function Calendar() {
                 {[['month', '캘린더'], ['list', '리스트']].map(([key, label]) => (
                   <button key={key} type="button" onClick={() => setMode(key)} aria-pressed={mode === key}
                           className={`min-h-9 cursor-pointer rounded-md border-0 px-3.5 text-[13px] font-semibold transition-colors duration-150
-                            ${mode === key ? 'bg-ink text-white' : 'bg-transparent text-muted hover:text-ink-soft'}`}>
+                            ${mode === key ? 'bg-brand-tint text-brand-ink' : 'bg-transparent text-muted hover:text-ink-soft'}`}>
                     {label}
                   </button>
                 ))}
@@ -238,7 +238,7 @@ export default function Calendar() {
         )}
 
         {/* 맨 아래 띠(시안) — 체크포인트를 훑었으면 캘린더에 담는 것이 '진행'이다 */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-card border border-ink bg-white px-6 py-5">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-card border border-brand bg-brand-tint/40 px-6 py-5">
           <div>
             <strong className="block text-[15px] font-extrabold">확인하고 진행하세요</strong>
             <p className="m-0 mt-1 text-[13px] leading-relaxed text-ink-soft">
@@ -293,7 +293,7 @@ function Grid({ view, anchor, events, today, result }) {
                    style={color ? { outline: `2px solid ${color}`, outlineOffset: -2 } : undefined}>
                 <div className="flex items-center justify-between">
                   <span className={`text-[13px] font-semibold ${outside ? 'text-muted/60' : ''}`} style={color ? { color } : undefined}>{date.getDate()}</span>
-                  {isToday && <span className="rounded bg-ink px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-white">TODAY</span>}
+                  {isToday && <span className="rounded bg-brand-strong px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-white">TODAY</span>}
                 </div>
                 {items.map(e => {
                   const past = date < today, c = STEP_COLORS[e.step];
@@ -333,14 +333,14 @@ function EventList({ events, anchor, today, stepName }) {
             <div className="flex items-center gap-2 text-sm font-extrabold">
               <span>{date.getMonth() + 1}월 {date.getDate()}일 {WEEKDAYS[date.getDay()]}</span>
               {isToday
-                ? <span className="rounded bg-ink px-1.5 py-0.5 text-[10px] font-extrabold text-white">TODAY</span>
+                ? <span className="rounded bg-brand-strong px-1.5 py-0.5 text-[10px] font-extrabold text-white">TODAY</span>
                 : <span className="text-xs font-semibold text-muted">{relativeDay(date, today)}</span>}
             </div>
             <ul className="m-0 grid list-none gap-2.5 p-0">
               {items.map(e => (
                 <li key={e.label} className="grid grid-cols-[auto_1fr_auto] items-center gap-2.5 text-sm">
                   <span className={`grid size-[18px] place-items-center rounded-full border-[1.5px] text-[11px] font-extrabold
-                    ${past ? 'border-ink bg-ink text-white' : 'border-[#cfd3da]'}`}>{past ? '✓' : ''}</span>
+                    ${past ? 'border-brand-strong bg-brand-strong text-white' : 'border-[#cfd3da]'}`}>{past ? '✓' : ''}</span>
                   <span className="font-semibold">{e.label}</span>
                   <span className="whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-bold"
                         style={{ background: STEP_COLORS[e.step] + '1f', color: STEP_COLORS[e.step] }}>{stepName(e.step)}</span>

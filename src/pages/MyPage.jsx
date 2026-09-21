@@ -224,7 +224,7 @@ function Consents() {
           <div className="mt-2 flex flex-wrap gap-2">
             <Link to="/privacy" className="btn btn-ghost min-h-10">방침 보기</Link>
             <button type="button" disabled={busy} onClick={() => call('/api/v1/me/consent/acknowledge')}
-                    className="btn btn-dark min-h-10 disabled:opacity-45">확인했어요</button>
+                    className="btn btn-primary min-h-10 disabled:opacity-45">확인했어요</button>
           </div>
         </div>
       )}
@@ -246,7 +246,7 @@ function Consents() {
                 ? <button type="button" disabled={busy} aria-pressed={on}
                           aria-label={`${meta.name} ${on ? '끄기' : '켜기'}`}
                           onClick={() => call(meta.path, { agree: !on })}
-                          className={`btn min-h-10 disabled:opacity-45 ${on ? 'btn-dark' : 'btn-ghost'}`}>
+                          className={`btn min-h-10 disabled:opacity-45 ${on ? 'btn-primary' : 'btn-ghost'}`}>
                     {on ? '받는 중' : '받기'}
                   </button>
                 : <span className="whitespace-nowrap text-[13px] font-semibold text-ink-soft">{on ? '동의함' : '동의 안 함'}</span>}
@@ -300,7 +300,7 @@ function Profile({ member, onChange }) {
   return (
     <Card title="내 계정">
       <div className="flex items-center gap-4">
-        <span className="grid size-14 place-items-center rounded-full bg-ink text-xl font-extrabold text-white">
+        <span className="grid size-14 place-items-center rounded-full bg-brand-strong text-xl font-extrabold text-white">
           {[...display][0] ?? '·'}
         </span>
         <div>
@@ -317,7 +317,7 @@ function Profile({ member, onChange }) {
           <input value={value} onChange={e => setValue(e.target.value)} autoFocus
                  aria-label="새 닉네임" className="field" />
           <div className="flex gap-2">
-            <button type="submit" className="btn btn-dark">저장</button>
+            <button type="submit" className="btn btn-primary">저장</button>
             <button type="button" onClick={() => { setEditing(false); setStatus(''); }} className="btn btn-ghost">취소</button>
           </div>
         </form>
@@ -362,7 +362,7 @@ function CurrentPlan({ member, plans, onSaved }) {
           {found.length ? found.map(plan => (
             <button key={plan.id} type="button" onClick={() => save(plan)}
                     className={`flex w-full cursor-pointer items-center gap-2.5 border-b border-line px-4 py-3.5 text-left
-                      font-semibold last:border-b-0 ${plan.id === member?.currentPlanId ? 'bg-ink text-white' : 'bg-white hover:bg-bg-soft'}`}>
+                      font-semibold last:border-b-0 ${plan.id === member?.currentPlanId ? 'bg-brand-tint text-brand-ink' : 'bg-white hover:bg-bg-soft'}`}>
               <span>{plan.carrier} {plan.name}</span>
               <small className="text-xs font-medium text-muted">
                 {NETWORKS[plan.networkType] ?? plan.networkType} · 월 {won(plan.basePrice)}
@@ -455,7 +455,7 @@ function Subscriptions({ services, rows, onChanged }) {
         </select>
         <input value={price} onChange={e => setPrice(e.target.value)} inputMode="numeric"
                aria-label="월 결제액" className="field sm:w-28" />
-        <button type="submit" className="btn btn-dark">추가</button>
+        <button type="submit" className="btn btn-primary">추가</button>
       </form>
       <Status>{status}</Status>
     </Card>

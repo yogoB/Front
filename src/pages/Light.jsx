@@ -116,7 +116,7 @@ export default function Light() {
             {customFee && (
               <div className="mt-5">
                 <label htmlFor="fee-input" className="mb-2 block text-sm font-semibold">직접 입력</label>
-                <div className="flex min-h-13 items-center rounded-xl border border-line bg-white px-4 shadow-card focus-within:border-ink focus-within:ring-[3px] focus-within:ring-ink/10">
+                <div className="flex min-h-13 items-center rounded-xl border border-line bg-white px-4 shadow-card focus-within:border-brand focus-within:ring-[3px] focus-within:ring-brand-tint">
                   <input id="fee-input" inputMode="numeric" placeholder="55000" autoFocus value={feeText}
                          onChange={e => {
                            // 상한을 넘긴 값은 화면에도 상태에도 남지 않게 여기서 자른다.

@@ -110,7 +110,7 @@ function ReportDialog({ onClose }) {
       {done ? (
         <>
           <p className="text-sm leading-relaxed text-ink-soft">접수했어요. 확인한 뒤 고칠게요. 고맙습니다.</p>
-          <button type="button" onClick={onClose} className="btn btn-dark mt-5">닫기</button>
+          <button type="button" onClick={onClose} className="btn btn-primary mt-5">닫기</button>
         </>
       ) : (
         <form onSubmit={submit} className="grid gap-4">
@@ -133,7 +133,7 @@ function ReportDialog({ onClose }) {
                 {TARGETS.map(([v, label]) => (
                   <button key={v} type="button" onClick={() => { setTargetType(v); setTarget(null); setQuery(''); }} aria-pressed={targetType === v}
                           className={`min-h-10 cursor-pointer rounded-full border px-4 text-sm font-semibold transition-colors duration-150
-                            ${targetType === v ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink-soft hover:bg-bg-soft'}`}>
+                            ${targetType === v ? 'picked' : 'border-line bg-white text-ink-soft hover:bg-bg-soft'}`}>
                     {label}
                   </button>
                 ))}
@@ -178,7 +178,7 @@ function ReportDialog({ onClose }) {
 
           <div className="flex items-center gap-3">
             <button type="submit" disabled={!description.trim() || busy}
-                    className="btn btn-dark disabled:cursor-not-allowed disabled:opacity-45">
+                    className="btn btn-primary disabled:cursor-not-allowed disabled:opacity-45">
               {busy ? '보내는 중…' : '제보 보내기'}
             </button>
             {status && <span role="alert" className="text-[13px] text-danger">{status}</span>}

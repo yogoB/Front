@@ -19,13 +19,13 @@ export function Header() {
     /* 시안: 화면 끝까지 흰 띠. 회색 바탕 화면에서는 그림자로 띄운다. */
     <header className="relative z-10 flex w-full items-center justify-between bg-white px-6 py-4 shadow-[0_1px_10px_rgba(20,20,43,.06)]">
       <Link to="/" className="inline-flex items-center gap-2 text-lg font-bold">
-        <span className="grid size-7 place-items-center rounded-lg bg-brand text-[15px] font-extrabold text-white">B</span>
+        <span className="grid size-7 place-items-center rounded-lg bg-brand-strong text-[15px] font-extrabold text-white">B</span>
         YogoB
       </Link>
       <nav className="flex items-center gap-4">
         {member && <Link to="/mypage" className="inline-flex min-h-11 items-center px-2 text-sm text-muted hover:text-ink-soft">마이페이지</Link>}
         {member && <button type="button" onClick={logout} className="btn btn-ghost">로그아웃</button>}
-        {member === null && <Link to="/login" className="btn btn-dark">로그인</Link>}
+        {member === null && <Link to="/login" className="btn btn-primary">로그인</Link>}
       </nav>
     </header>
   );

@@ -21,7 +21,7 @@ export default function Analyzing({ onDone }) {
   return (
     <section aria-live="polite" className="mx-auto my-16 max-w-[460px] text-center">
       <span className="inline-grid size-12 place-items-center rounded-xl bg-bg-soft" aria-hidden="true">
-        <span className="size-[22px] animate-spin rounded-full border-[3px] border-ink border-t-transparent" />
+        <span className="size-[22px] animate-spin rounded-full border-[3px] border-brand border-t-transparent" />
       </span>
       <h1 className="my-5 text-[22px] font-extrabold">최적 요금 조합 탐색 중</h1>
       <ul className="mb-[22px] grid list-none gap-2.5 p-0 text-left">
@@ -34,7 +34,7 @@ export default function Analyzing({ onDone }) {
         ))}
       </ul>
       <div className="h-1.5 overflow-hidden rounded-full bg-[#eceef2]">
-        <i className="block h-full bg-ink transition-[width] duration-[400ms]"
+        <i className="block h-full bg-brand transition-[width] duration-[400ms]"
            style={{ width: `${(done / STEPS.length) * 100}%` }} />
       </div>
     </section>

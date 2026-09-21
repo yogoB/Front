@@ -283,7 +283,7 @@ export default function Detail() {
                   {!wish.length && <p className="text-sm leading-relaxed text-muted">아직 고른 서비스가 없어요. 아래에서 추가해 주세요.</p>}
                 </div>
                 <button type="button" onClick={() => setModalOpen(true)}
-                        className="btn btn-dark">+ 추가하기</button>
+                        className="btn btn-primary">+ 추가하기</button>
                 <Actions onNext={analyze} nextLabel="분석 시작하기" />
               </>
             )}
@@ -317,7 +317,7 @@ function CarrierSearch({ query, onQuery, open, selected, onPick, onClear, carrie
   const exact = found.some(c => matches(c.name, typed) && matches(typed, c.name));
   if (selected) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-field border border-ink bg-ink px-4 py-2.5 font-semibold text-white">
+      <div className="picked flex items-center justify-between gap-3 rounded-field border px-4 py-2.5 font-semibold">
         <span>{selected.name}{selected.mvno && <small className="ml-2 text-xs font-medium text-white/70">알뜰폰</small>}</span>
         <button type="button" onClick={onClear} aria-label="통신사 선택 해제"
                 className="grid size-9 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-base text-white hover:bg-white/10">✕</button>
@@ -387,7 +387,7 @@ function PlanSearch({ plans, carrier, selected, onPick, onClear, status = 'ready
       </label>
       {selected ? (
         <>
-          <div className="flex items-center justify-between gap-3 rounded-field border border-ink bg-ink px-4 py-2.5 font-semibold text-white">
+          <div className="picked flex items-center justify-between gap-3 rounded-field border px-4 py-2.5 font-semibold">
             <span>{selected.custom ? selected.name : `${selected.carrier} ${selected.name}`}
               {selected.basePrice != null && <small className="ml-1 text-xs font-medium text-white/70 tnum">월 {won(selected.basePrice)}</small>}
             </span>
@@ -496,7 +496,7 @@ function AddModal({ catalog, chosen, onClose, onAdd, status = 'ready', onRetry }
         ))}
         {!shown.length && <SearchState status={status} onRetry={onRetry} empty="추가할 서비스가 없어요." className="p-4 text-sm" />}
       </div>
-      <button type="button" onClick={() => onAdd(picked)} className="btn btn-dark btn-block">추가</button>
+      <button type="button" onClick={() => onAdd(picked)} className="btn btn-primary btn-block">추가</button>
     </dialog>
   );
 }
