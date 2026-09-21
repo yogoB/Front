@@ -170,13 +170,14 @@ function SavedResults() {
    항목마다 근거가 달라 다루는 법도 다르다(BE docs/privacy.md):
    - ESSENTIAL     계약 이행 근거라 철회할 수 없다. 방침 버전이 오르면 '고지'이고, 확인하면 그 시점으로 올린다.
    - MARKETING     동의 근거라 언제든 끄고 켤 수 있다.
-   - SAVINGS_ALERT 동의 근거지만 **로그인할 때만 기록**된다 — 지금 BE 에 변경 경로가 없어 읽기만 한다.
+   - SAVINGS_ALERT 같다. BE 가 경로를 열어 줘서(v84) 읽기 전용에서 버튼으로 바꿨다 — 끄는 길이
+                   먼저 있어야 한다. 보내기 시작한 뒤에 만들면 그 사이에 받은 사람은 끌 수 없다.
 
    `current:false` 는 "구버전 동의"다. 그걸 "동의함"으로만 적으면 거짓이라 그 사실을 따로 적는다. */
 const CONSENT_ITEMS = {
   ESSENTIAL: { name: '필수 동의', desc: '만 14세 이상 · 이용약관 · 개인정보 수집·이용. 서비스 제공의 근거라 철회할 수 없어요.' },
-  SAVINGS_ALERT: { name: '절감 추천 알림', desc: '요금제 변경 시점을 알려 드려요. 로그인할 때 고른 값이에요.' },
-  MARKETING: { name: '이벤트·혜택 정보 수신', desc: '언제든 끄고 켤 수 있어요.' },
+  SAVINGS_ALERT: { name: '절감 추천 알림', desc: '요금제 변경 시점을 알려 드려요.', path: '/api/v1/me/consent/savings-alert' },
+  MARKETING: { name: '이벤트·혜택 정보 수신', desc: '이벤트·혜택 소식을 보내 드려요.', path: '/api/v1/me/consent/marketing' },
 };
 const CONSENT_ORDER = ['ESSENTIAL', 'SAVINGS_ALERT', 'MARKETING'];
 
@@ -241,9 +242,10 @@ function Consents() {
                   <p className="mt-1 text-[13px] font-semibold text-warn-ink">이전 방침 기준 동의라 지금은 유효하지 않아요. 다시 켜 주세요.</p>
                 )}
               </div>
-              {item === 'MARKETING'
+              {meta.path
                 ? <button type="button" disabled={busy} aria-pressed={on}
-                          onClick={() => call('/api/v1/me/consent/marketing', { agree: !on })}
+                          aria-label={`${meta.name} ${on ? '끄기' : '켜기'}`}
+                          onClick={() => call(meta.path, { agree: !on })}
                           className={`btn min-h-10 disabled:opacity-45 ${on ? 'btn-dark' : 'btn-ghost'}`}>
                     {on ? '받는 중' : '받기'}
                   </button>
@@ -252,9 +254,9 @@ function Consents() {
           );
         })}
       </ul>
-      {/* 바꿀 수 없는 항목을 바꿀 수 있는 척하지 않는다. BE 에 변경 경로를 요청해 두었다. */}
+      {/* 끈 뒤에도 다시 켤 수 있다는 걸 적는다 — 철회가 끝이라고 읽히면 사람이 끄기를 망설인다. */}
       <p className="mt-3 text-[13px] leading-relaxed text-muted">
-        절감 추천 알림은 지금 로그인할 때만 고를 수 있어요. 바꾸시려면 로그아웃 후 다시 로그인하면서 선택해 주세요.
+        끈 뒤에도 언제든 다시 켤 수 있어요. 지금은 두 알림 모두 보내는 기능이 준비 중이라 실제로 오지는 않아요.
       </p>
       <Status>{status}</Status>
     </Card>
