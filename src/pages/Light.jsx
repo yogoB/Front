@@ -101,7 +101,7 @@ export default function Light() {
 
         {step === 2 && (
           <div>
-            <Question kicker="현재 납부액"
+            <Question kicker="요금 정보"
                       sub="지난달 실제 납부한 결합·약정 할인이 다 적용된 총 납부금액을 알려주세요."
                       tip="통신사 앱 → 청구내역에서 확인할 수 있어요">
               실제로 내는 금액이 얼마예요?
