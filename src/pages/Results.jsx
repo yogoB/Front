@@ -452,7 +452,7 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
   // 1순위로 채웠으면 1순위 기준 값을 쓴다. 그 기간 값이 응답에 없으면(undefined) 정가 대비로 남긴다 — 곱하지 않는다.
   const now = current ?? paid;
   const nowSaving = now && (minimalKnown
-    ? { 1: now.minimalChangeMonthlySavings, 12: now.minimalChangeAnnualSavings }
+    ? { 1: now.minimalChangeMonthlySavings, 6: now.minimalChangeSemiannualSavings, 12: now.minimalChangeAnnualSavings }
     : { 1: now.monthlySavings, 6: now.semiannualSavings, 12: now.annualSavings })[months];
   const period = months === 12 ? '연' : months === 6 ? '6개월' : '월';
   const spec = (view, fallback) => fmtData(view?.dataMb) ?? fallback;
