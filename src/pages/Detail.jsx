@@ -13,7 +13,6 @@ import { track } from '../lib/track.js';
 import { request } from '../lib/api.js';
 
 const STEPS = ['기본', '요금제', '구독'];
-const DEFAULT_WISH = [1, 2, 6];
 const LINES_MIN = 2, LINES_MAX = 10;   // 결합 회선 수. 1회선 결합은 없다
 
 export default function Detail() {
@@ -52,9 +51,7 @@ export default function Detail() {
       .then(list => {
         setCatalog(list);
         setCatalogState('ready');
-        // 기본 선택을 채운다. 카탈로그에 없는 서비스는 조용히 건너뛴다.
-        setWish(DEFAULT_WISH.map(id => list.find(s => s.id === id)).filter(Boolean)
-          .map(service => ({ id: service.id, service, tierId: service.tiers[0].id })));
+        // 미리 담지 않는다 — 지우지 않은 구독이 계산에 들어가면 안 쓰는 서비스에 돈을 매기게 된다(절대 원칙 1).
       })
       .catch(e => { setCatalogState('failed'); setError(e.message || '구독 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'); });
   }, []);
@@ -76,15 +73,19 @@ export default function Detail() {
     if (!carrier) { setError('통신사를 선택해 주세요.'); return; }
     go(2);
   }
+  // 몰라도 막히지 않는다(원칙 5). BE 는 currentCarrier 없이도 결과를 낸다 — 통신사에 딸린 입력도 함께 비운다.
+  function skipStep1() {
+    setCarrier(null); setCarrierQuery(''); setCurrentPlan(null); setContractHas(null); setContractEnd('');
+    go(2);
+  }
 
   function analyze() {
-    if (!carrier) { setError('통신사를 먼저 선택해 주세요.'); go(1); return; }
     if (!wish.length) { setError('지금 쓰는 구독 서비스를 하나 이상 넣어주세요.'); return; }
     track('INPUT_COMPLETED');   // 막는 검사를 통과한 뒤에 센다 — 되돌아가는 사람을 완료로 세지 않는다
     const b = DATA_BUCKETS[dataIdx];
     setInput({
       mode: 'detail',
-      carrier: carrier.name, mvno: carrier.mvno,
+      carrier: carrier?.name ?? null, mvno: carrier?.mvno ?? null,
       // 지금 쓰는 요금제 id 만 보낸다. 없으면 '현재' 열은 입력값 합계로 돌아간다.
       currentPlanId: currentPlan?.id ?? null,
       currentPlanLabel: currentPlan ? (currentPlan.custom ? currentPlan.name : `${currentPlan.carrier} ${currentPlan.name}`) : null,
@@ -163,7 +164,7 @@ export default function Detail() {
                     )}
                   </div>
                 )}
-                <Actions onNext={nextFromStep1} />
+                <Actions onNext={nextFromStep1} onSkip={skipStep1} />
               </>
             )}
 
