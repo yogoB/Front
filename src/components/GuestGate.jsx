@@ -51,6 +51,8 @@ export function LoginTeaser({ amount, basis, onGoogle, onBack }) {
             <mark className="rounded bg-brand px-2 py-0.5 text-ink">최대 {won(amount)}</mark> 절감 받을 수 있네요.
           </>
         )}
+        {/* 지금보다 비싸면 숨기지 않는다 — 절감처럼 보이게 두면 거짓말이 된다. */}
+        {amount < 0 && <><br />{basis} 월 {won(-amount)} 더 나와요.</>}
         <br />
         구체적인 내용과 일정플랜이 궁금하신가요?
       </h2>

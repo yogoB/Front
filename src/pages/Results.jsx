@@ -85,6 +85,9 @@ export default function Results() {
      그보다 비쌀 수 없다. BE 가 이 성질을 테스트로 고정해 두었다(RecommendationApiTest).
      두 금액을 견주기만 한다 — 차액은 적지 않는다(절대 원칙 2). */
   const minimalCostsMore = Boolean(current && minimalKnown && recommended.monthlyTotal > current.cost.monthlyTotal);
+  // 제목의 '절감 완료'는 실제로 아낄 때만. 지금(요금제·내는 금액)을 알면 그 대비 1순위 절감(BE 값)으로 가른다.
+  const now = current ?? data.paid ?? null;
+  const saves = now ? now.monthlySavings > 0 : cheapest?.monthlySavings > 0;
   // 왜 없는지는 둘 중 하나다 — 통신사를 모르거나, 알지만 그 통신사에 다른 후보가 없거나(예: SKT·LTE 는 카탈로그에 1건뿐).
   // 둘을 같은 문장으로 적으면 이미 통신사를 알려준 사람에게 또 알려달라고 하게 된다.
   const narrated = { ...data, ...(told ?? {}) };   // 설명 필드는 첫 응답 또는 narrate 응답에서
@@ -143,7 +146,7 @@ export default function Results() {
       <div className={guest ? 'select-none blur-[6px]' : undefined}>
       <main className="mx-auto max-w-page px-6 py-8">
         <span className="inline-block rounded-full bg-bg-soft px-3 py-1.5 text-[13px] font-bold text-ink-soft">
-          절감 완료
+          {saves ? '절감 완료' : '분석 완료'}
         </span>
         <h1 className="mb-1 mt-4 text-2xl font-extrabold tracking-[-.01em] md:text-[28px]">최적 요금 조합 비교 분석</h1>
         <p className="mb-6 text-sm text-muted">카탈로그 가격 기준 · {stamp(data.receivedAt)} 계산</p>
@@ -455,6 +458,8 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
     ? { 1: now.minimalChangeMonthlySavings, 6: now.minimalChangeSemiannualSavings, 12: now.minimalChangeAnnualSavings }
     : { 1: now.monthlySavings, 6: now.semiannualSavings, 12: now.annualSavings })[months];
   const period = months === 12 ? '연' : months === 6 ? '6개월' : '월';
+  // 지금 내는 금액(paid)보다 추천 열이 비싸면 알린다 — current 쪽 minimalCostsMore 와 같은 자리, 차액은 BE 값 그대로.
+  const paidMore = !current && paid ? -(minimalKnown ? paid.minimalChangeMonthlySavings : paid.monthlySavings) : 0;
   const spec = (view, fallback) => fmtData(view?.dataMb) ?? fallback;
   const guessed = input.data ? `${input.data.label} 충족` : `${DEFAULT_GB}GB 기준 충족`;
   const exclusion = excludedSentence(excluded, input.data?.label);
@@ -512,6 +517,12 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
           {exclusion && ` ${exclusion}`}
           {' '}맨 오른쪽 열은 {currentCarrier ? `${currentCarrier} 안에서 ` : ''}그 조건을 맞추는 가장 싼 조합이에요.
           조건이 지금으로 충분하면 그대로 두셔도 괜찮아요.
+        </p>
+      )}
+      {paidMore > 0 && (
+        <p className="bg-warn-tint px-4.5 py-2.5 text-[13px] leading-relaxed text-warn-ink">
+          <strong>지금 내시는 금액이 더 싸요.</strong> 맨 오른쪽 조합은 지금보다 월 {won(paidMore)} 더 나와요 —
+          원하시는 조건(데이터·통신 규격)을 맞추느라 그래요. 조건이 지금으로 충분하면 그대로 두셔도 괜찮아요.
         </p>
       )}
       {!minimalKnown && (
