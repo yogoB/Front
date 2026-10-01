@@ -359,7 +359,8 @@ function buildNotices(source, data, best) {
   const notices = [];
   if (!source.data) notices.push(`데이터 사용량을 건너뛰어 ${DEFAULT_GB}GB 기준으로 계산했어요. 실제 사용량을 넣으면 결과가 정확해져요.`);
   notices.push(...(data.notices || []));
-  if (!best) notices.push('조건에 맞는 요금제를 아직 찾지 못했어요. 조건을 바꾸거나 잠시 후 다시 시도해 주세요.');
+  // 결과가 없으면 BE 가 notices 첫 줄에 "왜 없는지"를 싣는다(G-87 a) — 그때는 우리 문장을 겹쳐 쓰지 않는다.
+  if (!best && !data.notices?.length) notices.push('조건에 맞는 요금제를 아직 찾지 못했어요. 조건을 바꾸거나 잠시 후 다시 시도해 주세요.');
   return notices;
 }
 
