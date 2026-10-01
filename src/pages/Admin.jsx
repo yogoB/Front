@@ -6,7 +6,12 @@ import { request } from '../lib/api.js';
    회원 화면과 같은 쿠키 세션 + CSRF 헤더를 쓴다(request 의 member:true).
    화면은 레퍼런스(다크 대시보드 "Nexus")를 따른다: 좌측 고정 사이드바, KPI 4장, 면적/막대/도넛 차트, 최근 활동.
    차트는 SVG 를 직접 그린다 — 라이브러리 없이 값과 좌표만 옮긴다. */
-const call = (path, opts = {}) => request(path, { member: true, ...opts }).then(r => r.data);
+/* 403 = 로그인은 됐지만 이 기능 권한이 없다(ROLE_CATALOG 는 catalog·gaps·session 만 연다, BE G-90).
+   어느 카드든 같은 문장으로 접히도록 여기서 한 번 바꾼다. */
+const DENIED = '권한 없음 — 이 계정으로는 볼 수 없는 기능이에요.';
+const call = (path, opts = {}) => request(path, { member: true, ...opts }).then(r => r.data,
+  e => { if (e.status === 403) e.message = DENIED; throw e; });
+const Denied = () => <p className="text-sm text-adm-muted">{DENIED}</p>;
 
 /** -1 은 "알 수 없음"이다(표가 없거나 조회 실패). 0 으로 적으면 거짓말이 된다. */
 const show = value => (typeof value === 'number' && value >= 0 ? value.toLocaleString('ko-KR') : '—');
@@ -297,7 +302,7 @@ export default function Admin() {
 
   const say = setMessage;
   const fail = e => say(e.message);
-  const loadDashboard = useCallback(() => call('/api/v1/admin/dashboard').then(setDashboard), []);
+  const loadDashboard = useCallback(() => call('/api/v1/admin/dashboard').then(setDashboard, e => { if (e.status === 403) setDashboard(false); throw e; }), []);   // false = 권한 없음
   const loadAudit = useCallback(() => call('/api/v1/admin/audit?limit=100').then(setAudit), []);
   const refresh = useCallback(() => Promise.all([loadDashboard(), loadAudit()]).catch(fail), [loadDashboard, loadAudit]);   // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -305,9 +310,10 @@ export default function Admin() {
   const showSession = useCallback(async () => {
     try {
       setSession(await call('/api/v1/admin/session'));
-      await Promise.all([loadDashboard(), loadAudit()]);
-    } catch { setSession(null); }
-  }, [loadDashboard, loadAudit]);
+    } catch { setSession(null); return; }
+    // 지표가 403 이어도 로그인 화면으로 돌려보내지 않는다 — 카탈로그 담당자는 지표 권한이 없다.
+    refresh();
+  }, [refresh]);
   useEffect(() => { showSession(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
   async function login(event) {
@@ -394,7 +400,8 @@ export default function Admin() {
         <p role="status" aria-live="polite" className="my-3 min-h-[1.5em] whitespace-pre-wrap text-sm font-semibold text-adm-cyan">{message}</p>
 
         {page === 'dashboard' && <DashboardPage data={dashboard} audit={audit} />}
-        {page === 'quality' && <QualityPage quality={dashboard?.quality} />}
+        {page === 'quality' && dashboard === false && <Denied />}
+        {page === 'quality' && dashboard !== false && <QualityPage quality={dashboard?.quality} />}
         {page === 'gaps' && <><GapsBoard say={say} onChanged={refresh} /><ReportsBoard say={say} onChanged={refresh} /></>}
         {page === 'members' && <MembersPage say={say} />}
         {page === 'stats' && <StatsPage data={dashboard} />}
@@ -415,6 +422,7 @@ const Brand = () => (
 
 /* ---------- 대시보드 ---------- */
 function DashboardPage({ data, audit }) {
+  if (data === false) return <Denied />;
   if (!data) return <p className="text-sm text-adm-muted">지표를 읽는 중…</p>;
   const health = data.health ?? {};
   const failures = pick(data, 'health.narrationFailures');
@@ -1024,6 +1032,7 @@ function MembersPage({ say }) {
 
 /* ---------- 통계(D-52 ⑦) ---------- */
 function StatsPage({ data }) {
+  if (data === false) return <Denied />;
   if (!data) return <p className="text-sm text-adm-muted">통계를 읽는 중…</p>;
   const stats = data.stats ?? {};
   const Ranked = ({ rows, empty }) => {
