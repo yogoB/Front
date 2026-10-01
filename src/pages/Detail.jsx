@@ -80,7 +80,7 @@ export default function Detail() {
   }
 
   function analyze() {
-    if (!wish.length) { setError('지금 쓰는 구독 서비스를 하나 이상 넣어주세요.'); return; }
+    // 구독이 없어도 통신비만으로 추천한다(결정 ⑥) — 빈 목록을 막지 않는다.
     track('INPUT_COMPLETED');   // 막는 검사를 통과한 뒤에 센다 — 되돌아가는 사람을 완료로 세지 않는다
     const b = DATA_BUCKETS[dataIdx];
     setInput({

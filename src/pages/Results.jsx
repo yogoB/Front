@@ -168,7 +168,7 @@ export default function Results() {
             <CompareTable input={input} recommended={recommended} cheapest={cheapest} sameAsCheapest={sameAsCheapest}
                           minimalKnown={minimalKnown} currentCarrier={currentCarrier} minimalCostsMore={minimalCostsMore}
                           excluded={current?.excluded ?? null} subs={keptSubs(input)}
-                          current={current} months={months} planViews={planViews}
+                          current={current} paid={data.paid ?? null} months={months} planViews={planViews}
                           tools={
                             /* 저장·내려받기는 세 번째 열 머리 오른쪽에 둔다(사용자 결정 2026-09-18).
                                둘 다 리포트 전체를 다루므로 대상을 label 에 적는다 — 셋째 열만 저장한다고 읽히지 않게. */
@@ -436,7 +436,7 @@ function PlanChip({ carrier, name }) {
   );
 }
 
-function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKnown = true, currentCarrier, minimalCostsMore = false, excluded = null, subs = [], current, months, planViews, tools }) {
+function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKnown = true, currentCarrier, minimalCostsMore = false, excluded = null, subs = [], current, paid = null, months, planViews, tools }) {
   const rec = columnFacts(recommended);
   const low = columnFacts(cheapest);
   // '현재' 열: BE 가 같은 계산기로 낸 current.cost 가 있으면 그것, 없으면 입력값 합계(폴백).
@@ -448,6 +448,13 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
   const periodSaving = months === 12 ? recommended.annualSavings
     : months === 6 ? recommended.semiannualSavings : recommended.monthlySavings;
   const periodUnknown = months !== 1 && periodSaving == null;
+  // 지금(요금제 또는 내는 금액)을 알면 카드 절감도 그 기준이다. 추천 열이 변경 최소면 BE 의 minimalChange* 를,
+  // 1순위로 채웠으면 1순위 기준 값을 쓴다. 그 기간 값이 응답에 없으면(undefined) 정가 대비로 남긴다 — 곱하지 않는다.
+  const now = current ?? paid;
+  const nowSaving = now && (minimalKnown
+    ? { 1: now.minimalChangeMonthlySavings, 12: now.minimalChangeAnnualSavings }
+    : { 1: now.monthlySavings, 6: now.semiannualSavings, 12: now.annualSavings })[months];
+  const period = months === 12 ? '연' : months === 6 ? '6개월' : '월';
   const spec = (view, fallback) => fmtData(view?.dataMb) ?? fallback;
   const guessed = input.data ? `${input.data.label} 충족` : `${DEFAULT_GB}GB 기준 충족`;
   const exclusion = excludedSentence(excluded, input.data?.label);
@@ -487,10 +494,13 @@ function CompareTable({ input, recommended, cheapest, sameAsCheapest, minimalKno
         : sameAsCheapest ? `${recommended.carrier} 그대로가 가장 싼 조합이에요`
         : `${recommended.carrier} 그대로 · 번호이동 없이 바꾸는 조합`,
       total: won(recommended.monthlyTotal), plan: rows[0][2], promo: promoLine(recommended),
-      save: recommended.monthlySavings <= 0 ? ''
+      save: nowSaving !== undefined
+        ? (nowSaving == null ? `${months}개월 절감액은 특가가 끝난 뒤 금액을 몰라 내지 않았어요`
+          : nowSaving > 0 ? `${current ? '지금 요금제' : '지금 내는 금액'} 대비 ${period} ${won(nowSaving)} 절감` : '')
+        : recommended.monthlySavings <= 0 ? ''
         : periodUnknown
           ? `${months}개월 절감액은 특가가 끝난 뒤 금액을 몰라 내지 않았어요`
-          : `정가 대비 ${months === 12 ? '연' : months === 6 ? '6개월' : '월'} ${won(periodSaving)} 절감` },
+          : `정가 대비 ${period} ${won(periodSaving)} 절감` },
   ];
 
   return (

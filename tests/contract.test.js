@@ -369,11 +369,12 @@ test("INPUT_COMPLETED 는 막는 검사를 통과한 뒤에만 보낸다 — 분
   // '입력 완료'로 세고 있었다(2026-09-21). 보고서 §9.2 결과 도달률이 그 수를 쓰므로 자리가 중요하다.
   for (const file of ['Light.jsx', 'Detail.jsx']) {
     const src = readFileSync(`src/pages/${file}`, 'utf8');
-    const body = src.slice(src.indexOf('function analyze()'));
+    // 구독 0개도 통과하게 되면서(결정 ⑥) 막는 검사가 없을 수도 있다 — 있다면 보낸 뒤에 와선 안 된다.
+    const start = src.indexOf('function analyze()');
+    const body = src.slice(start, src.indexOf('\n  }\n', start));
     const sent = body.indexOf("track('INPUT_COMPLETED')");
-    const guard = body.indexOf('setError(');
     assert.ok(sent > 0, `${file}: analyze() 가 INPUT_COMPLETED 를 안 보낸다`);
-    assert.ok(guard > 0 && sent > guard, `${file}: 검사보다 먼저 INPUT_COMPLETED 를 보내고 있다`);
+    assert.equal(body.indexOf('setError(', sent), -1, `${file}: 검사보다 먼저 INPUT_COMPLETED 를 보내고 있다`);
   }
 });
 

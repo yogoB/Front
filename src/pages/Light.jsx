@@ -46,7 +46,7 @@ export default function Light() {
 
   function analyze() {
     const chosen = subs.filter(s => s.checked);
-    if (!chosen.length) { setError('구독 서비스를 하나 이상 골라주세요.'); return; }
+    // 구독이 없어도 통신비만으로 추천한다(결정 ⑥) — 빈 목록을 막지 않는다.
     track('INPUT_COMPLETED');   // 막는 검사를 통과한 뒤에 센다 — 디테일과 같은 자리다(되돌아가는 사람을 완료로 세지 않는다)
     const bucket = DATA_BUCKETS[dataIdx];
     setInput({
