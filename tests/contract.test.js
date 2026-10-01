@@ -38,6 +38,9 @@ test('추천 요청은 서버 ID·enum·지원 필드만 담는다', () => {
   // 지금 쓰는 요금제는 고른 경우에만 보낸다(G-30).
   assert.equal(optionalOf({ currentPlanId: 42 }).currentPlanId, 42);
   assert.equal('currentPlanId' in optionalOf({ currentPlanId: null }), false);
+  // 지금 내는 월 통신비는 고르거나 입력한 경우에만 보낸다(BE 가 data.paid 로 '지금 대비' 절감을 낸다).
+  assert.equal(optionalOf({ fee: { label: '5~7만원', amount: 60000 } }).currentMonthlyPayment, 60000);
+  assert.equal('currentMonthlyPayment' in optionalOf({ fee: null }), false);
 });
 
 test('가족결합 회선 수·할인액은 결합 중일 때만, 정수 범위만 나간다 (G-28)', () => {

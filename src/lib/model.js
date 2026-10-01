@@ -96,6 +96,8 @@ export function buildRequest(source) {
   if (source.carrier) optional.currentCarrier = source.carrier;
   // 지금 쓰는 요금제(G-30). BE 가 '현재' 열을 같은 계산기로 내고 요금제의 통신사를 현재 통신사로 확정한다.
   if (source.currentPlanId) optional.currentPlanId = source.currentPlanId;
+  // 지금 내는 월 통신비(구간이면 대표값). BE 가 이 금액 대비 절감(data.paid)을 낸다 — 정가 대비보다 사용자에게 가깝다.
+  if (Number.isInteger(source.fee?.amount)) optional.currentMonthlyPayment = source.fee.amount;
   // 모른다고 한 값은 빼서 missingInputs 안내가 그대로 남는다(원칙 5-①).
   if (source.networkType) optional.networkType = source.networkType;
   if (source.contractType) optional.contractType = source.contractType;

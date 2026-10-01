@@ -201,7 +201,7 @@ export default function Results() {
           </button>
         ) : (
           <section className="mt-6" aria-label="결과 설명">
-            {recommended && <SaveHero best={recommended} current={current} sameAsCheapest={sameAsCheapest} />}
+            {recommended && <SaveHero best={recommended} current={current ?? data.paid ?? null} nowLabel={current ? '지금 요금제' : '지금 내는 금액'} sameAsCheapest={sameAsCheapest} />}
             <Summary message={narrated.message} />
             <p className="my-6 max-w-prose rounded-xl bg-warn-tint px-4 py-3 text-sm leading-relaxed text-warn-ink">
               {current
@@ -250,9 +250,11 @@ export default function Results() {
 }
 
 /** 티저 한 줄에 쓸 절감액. BE 가 준 값 중 가장 큰 것을 **고르기만** 한다 — 빼거나 곱하지 않는다(절대 원칙 2).
-    지금 쓰는 요금제를 알려준 사람에게는 '지금보다' 절감액이 더 정확하다(G-30). */
+    지금 쓰는 요금제를 알려준 사람에게는 '지금보다' 절감액이 더 정확하다(G-30).
+    요금제는 몰라도 지금 내는 통신비를 알려줬으면 그 금액 대비(data.paid)가 정가 대비보다 낫다. */
 function teaserSaving(data) {
   if (data.current) return { amount: data.current.monthlySavings, basis: '지금 요금제보다' };
+  if (data.paid) return { amount: data.paid.monthlySavings, basis: '지금 내는 금액보다' };
   return {
     amount: data.results.reduce((top, r) => (r.monthlySavings > top ? r.monthlySavings : top), 0),
     basis: '정가 대비',
@@ -278,8 +280,8 @@ const DownloadIcon = () => (
 /* 결론 먼저(원칙 5-③) — 다만 금액을 하나도 만들지 않는다(원칙 2). 설명 펼침 안에서만 보인다.
    월·연 절감은 BE 의 monthlySavings·annualSavings 를 그대로 쓴다. 기준은 정가(baseline)이며
    사용자의 현재 청구액이 아니다(integration.md 결과 해석). */
-function SaveHero({ best, current, sameAsCheapest = true }) {
-  // current 가 있으면 "지금보다" 가 기준이다(G-30). 차액은 BE 가 뺀 값(current.monthlySavings)을 그대로 쓴다 —
+function SaveHero({ best, current, nowLabel = '지금 요금제', sameAsCheapest = true }) {
+  // current 는 지금 요금제(data.current) 또는 지금 내는 금액(data.paid) — 모양이 같다. current 가 있으면 "지금보다" 가 기준이다(G-30). 차액은 BE 가 뺀 값(current.monthlySavings)을 그대로 쓴다 —
   // 화면에서 current − best 를 다시 계산하지 않는다. 음수(지금이 더 쌈)도 숨기지 않는다.
   let head, amount, foot;
   if (current) {
@@ -292,7 +294,7 @@ function SaveHero({ best, current, sameAsCheapest = true }) {
         ? `1년치는 특가가 끝난 뒤 금액을 몰라 내지 않았어요${basis}`
         : `1년이면 ${won(current.annualSavings)}${basis}`;
     }
-    else if (diff < 0) { head = '지금 요금제가 더 싸요 — 매달'; amount = won(-diff); foot = `추천 조합으로 옮기면 그만큼 더 내요${basis}`; }
+    else if (diff < 0) { head = `${nowLabel}${nowLabel.endsWith('금액') ? '이' : '가'} 더 싸요 — 매달`; amount = won(-diff); foot = `추천 조합으로 옮기면 그만큼 더 내요${basis}`; }
     else { head = '지금과 같은 금액이에요'; amount = won(best.monthlyTotal); foot = '옮겨도 월 요금은 그대로예요'; }
   } else {
     const saving = best.monthlySavings > 0;
@@ -312,7 +314,7 @@ function SaveHero({ best, current, sameAsCheapest = true }) {
       </div>
       <dl className="m-0 flex flex-wrap gap-2.5">
         <Delta label="추천 조합" value={won(best.monthlyTotal)} />
-        {current && <Delta label="지금 요금제" value={won(current.cost.monthlyTotal)} />}
+        {current && <Delta label={nowLabel} value={won(current.cost.monthlyTotal)} />}
         <Delta label="정가 기준" value={won(best.baseline)} />
       </dl>
     </section>
