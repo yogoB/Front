@@ -40,12 +40,14 @@ export async function loadCatalog(signal) {
 // BE 카탈로그가 쓰는 무제한 표기. monthlyDataGb 계약은 정수 GB라 이 값 이하의 가장 큰 GB를 보낸다.
 export const UNLIMITED_DATA_MB = 999_999;
 
-// 데이터 사용량 구간. rep = BE(monthlyDataGb 정수) 전송용 대표값(구간 중앙값). 흐름 확정본 결정 사항.
+// 데이터 사용량 구간. rep = BE(monthlyDataGb 정수) 전송용 값 — **구간 상단**이다(사용자 결정 2026-10-01).
+// 화면은 '해당 용량 이상인 요금제를 찾아요'라고 약속한다. 중앙값이면 50GB 가까이 쓰는 사람에게 30GB 요금제가 1순위가 됐다.
+// '50GB 이상'은 상단이 없어 기존 값을 둔다.
 export const DATA_BUCKETS = [
-  { label: '3GB 미만', rep: 2 },
-  { label: '3~5GB', rep: 4 },
-  { label: '5~15GB', rep: 10 },
-  { label: '15~50GB', rep: 30 },
+  { label: '3GB 미만', rep: 3 },
+  { label: '3~5GB', rep: 5 },
+  { label: '5~15GB', rep: 15 },
+  { label: '15~50GB', rep: 50 },
   { label: '50GB 이상', rep: 80 },
   // ponytail: 현재 계약 안에서 무제한 sentinel만 통과시키는 최소 기준이다.
   // 976GB 이상 유한 요금제가 생기면 monthlyDataGb 대신 명시적인 데이터 조건 enum을 추가한다.

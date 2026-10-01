@@ -155,7 +155,7 @@ test('range buckets carry a positive integer representative for BE (monthlyDataG
     for (const b of list)
       assert.ok(Number.isInteger(b.rep) && b.rep > 0, `${b.label} rep must be positive int`);
   // representative gb is what /recommendations receives; keep it in Java int range and non-skippable-safe
-  assert.deepEqual(DATA_BUCKETS.map(b => b.rep), [2, 4, 10, 30, 80, 976]);
+  assert.deepEqual(DATA_BUCKETS.map(b => b.rep), [3, 5, 15, 50, 80, 976]);
   const unlimitedGb = DATA_BUCKETS.at(-1).rep;
   assert.ok(unlimitedGb * 1024 <= UNLIMITED_DATA_MB);
   assert.ok((unlimitedGb + 1) * 1024 > UNLIMITED_DATA_MB);
