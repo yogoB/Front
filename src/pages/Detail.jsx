@@ -8,7 +8,7 @@ import { loadCatalog, loadPlans, carriersOf, DATA_BUCKETS, FEE_BUCKETS } from '.
 import { won, tierPrice, foreignNote, tierKrwGuess, isForeign, matches, matchesAll, searchKey, findPlans, clampDigits, FEE_MAX } from '../lib/model.js';
 import { PriceNote } from '../components/SubscriptionPicker.jsx';
 import TierSelect from '../components/TierSelect.jsx';
-import { setInput } from '../lib/session.js';
+import { getInput, setInput } from '../lib/session.js';
 import { track } from '../lib/track.js';
 import { request } from '../lib/api.js';
 
@@ -44,6 +44,7 @@ export default function Detail() {
   const [feeText, setFeeText] = useState('');                          // 직접입력 통신비. 상한 FEE_MAX
   const [wish, setWish] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [prior] = useState(getInput);   // 앞서(라이트 등) 넣은 입력. 마운트 때 한 번만 읽는다(무한 요청 회귀 가드)
 
   const fetchCatalog = useCallback(() => {
     setCatalogState('loading');
@@ -51,10 +52,14 @@ export default function Detail() {
       .then(list => {
         setCatalog(list);
         setCatalogState('ready');
+        // 앞서(라이트 등) 넣은 구독을 이어 담는다 — 사용자가 직접 고른 것만이라 미리 담기(원칙 1 위반)와 다르다.
+        setWish((prior?.subs ?? []).map(p => ({ p, service: list.find(s => s.id === p.id) })).filter(x => x.service)
+          .map(({ p, service }) => ({ id: service.id, service,
+            tierId: service.tiers.some(t => t.id === p.tierId) ? p.tierId : service.tiers[0].id })));
         // 미리 담지 않는다 — 지우지 않은 구독이 계산에 들어가면 안 쓰는 서비스에 돈을 매기게 된다(절대 원칙 1).
       })
       .catch(e => { setCatalogState('failed'); setError(e.message || '구독 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'); });
-  }, []);
+  }, [prior]);
   // 통신사 목록은 따로 받는다. 실패해도 구독 단계까지는 진행할 수 있어야 하므로 화면을 막지 않는다.
   const fetchPlans = useCallback(() => {
     setPlansState('loading');
@@ -63,6 +68,16 @@ export default function Detail() {
       .catch(() => setPlansState('failed'));
   }, []);
   useEffect(() => { fetchCatalog(); fetchPlans(); }, [fetchCatalog, fetchPlans]);
+  // 라이트에서 넘어오면 통신비·데이터를 이어 채운다(사용자 결정 2026-10-01). 구독은 카탈로그를 받은 뒤 위에서 채운다.
+  useEffect(() => {
+    const idx = DATA_BUCKETS.findIndex(b => b.label === prior?.data?.label);
+    if (idx >= 0) setDataIdx(idx);
+    const amount = prior?.fee?.amount;
+    if (!Number.isInteger(amount) || amount <= 0) return;
+    const bucket = FEE_BUCKETS.find(b => b.label === prior.fee.label);
+    if (bucket) setFee({ label: bucket.label, amount: bucket.rep });
+    else { setCustomFee(true); setFeeText(String(amount)); setFee({ label: `${amount.toLocaleString('ko-KR')}원`, amount }); }
+  }, [prior]);
   // 보고서 §9.2 결과 도달률의 분모 — 입력을 시작한 사람.
   useEffect(() => { track('INPUT_STARTED'); }, []);
 
